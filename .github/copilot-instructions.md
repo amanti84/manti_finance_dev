@@ -100,5 +100,29 @@ export const NomeComponente: FC<Props> = ({ data }) => {
 
 ## Budget e costi
 Obiettivo: costi Firebase < €1/mese a regime.
+
+Usare free tier Firebase dove possibile. Evitare chiamate API inutili — preferire cache locale e snapshot listeners.
+
+## Policy crediti GitHub Copilot (aggiornamento giugno 2026)
+
+Dal 1° giugno 2026 GitHub Copilot adotta un modello a crediti (1 credito = $0.01).
+Ogni piano include crediti inclusi pari al costo mensile (es. Pro = $10/mese = 1000 crediti).
+
+### Regole operative per questo progetto
+
+- **Preferire modelli leggeri** (GPT-4o mini, Claude Haiku) per completamenti inline e chat brevi.
+- **Usare modelli frontier** (Claude Sonnet/Opus, GPT-4o) SOLO per issue complesse che richiedono ragionamento architetturale.
+- **Nessuna sessione agent illimitata**: ogni sessione agent deve essere focalizzata su UNA issue atomica.
+- **Evitare context window enormi**: non caricare l'intero repo come contesto — passare solo i file rilevanti per il task.
+- **Soglia di allerta**: se i crediti consumati nel mese superano $8 (80% del piano), sospendere le sessioni agent e completare solo con completamenti inline.
+- **Nessuna code review automatica** sui branch di sviluppo durante M1 — solo review manuale da PM.
+- **Tetto massimo mensile**: $10 di crediti Copilot inclusi. Nessun budget extra autorizzato senza approvazione esplicita del proprietario del progetto.
+
+### Impatto atteso per M1 (giugno 2026)
+
+- Issue atomiche piccole = basso consumo di crediti per sessione.
+- Struttura cartelle e scaffolding: prevalentemente completamento inline → consumo minimo.
+- Sessioni agent su issue complesse (Snapshot Engine, Audit Trail): stimato 2-4 crediti/sessione.
+- Stima totale M1: 20-40 crediti su 1000 disponibili → ampiamente dentro il piano incluso.
 Usare free tier Firebase dove possibile.
 Evitare chiamate API inutili — preferire cache locale e snapshot listeners.
