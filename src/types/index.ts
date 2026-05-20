@@ -1,14 +1,14 @@
 // ============================================================
 // CORE TYPES - manti_finance_dev
-// Modello dati v1 — allineato alle collection Firestore
-// /users/{uid}/snapshots | transactions | investments | payslips | auditLog | config
+// Modello dati v1 - allineato alle collection Firestore
+// /users/{uid}/snapshots | transactions | investments | payslips | audit | config
 // ============================================================
 
 import type { Timestamp } from 'firebase/firestore'
 
-// ------------------------------------------------------------
+// --------------------------------------------------------
 // BASE
-// ------------------------------------------------------------
+// --------------------------------------------------------
 
 export interface BaseDocument {
   id: string
@@ -20,45 +20,45 @@ export type Currency = 'EUR' | 'USD' | 'GBP' | 'CHF'
 
 export type Month = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12
 
-// ------------------------------------------------------------
+// --------------------------------------------------------
 // USER
-// ------------------------------------------------------------
+// --------------------------------------------------------
 
 export interface UserProfile extends BaseDocument {
   uid: string
   email: string
   displayName: string
   currency: Currency
-  taxCode?: string  // codice fiscale
+  taxCode?: string // codice fiscale
   onboardingComplete: boolean
 }
 
-// ------------------------------------------------------------
+// --------------------------------------------------------
 // PATRIMONIO SNAPSHOT (mensile)
 // /users/{uid}/snapshots/{snapshotId}
-// ------------------------------------------------------------
+// --------------------------------------------------------
 
 export interface PatrimonioSnapshot extends BaseDocument {
   year: number
   month: Month
   // Attivi
-  contiCorrenti: number       // liquidita' totale
-  investimenti: number        // portafoglio totale
-  immobili: number            // valore immobili
-  fondoPensione: number       // Fon.Te + altri fondi
-  tfr: number                 // TFR maturato
+  contiCorrenti: number          // liquidita' totale
+  investimenti: number           // portafoglio totale
+  immobili: number               // valore immobili
+  fondoPensione: number          // Fon.Te + altri fondi
+  tfr: number                    // TFR maturato
   // Passivi
-  mutuo: number               // debito residuo mutuo
+  mutuo: number                  // debito residuo mutuo
   altriDebiti: number
   // Calcolati
-  patrimonioNetto: number     // attivi - passivi
+  patrimonioNetto: number        // attivi - passivi
   note?: string
 }
 
-// ------------------------------------------------------------
+// --------------------------------------------------------
 // TRANSAZIONI
 // /users/{uid}/transactions/{transactionId}
-// ------------------------------------------------------------
+// --------------------------------------------------------
 
 export type TransactionType = 'income' | 'expense' | 'transfer' | 'investment'
 
@@ -81,10 +81,10 @@ export interface Transaction extends BaseDocument {
   source: 'manual' | 'import' | 'email'
 }
 
-// ------------------------------------------------------------
+// --------------------------------------------------------
 // INVESTIMENTI
 // /users/{uid}/investments/{investmentId}
-// ------------------------------------------------------------
+// --------------------------------------------------------
 
 export type AssetClass =
   | 'azioni' | 'obbligazioni' | 'etf' | 'fondi' | 'pac'
@@ -99,47 +99,45 @@ export interface Investment extends BaseDocument {
   assetClass: AssetClass
   broker: Broker
   quantity: number
-  avgCost: number             // prezzo medio di carico
+  avgCost: number               // prezzo medio di carico
   currentPrice: number
-  currentValue: number        // quantity * currentPrice
+  currentValue: number          // quantity * currentPrice
   currency: Currency
-  isPac: boolean              // e' un PAC (issue #11)
+  isPac: boolean                // e' un PAC (issue #11)
   pacMonthlyAmount?: number
   lastPriceUpdate: Timestamp
 }
 
-// ------------------------------------------------------------
+// --------------------------------------------------------
 // PAYROLL / CEDOLINI
 // /users/{uid}/payslips/{payslipId}
-// ------------------------------------------------------------
+// --------------------------------------------------------
 
 export interface Payslip extends BaseDocument {
   year: number
   month: Month
-  grossSalary: number         // RAL mensile lordo
-  netSalary: number           // netto in busta
+  grossSalary: number           // RAL mensile lordo
+  netSalary: number             // netto in busta
   irpef: number
   inps: number
-  tfr: number                 // quota TFR del mese
-  fondoPensione: number       // versamento mensile Fon.Te
+  tfr: number                   // quota TFR del mese
+  fondoPensione: number         // versamento mensile Fon.Te
   bonus?: number
   rimborsiSpese?: number
-  surplus?: number            // calcolato: net - spese fisse
-  documentUrl?: string        // Storage path del PDF
-  parsed: boolean             // cedolino parsato automaticamente
-  rawText?: string            // testo grezzo per debugging
+  surplus?: number              // calcolato: net - spese fisse
+  documentUrl?: string          // Storage path del PDF
+  parsed: boolean               // cedolino parsato automaticamente
+  rawText?: string              // testo grezzo per debugging
 }
 
-// ------------------------------------------------------------
+// --------------------------------------------------------
 // AUDIT LOG
-// /users/{uid}/auditLog/{logId}
-// Immutabile: no update, no delete (vedi firestore.rules)
-// ------------------------------------------------------------
+// /users/{uid}/audit/{logId}
+// --------------------------------------------------------
 
 export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'snapshot'
 
-export type AuditEntityType =
-  | 'snapshot' | 'transaction' | 'investment' | 'payslip' | 'config'
+export type AuditEntityType = 'snapshot' | 'transaction' | 'investment' | 'payslip' | 'config'
 
 export interface AuditLogEntry extends BaseDocument {
   entityType: AuditEntityType
@@ -151,20 +149,10 @@ export interface AuditLogEntry extends BaseDocument {
   ipHash?: string
 }
 
-// ------------------------------------------------------------
+// --------------------------------------------------------
 // CONFIGURAZIONE UTENTE
-// /users/{uid}/config/preferences
-// ------------------------------------------------------------
-
-export interface UserConfig extends BaseDocument {
-  // Conti correnti
-  accounts: BankAccount[]
-  // Parametri mutuo
-  mutuo?: MutuoConfig
-  // Notifiche
-  alertsEnabled: boolean
-  monthlyCloseReminderDay: number  // giorno del mese per reminder chiusura
-}
+// /users/{uid}/config/{configId}
+// --------------------------------------------------------
 
 export interface BankAccount {
   id: string
@@ -177,22 +165,27 @@ export interface BankAccount {
 export interface MutuoConfig {
   importoOriginale: number
   debitoResiduo: number
-  rataMessile: number
+  rataMensile: number
   tasso: number
   dataInizio: Timestamp
   dataFine: Timestamp
   isMutuoVariabile: boolean
 }
 
-// ------------------------------------------------------------
-// UI / UTILITY TYPES
-// ------------------------------------------------------------
+export interface UserConfig extends BaseDocument {
+  accounts: BankAccount[]
+  mutuo?: MutuoConfig
+  alertsEnabled: boolean
+  monthlyCloseReminderDay: number
+}
 
-export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
+// --------------------------------------------------------
+// UI / UTILITY TYPES
+// --------------------------------------------------------
 
 export interface ApiResult<T> {
-    data: T | null
-    error: string | null
+  data: T | null
+  error: string | null
   loading: boolean
 }
 
