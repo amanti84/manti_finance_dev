@@ -6,7 +6,7 @@
  * Principi:
  * - Write-only: ogni record audit non puo' essere modificato dopo la creazione
  * - Ogni scrittura su dati finanziari genera un record audit
- * - La collection audit/{uid}/audit/{id} e' protetta da regole Firestore (no update/delete)
+ * - La collection users/{uid}/audit/{id} e' protetta da regole Firestore (no update/delete)
  */
 
 import {
@@ -31,16 +31,16 @@ export interface AuditEntryInput {
   action: AuditAction
   entityType: AuditEntityType
   entityId: string
-  changes?: Record<string, unknown>
-  metadata?: Record<string, unknown>
+  previousValue?: Record<string, unknown>
+  newValue?: Record<string, unknown>
+  source?: 'user' | 'system' | 'import'
+  ipHash?: string
 }
 
 export interface AuditFilter {
   entityType?: AuditEntityType
   entityId?: string
   action?: AuditAction
-  fromDate?: Date
-  toDate?: Date
   limitN?: number
 }
 
@@ -61,12 +61,13 @@ export async function logAudit(
   const entry: Omit<AuditLogEntry, 'id'> = {
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
-    uid: input.uid,
     action: input.action,
     entityType: input.entityType,
     entityId: input.entityId,
-    changes: input.changes ?? {},
-    metadata: input.metadata ?? {},
+    previousValue: input.previousValue,
+    newValue: input.newValue,
+    source: input.source ?? 'user',
+    ipHash: input.ipHash,
   }
 
   const docRef = await addDoc(ref, entry)
@@ -112,21 +113,21 @@ export async function getAuditLog(
 
 /**
  * Helper: logga una modifica a un'entita' finanziaria.
- * Convenienza per usare il servizio in modo uniforme.
  */
 export async function logChange(
   uid: string,
   entityType: AuditEntityType,
   entityId: string,
-  before: Record<string, unknown>,
-  after: Record<string, unknown>
+  previousValue: Record<string, unknown>,
+  newValue: Record<string, unknown>
 ): Promise<AuditLogEntry> {
   return logAudit({
     uid,
     action: 'update',
     entityType,
     entityId,
-    changes: { before, after },
+    previousValue,
+    newValue,
   })
 }
 
@@ -137,14 +138,14 @@ export async function logCreate(
   uid: string,
   entityType: AuditEntityType,
   entityId: string,
-  data: Record<string, unknown>
+  newValue: Record<string, unknown>
 ): Promise<AuditLogEntry> {
   return logAudit({
     uid,
     action: 'create',
     entityType,
     entityId,
-    changes: { after: data },
+    newValue,
   })
 }
 
@@ -155,13 +156,13 @@ export async function logDelete(
   uid: string,
   entityType: AuditEntityType,
   entityId: string,
-  data: Record<string, unknown>
+  previousValue: Record<string, unknown>
 ): Promise<AuditLogEntry> {
   return logAudit({
     uid,
     action: 'delete',
     entityType,
     entityId,
-    changes: { before: data },
+    previousValue,
   })
 }
