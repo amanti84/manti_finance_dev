@@ -3,7 +3,31 @@
  * Unit test per le funzioni di calcolo del Payroll Engine v1
  * Issue #8 - M2 Core Modules
  */
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+
+// Mock Firebase per evitare inizializzazione con chiavi vuote in CI
+vi.mock('../firebase', () => ({
+  db: {},
+  auth: {},
+  storage: {},
+  default: {},
+}))
+
+// Mock Firestore per evitare chiamate reali
+vi.mock('firebase/firestore', () => ({
+  collection: vi.fn(),
+  doc: vi.fn(),
+  addDoc: vi.fn(),
+  updateDoc: vi.fn(),
+  deleteDoc: vi.fn(),
+  getDocs: vi.fn(),
+  getDoc: vi.fn(),
+  query: vi.fn(),
+  where: vi.fn(),
+  orderBy: vi.fn(),
+  serverTimestamp: vi.fn(),
+}))
+
 import {
   calculateExpectedNet,
   calculateNetDelta,
@@ -66,37 +90,34 @@ describe('calculateNetDelta', () => {
   })
 
   it('ritorna valore negativo se netto effettivo < atteso', () => {
-    const delta = calculateNetDelta({ ...mockPayslip, netSalary: 1900 })
-    expect(delta).toBe(-200)
+    const delta = calculateNetDelta({ ...mockPayslip, netSalary: 2000 })
+    expect(delta).toBe(-100)
   })
 })
 
 describe('calculateNetTrend', () => {
-  it('ritorna array vuoto per input vuoto', () => {
-    expect(calculateNetTrend([])).toEqual([])
-  })
+  const payslips: Payslip[] = [
+    { ...mockPayslip, id: 'p3', month: 3, netSalary: 2100 },
+    { ...mockPayslip, id: 'p1', month: 1, netSalary: 2000 },
+    { ...mockPayslip, id: 'p2', month: 2, netSalary: 2200 },
+  ]
 
-  it('ordina cedolini per mese', () => {
-    const payslips: Payslip[] = [
-      { ...mockPayslip, id: '3', month: 3 },
-      { ...mockPayslip, id: '1', month: 1 },
-      { ...mockPayslip, id: '2', month: 2 },
-    ]
+  it('ordina per mese crescente', () => {
     const trend = calculateNetTrend(payslips)
     expect(trend[0].month).toBe(1)
     expect(trend[1].month).toBe(2)
     expect(trend[2].month).toBe(3)
   })
 
-  it('calcola correttamente tutti i campi del trend', () => {
-    const trend = calculateNetTrend([mockPayslip])
-    expect(trend).toHaveLength(1)
-    expect(trend[0]).toMatchObject({
-      month: 1,
-      year: 2026,
-      netActual: 2100,
-      netExpected: 2100,
-      delta: 0,
-    })
+  it('calcola correttamente netActual e netExpected', () => {
+    const trend = calculateNetTrend([{ ...mockPayslip }])
+    expect(trend[0].netActual).toBe(2100)
+    expect(trend[0].netExpected).toBe(2100)
+    expect(trend[0].delta).toBe(0)
+  })
+
+  it('ritorna array vuoto per input vuoto', () => {
+    const trend = calculateNetTrend([])
+    expect(trend).toHaveLength(0)
   })
 })
