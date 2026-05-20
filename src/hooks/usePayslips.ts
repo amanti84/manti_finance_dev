@@ -12,12 +12,12 @@ import {
   deletePayslip,
   calculateNetTrend,
 } from '../services/payroll'
-import type { Payslip, Month } from '../types'
+import type { Payslip } from '../types'
 
 interface UsePayslipsState {
   payslips: Payslip[]
   loading: boolean
-  error: Error | null
+  error: string | null
 }
 
 interface UsePayslipsReturn extends UsePayslipsState {
@@ -55,7 +55,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
   }, [fetchPayslips])
 
   const addPayslip = useCallback(
-    async (data: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>) => {
+    async (data: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
       if (!user?.uid) return null
       const result = await createPayslip(user.uid, data)
       if (!result.error) {
@@ -68,7 +68,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
   )
 
   const editPayslip = useCallback(
-    async (id: string, updates: Partial<Omit<Payslip, 'id' | 'createdAt'>>) => {
+    async (id: string, updates: Partial<Omit<Payslip, 'id' | 'createdAt'>>): Promise<boolean> => {
       if (!user?.uid) return false
       const result = await updatePayslip(user.uid, id, updates)
       if (!result.error) {
@@ -81,7 +81,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
   )
 
   const removePayslip = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<boolean> => {
       if (!user?.uid) return false
       const result = await deletePayslip(user.uid, id)
       if (!result.error) {
