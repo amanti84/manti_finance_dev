@@ -1,140 +1,207 @@
-// =============================================================
-// src/types/index.ts
-// Core TypeScript interfaces per manti_finance_dev
-// Generato dal PM — NON modificare senza aprire una PR dedicata
-// =============================================================
+// ============================================================
+// CORE TYPES - manti_finance_dev
+// Modello dati v1 — allineato alle collection Firestore
+// /users/{uid}/snapshots | transactions | investments | payslips | auditLog | config
+// ============================================================
 
-// -------------------------------------------------------
-// ENTITA' BASE
-// -------------------------------------------------------
+import type { Timestamp } from 'firebase/firestore'
 
-export type Currency = 'EUR' | 'USD';
-export type DocumentStatus = 'raw' | 'extracted' | 'verified';
-export type SnapshotStatus = 'open' | 'closed';
+// ------------------------------------------------------------
+// BASE
+// ------------------------------------------------------------
 
-// -------------------------------------------------------
-// PAYROLL
-// -------------------------------------------------------
-
-export interface Payslip {
-  id: string;
-  userId: string;
-  period: string;          // 'YYYY-MM'
-  grossSalary: number;
-  netSalary: number;
-  totalDeductions: number;
-  inps: number;
-  irpef: number;
-  tfr: number;
-  currency: Currency;
-  documentUrl?: string;
-  status: DocumentStatus;
-  createdAt: Date;
-  updatedAt: Date;
+export interface BaseDocument {
+  id: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
 }
 
-// -------------------------------------------------------
-// MUTUO
-// -------------------------------------------------------
+export type Currency = 'EUR' | 'USD' | 'GBP' | 'CHF'
 
-export interface MortgageInstallment {
-  id: string;
-  userId: string;
-  period: string;          // 'YYYY-MM'
-  installmentAmount: number;
-  principalAmount: number;
-  interestAmount: number;
-  remainingBalance: number;
-  currency: Currency;
-  paidAt?: Date;
-  createdAt: Date;
+export type Month = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12
+
+// ------------------------------------------------------------
+// USER
+// ------------------------------------------------------------
+
+export interface UserProfile extends BaseDocument {
+  uid: string
+  email: string
+  displayName: string
+  currency: Currency
+  taxCode?: string  // codice fiscale
+  onboardingComplete: boolean
 }
 
-// -------------------------------------------------------
+// ------------------------------------------------------------
+// PATRIMONIO SNAPSHOT (mensile)
+// /users/{uid}/snapshots/{snapshotId}
+// ------------------------------------------------------------
+
+export interface PatrimonioSnapshot extends BaseDocument {
+  year: number
+  month: Month
+  // Attivi
+  contiCorrenti: number       // liquidita' totale
+  investimenti: number        // portafoglio totale
+  immobili: number            // valore immobili
+  fondoPensione: number       // Fon.Te + altri fondi
+  tfr: number                 // TFR maturato
+  // Passivi
+  mutuo: number               // debito residuo mutuo
+  altriDebiti: number
+  // Calcolati
+  patrimonioNetto: number     // attivi - passivi
+  note?: string
+}
+
+// ------------------------------------------------------------
+// TRANSAZIONI
+// /users/{uid}/transactions/{transactionId}
+// ------------------------------------------------------------
+
+export type TransactionType = 'income' | 'expense' | 'transfer' | 'investment'
+
+export type TransactionCategory =
+  | 'stipendio' | 'bonus' | 'affitto' | 'mutuo' | 'spesa_casa'
+  | 'ristorante' | 'trasporti' | 'salute' | 'istruzione'
+  | 'investimento' | 'rimborso' | 'altro'
+
+export interface Transaction extends BaseDocument {
+  date: Timestamp
+  type: TransactionType
+  category: TransactionCategory
+  amount: number
+  currency: Currency
+  description: string
+  accountId?: string
+  tags?: string[]
+  isKindergarten?: boolean    // spesa figlio (issue #19)
+  confidence: number          // 0-1, per Confidence Review (issue #31)
+  source: 'manual' | 'import' | 'email'
+}
+
+// ------------------------------------------------------------
 // INVESTIMENTI
-// -------------------------------------------------------
+// /users/{uid}/investments/{investmentId}
+// ------------------------------------------------------------
 
-export interface Investment {
-  id: string;
-  userId: string;
-  name: string;
-  isin?: string;
-  ticker?: string;
-  quantity: number;
-  purchasePrice: number;
-  currentPrice: number;
-  currency: Currency;
-  category: 'ETF' | 'azione' | 'obbligazione' | 'liquidita' | 'altro';
-  lastUpdatedAt: Date;
-  createdAt: Date;
+export type AssetClass =
+  | 'azioni' | 'obbligazioni' | 'etf' | 'fondi' | 'pac'
+  | 'crypto' | 'liquidita' | 'immobili' | 'altro'
+
+export type Broker = 'fineco' | 'directa' | 'degiro' | 'altri'
+
+export interface Investment extends BaseDocument {
+  name: string
+  isin?: string
+  ticker?: string
+  assetClass: AssetClass
+  broker: Broker
+  quantity: number
+  avgCost: number             // prezzo medio di carico
+  currentPrice: number
+  currentValue: number        // quantity * currentPrice
+  currency: Currency
+  isPac: boolean              // e' un PAC (issue #11)
+  pacMonthlyAmount?: number
+  lastPriceUpdate: Timestamp
 }
 
-export interface PAC {
-  id: string;
-  userId: string;
-  investmentId: string;
-  monthlyAmount: number;
-  frequency: 'mensile' | 'trimestrale';
-  startDate: Date;
-  active: boolean;
-  currency: Currency;
-  createdAt: Date;
+// ------------------------------------------------------------
+// PAYROLL / CEDOLINI
+// /users/{uid}/payslips/{payslipId}
+// ------------------------------------------------------------
+
+export interface Payslip extends BaseDocument {
+  year: number
+  month: Month
+  grossSalary: number         // RAL mensile lordo
+  netSalary: number           // netto in busta
+  irpef: number
+  inps: number
+  tfr: number                 // quota TFR del mese
+  fondoPensione: number       // versamento mensile Fon.Te
+  bonus?: number
+  rimborsiSpese?: number
+  surplus?: number            // calcolato: net - spese fisse
+  documentUrl?: string        // Storage path del PDF
+  parsed: boolean             // cedolino parsato automaticamente
+  rawText?: string            // testo grezzo per debugging
 }
 
-// -------------------------------------------------------
-// SNAPSHOT MENSILE
-// -------------------------------------------------------
+// ------------------------------------------------------------
+// AUDIT LOG
+// /users/{uid}/auditLog/{logId}
+// Immutabile: no update, no delete (vedi firestore.rules)
+// ------------------------------------------------------------
 
-export interface Snapshot {
-  id: string;
-  userId: string;
-  period: string;          // 'YYYY-MM'
-  status: SnapshotStatus;
-  totalNetWorth: number;
-  liquidAssets: number;
-  investmentValue: number;
-  mortgageBalance: number;
-  currency: Currency;
-  closedAt?: Date;
-  createdAt: Date;
+export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'snapshot'
+
+export type AuditEntityType =
+  | 'snapshot' | 'transaction' | 'investment' | 'payslip' | 'config'
+
+export interface AuditLogEntry extends BaseDocument {
+  entityType: AuditEntityType
+  entityId: string
+  action: AuditAction
+  previousValue?: Record<string, unknown>
+  newValue?: Record<string, unknown>
+  source: 'user' | 'system' | 'import'
+  ipHash?: string
 }
 
-// -------------------------------------------------------
-// AUDIT TRAIL
-// -------------------------------------------------------
+// ------------------------------------------------------------
+// CONFIGURAZIONE UTENTE
+// /users/{uid}/config/preferences
+// ------------------------------------------------------------
 
-export type AuditAction =
-  | 'create'
-  | 'update'
-  | 'delete'
-  | 'snapshot_open'
-  | 'snapshot_close';
-
-export interface AuditEntry {
-  id: string;
-  userId: string;
-  entityType: string;      // es. 'payslip', 'investment', 'snapshot'
-  entityId: string;
-  action: AuditAction;
-  previousValue?: Record<string, unknown>;
-  newValue?: Record<string, unknown>;
-  performedAt: Date;
-  source: 'user' | 'system' | 'agent';
+export interface UserConfig extends BaseDocument {
+  // Conti correnti
+  accounts: BankAccount[]
+  // Parametri mutuo
+  mutuo?: MutuoConfig
+  // Notifiche
+  alertsEnabled: boolean
+  monthlyCloseReminderDay: number  // giorno del mese per reminder chiusura
 }
 
-// -------------------------------------------------------
-// KINDERGARTEN
-// -------------------------------------------------------
+export interface BankAccount {
+  id: string
+  name: string
+  bank: string
+  iban?: string
+  type: 'corrente' | 'risparmio' | 'investimento'
+}
 
-export interface KindergartenExpense {
-  id: string;
-  userId: string;
-  period: string;          // 'YYYY-MM'
-  description: string;
-  amount: number;
-  category: 'retta' | 'extra' | 'rimborso' | 'altro';
-  currency: Currency;
-  receiptUrl?: string;
-  createdAt: Date;
-  updatedAt: Date;
+export interface MutuoConfig {
+  importoOriginale: number
+  debitoResiduo: number
+  rataMessile: number
+  tasso: number
+  dataInizio: Timestamp
+  dataFine: Timestamp
+  isMutuoVariabile: boolean
+}
+
+// ------------------------------------------------------------
+// UI / UTILITY TYPES
+// ------------------------------------------------------------
+
+export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
+
+export interface ApiResult<T> {
+  data?: T
+  error?: string
+  loading: boolean
+}
+
+export interface DateRange {
+  from: Date
+  to: Date
+}
+
+export interface MonthYear {
+  year: number
+  month: Month
 }
