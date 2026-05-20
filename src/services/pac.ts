@@ -276,11 +276,11 @@ export async function getPacSummary(
   try {
     const paymentsResult = await getPacPaymentsByInvestment(uid, investment.id)
 
-    if (paymentsResult.error || !paymentsResult.data) {
+    if (paymentsResult.error ?? !paymentsResult.data) {
       return {
         data: null,
         loading: false,
-        error: paymentsResult.error || 'Nessun versamento trovato',
+        error: paymentsResult.error ?? 'Nessun versamento trovato',
       }
     }
 
@@ -347,11 +347,12 @@ export async function calculatePacProgress(
   try {
     const summaryResult = await getPacSummary(uid, investment)
 
-    if (summaryResult.error || !summaryResult.data) {
+    if (summaryResult.error ?? !summaryResult.data) {
       return {
         data: null,
         loading: false,
-        error: summaryResult.error || 'Impossibile calcolare il progresso',
+        error: summaryResult.error ?? 'Impossibile calcolare il progresso',
+        
       }
     }
 
