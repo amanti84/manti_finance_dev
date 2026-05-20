@@ -22,6 +22,9 @@
     "noImplicitReturns": true,
     "exactOptionalPropertyTypes": true,
 
+    /* Vitest globals (vi, beforeEach, describe, expect, ...) */
+    "types": ["vitest/globals"],
+
     /* Path aliases */
     "baseUrl": ".",
     "paths": {
