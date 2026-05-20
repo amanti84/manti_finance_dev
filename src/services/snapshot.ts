@@ -107,7 +107,8 @@ export async function createSnapshot(
     mutuo: input.mutuo,
     altriDebiti: input.altriDebiti,
     patrimonioNetto,
-    note: input.note,
+    // include note solo se definita (exactOptionalPropertyTypes)
+    ...(input.note !== undefined ? { note: input.note } : {}),
   }
 
   await setDoc(ref, snapshot)
