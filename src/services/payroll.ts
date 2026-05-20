@@ -62,7 +62,7 @@ export async function createPayslip(
     })
     return { data: docRef.id, loading: false, error: null }
   } catch (error) {
-    return { data: null, loading: false, error: error as Error }
+    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -73,7 +73,7 @@ export async function updatePayslip(
   uid: string,
   payslipId: string,
   updates: Partial<Omit<Payslip, 'id' | 'createdAt'>>
-): Promise<ApiResult<void>> {
+): Promise<ApiResult<undefined>> {
   try {
     const docRef = doc(db, COLLECTION(uid), payslipId)
     await updateDoc(docRef, {
@@ -82,7 +82,7 @@ export async function updatePayslip(
     })
     return { data: undefined, loading: false, error: null }
   } catch (error) {
-    return { data: null, loading: false, error: error as Error }
+    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -92,13 +92,13 @@ export async function updatePayslip(
 export async function deletePayslip(
   uid: string,
   payslipId: string
-): Promise<ApiResult<void>> {
+): Promise<ApiResult<undefined>> {
   try {
     const docRef = doc(db, COLLECTION(uid), payslipId)
     await deleteDoc(docRef)
     return { data: undefined, loading: false, error: null }
   } catch (error) {
-    return { data: null, loading: false, error: error as Error }
+    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -108,14 +108,14 @@ export async function deletePayslip(
 export async function getPayslip(
   uid: string,
   payslipId: string
-): Promise<ApiResult<Payslip | null>> {
+): Promise<ApiResult<Payslip>> {
   try {
     const docRef = doc(db, COLLECTION(uid), payslipId)
     const snap = await getDoc(docRef)
     if (!snap.exists()) return { data: null, loading: false, error: null }
     return { data: { id: snap.id, ...snap.data() } as Payslip, loading: false, error: null }
   } catch (error) {
-    return { data: null, loading: false, error: error as Error }
+    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -137,7 +137,7 @@ export async function getPayslipsByYear(
     const payslips = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Payslip)
     return { data: payslips, loading: false, error: null }
   } catch (error) {
-    return { data: null, loading: false, error: error as Error }
+    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -148,7 +148,7 @@ export async function getPayslipByMonth(
   uid: string,
   year: number,
   month: Month
-): Promise<ApiResult<Payslip | null>> {
+): Promise<ApiResult<Payslip>> {
   try {
     const colRef = collection(db, COLLECTION(uid))
     const q = query(
@@ -161,7 +161,7 @@ export async function getPayslipByMonth(
     const d = snap.docs[0]
     return { data: { id: d.id, ...d.data() } as Payslip, loading: false, error: null }
   } catch (error) {
-    return { data: null, loading: false, error: error as Error }
+    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
