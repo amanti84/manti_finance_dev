@@ -337,9 +337,7 @@ export function simulateAnticipatedExtinction(
 ): ApiResult<SimulazioneEstinzione> {
   try {
     const pianoResult = getPianoAmmortamento(config)
-    if (pianoResult.||!pianoResult.error) {
-      return pianoResult
-    }
+    if (pianoResult.error || !pianoResult.data) {      return pianoResult
 
     const piano = pianoResult.data!
 
@@ -424,6 +422,6 @@ export function simulateExtraPayment(
       },
     }
   } catch (error: unknown) {
-    return { { error: (error as Error).message }
+    return {  error: (error as Error).message }
   }
 }
