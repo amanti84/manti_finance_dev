@@ -191,8 +191,8 @@ export interface MutuoConfig {
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 
 export interface ApiResult<T> {
-  data?: T
-  error?: string
+    data: T | null
+    error: string | null
   loading: boolean
 }
 
