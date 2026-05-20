@@ -17,7 +17,6 @@ import {
   where,
   orderBy,
   Timestamp,
-  serverTimestamp,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import type { Investment, ApiResult } from '../types'
@@ -110,13 +109,10 @@ export async function recordPacPayment(
 
     // Audit trail
     await logAudit(uid, {
+      uid,
       action: 'pac.payment_created',
       entityType: 'PacPayment',
       entityId: docRef.id,
-      metadata: {
-        investmentId: data.investmentId,
-        importo: data.importo,
-      },
     })
 
     return { data: docRef.id, loading: false, error: null }
@@ -163,10 +159,10 @@ export async function updatePacPayment(
 
     // Audit trail
     await logAudit(uid, {
+      uid,
       action: 'pac.payment_updated',
       entityType: 'PacPayment',
       entityId: paymentId,
-      metadata: { fields: Object.keys(data) },
     })
 
     return { data: undefined, loading: false, error: null }
@@ -199,10 +195,10 @@ export async function deletePacPayment(
 
     // Audit trail
     await logAudit(uid, {
+      uid,
       action: 'pac.payment_deleted',
       entityType: 'PacPayment',
       entityId: paymentId,
-      metadata: { investmentId },
     })
 
     return { data: undefined, loading: false, error: null }
