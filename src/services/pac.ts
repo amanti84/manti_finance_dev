@@ -111,7 +111,7 @@ export async function recordPacPayment(
     await logAudit({
       uid,
       action: 'create',
-      entityType: ''investment',
+      entityType: 'investment',
       entityId: docRef.id,
     })
 
@@ -161,7 +161,7 @@ export async function updatePacPayment(
     await logAudit({
       uid,
       action: 'update',
-      entityType: 'investment'
+      entityType: 'investment',
       entityId: paymentId,
     })
 
