@@ -3,7 +3,8 @@
  * Unit test per SnapshotService (pure functions - no Firestore)
  */
 
-import { describe, it, expect, vi } from 'vitest'import {
+import { describe, it, expect, vi } from 'vitest'
+import {
   buildSnapshotId,
   calcPatrimonioNetto,
   computeDeltas,
@@ -12,6 +13,7 @@ import type { SnapshotInput } from './snapshot'
 import type { PatrimonioSnapshot } from '../types'
 import { Timestamp } from 'firebase/firestore'
 
+// Mock firebase/firestore
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
   doc: vi.fn(),
@@ -27,7 +29,9 @@ vi.mock('firebase/firestore', () => ({
   },
 }))
 
+// Mock firebase app
 vi.mock('../firebase', () => ({ db: {} }))
+
 // --------------------------------------------------------
 // buildSnapshotId
 // --------------------------------------------------------
@@ -58,46 +62,44 @@ describe('calcPatrimonioNetto', () => {
     uid: 'user123',
     year: 2024,
     month: 6,
-    totaleInvestimenti: 50000,
-    saldoContiCorrente: 10000,
-    valoreMutuoResiduo: 120000,
+    contiCorrenti: 10000,
+    investimenti: 50000,
+    immobili: 200000,
+    fondoPensione: 15000,
     tfr: 8000,
+    mutuo: 120000,
+    altriDebiti: 5000,
   }
 
-  it('calcola patrimonio netto senza voci opzionali', () => {
-    // 50000 + 10000 + 8000 - 120000 = -52000
-    expect(calcPatrimonioNetto(baseInput)).toBe(-52000)
+  it('calcola patrimonio netto correttamente', () => {
+    // attivi: 10000 + 50000 + 200000 + 15000 + 8000 = 283000
+    // passivi: 120000 + 5000 = 125000
+    // netto: 283000 - 125000 = 158000
+    expect(calcPatrimonioNetto(baseInput)).toBe(158000)
   })
 
-  it('include altreAttivita e altrePassivita', () => {
+  it('patrimonio con immobili e nessun debito extra', () => {
     const input: SnapshotInput = {
       ...baseInput,
-      altreAttivita: 5000,
-      altrePassivita: 2000,
+      altriDebiti: 0,
     }
-    // 50000 + 10000 + 8000 + 5000 - 120000 - 2000 = -49000
-    expect(calcPatrimonioNetto(input)).toBe(-49000)
+    // 283000 - 120000 = 163000
+    expect(calcPatrimonioNetto(input)).toBe(163000)
   })
 
-  it('patrimonio positivo con investimenti alti', () => {
+  it('patrimonio negativo con mutuo alto', () => {
     const input: SnapshotInput = {
       ...baseInput,
-      totaleInvestimenti: 200000,
-      saldoContiCorrente: 50000,
-      valoreMutuoResiduo: 80000,
-      tfr: 15000,
+      contiCorrenti: 1000,
+      investimenti: 2000,
+      immobili: 0,
+      fondoPensione: 0,
+      tfr: 0,
+      mutuo: 200000,
+      altriDebiti: 0,
     }
-    // 200000 + 50000 + 15000 - 80000 = 185000
-    expect(calcPatrimonioNetto(input)).toBe(185000)
-  })
-
-  it('gestisce valori opzionali undefined come 0', () => {
-    const input: SnapshotInput = {
-      ...baseInput,
-      altreAttivita: undefined,
-      altrePassivita: undefined,
-    }
-    expect(calcPatrimonioNetto(input)).toBe(calcPatrimonioNetto(baseInput))
+    // attivi: 3000, passivi: 200000
+    expect(calcPatrimonioNetto(input)).toBe(-197000)
   })
 })
 
@@ -115,29 +117,28 @@ describe('computeDeltas', () => {
     id: buildSnapshotId(2024, month),
     createdAt: now,
     updatedAt: now,
-    uid: 'user123',
     year: 2024,
     month: month as PatrimonioSnapshot['month'],
-    totaleInvestimenti: 0,
-    saldoContiCorrente: 0,
-    valoreMutuoResiduo: 0,
+    contiCorrenti: 0,
+    investimenti: 0,
+    immobili: 0,
+    fondoPensione: 0,
     tfr: 0,
-    altreAttivita: 0,
-    altrePassivita: 0,
+    mutuo: 0,
+    altriDebiti: 0,
     patrimonioNetto,
   })
 
   it('calcola delta rispetto al mese precedente', () => {
-    // Array ordinato decrescente: mese piu' recente prima
     const snapshots = [
-      makeSnapshot(3, 105000), // mese corrente
-      makeSnapshot(2, 100000), // mese precedente
-      makeSnapshot(1, 95000),  // due mesi fa
+      makeSnapshot(3, 105000),
+      makeSnapshot(2, 100000),
+      makeSnapshot(1, 95000),
     ]
     const result = computeDeltas(snapshots)
-    expect(result[0].delta).toBe(5000)  // 105000 - 100000
-    expect(result[1].delta).toBe(5000)  // 100000 - 95000
-    expect(result[2].delta).toBeNull()  // nessun precedente
+    expect(result[0].delta).toBe(5000)
+    expect(result[1].delta).toBe(5000)
+    expect(result[2].delta).toBeNull()
   })
 
   it('delta null per snapshot singolo', () => {
