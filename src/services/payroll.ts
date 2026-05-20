@@ -171,7 +171,7 @@ export async function getPayslipByMonth(
  */
 export function calculateNetTrend(
   payslips: Payslip[]
-): Array<{ month: Month; year: number; netActual: number; netExpected: number; delta: number }> {
+): { month: Month; year: number; netActual: number; netExpected: number; delta: number }[] {
   return payslips
     .sort((a, b) => a.month - b.month)
     .map(p => ({
