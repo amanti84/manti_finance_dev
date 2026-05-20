@@ -374,8 +374,7 @@ export function simulateAnticipatedExtinction(
             loading: false,
       error: null
         }
-        }
-    }
+        
   } catch (error: unknown) {
     return { data: null, loading: false, error: (error as Error).message } 
 }
