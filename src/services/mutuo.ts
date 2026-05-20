@@ -319,8 +319,7 @@ export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
       error: null
     }
   } catch (error: unknown) {
-    return { data: null, loading: false, error: (error as Error).message }  }
-}
+    return { data: null, loading: false, error: (error as Error).message }}
 
 // ---------------------------------------------------------------------------
 // SIMULAZIONI
@@ -376,7 +375,7 @@ export function simulateAnticipatedExtinction(
       error: null
     }
   } catch (error: unknown) {
-    return { data: null, loading: false, error: (error as Error).message }  }
+    return { data: null, loading: false, error: (error as Error).message } 
 }
 
 /**
@@ -423,6 +422,5 @@ export function simulateExtraPayment(
       error: null
     }
   } catch (error: unknown) {
-    return { data: null, loading: false, error: (error as Error).message }  }
-    
+    return { data: null, loading: false, error: (error as Error).message }
 }
