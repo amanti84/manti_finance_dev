@@ -3,7 +3,6 @@
  * AuditService - tracciamento modifiche su dati finanziari
  * Issue #6 - M1 Foundation
  */
-
 import {
   collection,
   addDoc,
@@ -13,6 +12,7 @@ import {
   orderBy,
   limit,
   Timestamp,
+  type QueryConstraint,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import type { AuditLogEntry, AuditAction, AuditEntityType } from '../types'
@@ -20,7 +20,6 @@ import type { AuditLogEntry, AuditAction, AuditEntityType } from '../types'
 // --------------------------------------------------------
 // TYPES
 // --------------------------------------------------------
-
 export interface AuditEntryInput {
   uid: string
   action: AuditAction
@@ -31,18 +30,15 @@ export interface AuditEntryInput {
   source?: 'user' | 'system' | 'import'
   ipHash?: string
 }
-
 export interface AuditFilter {
   entityType?: AuditEntityType
   entityId?: string
   action?: AuditAction
   limitN?: number
 }
-
 // --------------------------------------------------------
 // SERVICE
 // --------------------------------------------------------
-
 /**
  * Registra un evento audit (write-only).
  */
@@ -50,7 +46,6 @@ export async function logAudit(
   input: AuditEntryInput
 ): Promise<AuditLogEntry> {
   const ref = collection(db, 'users', input.uid, 'audit')
-
   // Usa spread per gestire exactOptionalPropertyTypes
   const entry: Omit<AuditLogEntry, 'id'> = {
     createdAt: Timestamp.now(),
@@ -63,9 +58,7 @@ export async function logAudit(
     ...(input.newValue !== undefined ? { newValue: input.newValue } : {}),
     ...(input.ipHash !== undefined ? { ipHash: input.ipHash } : {}),
   }
-
   const docRef = await addDoc(ref, entry)
-
   return {
     id: docRef.id,
     ...entry,
@@ -80,10 +73,7 @@ export async function getAuditLog(
   filter: AuditFilter = {}
 ): Promise<AuditLogEntry[]> {
   const ref = collection(db, 'users', uid, 'audit')
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const constraints: any[] = [orderBy('createdAt', 'desc')]
-
+  const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc')]
   if (filter.entityType) {
     constraints.unshift(where('entityType', '==', filter.entityType))
   }
@@ -93,12 +83,9 @@ export async function getAuditLog(
   if (filter.action) {
     constraints.unshift(where('action', '==', filter.action))
   }
-
   constraints.push(limit(filter.limitN ?? 50))
-
   const q = query(ref, ...constraints)
   const snap = await getDocs(q)
-
   return snap.docs.map((d) => ({
     id: d.id,
     ...d.data(),
