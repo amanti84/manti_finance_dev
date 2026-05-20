@@ -123,5 +123,29 @@ In caso di dubbio su logica finanziaria: **non implementare**, lascia un comment
 
 - Repository: `amanti84/manti_finance_dev`
 - Milestone attiva: M1 - Foundation (scadenza 30 giugno 2026)
+
+- - Blueprint: `.github/copilot-instructions.md` e `AGENTS.md`
+
+---
+
+## Policy crediti GitHub Copilot (aggiornamento giugno 2026)
+
+Dal 1° giugno 2026 GitHub Copilot usa un modello a crediti (1 credito = $0.01, piano Pro incluso = 1000 crediti/mese).
+
+### Regole per gli agenti
+
+- Usare **modelli leggeri** (Haiku, GPT-4o mini) per completamenti e chat veloci.
+- Usare **modelli frontier** (Sonnet, Opus, GPT-4o) solo per task architetturali complessi.
+- **Una sessione agent = una issue atomica**. Non aprire sessioni multi-issue.
+- **Non caricare l'intero repo** come contesto: passare solo i file pertinenti al task corrente.
+- **Soglia mensile**: tetto assoluto $10 di crediti inclusi. Nessun budget extra senza approvazione esplicita.
+- **Nessuna code review automatica** durante M1 — review manuale da PM.
+- Se i crediti superano $8 nel mese, sospendere sessioni agent e proseguire solo con completamento inline.
+
+### Stima consumo M1
+
+- Scaffolding e setup (inline completions): < 5 crediti totali.
+- Issue complesse (Snapshot Engine, Audit Trail): ~2–4 crediti/sessione.
+- Totale M1 stimato: 20–40 crediti su 1000 disponibili. Rischio sforamento: basso.
 - Istruzioni dettagliate: `.github/copilot-instructions.md`
 - Stack legacy di riferimento: `amanti84/manti_finance` (repo originale con 277 commit)
