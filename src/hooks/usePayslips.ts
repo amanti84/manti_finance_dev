@@ -25,7 +25,7 @@ interface UsePayslipsReturn extends UsePayslipsState {
   addPayslip: (data: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string | null>
   editPayslip: (id: string, updates: Partial<Omit<Payslip, 'id' | 'createdAt'>>) => Promise<boolean>
   removePayslip: (id: string) => Promise<boolean>
-  refresh: () => void
+  refresh: () => Promise<void>
 }
 
 export function usePayslips(year: number): UsePayslipsReturn {
