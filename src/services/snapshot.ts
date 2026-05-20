@@ -27,12 +27,16 @@ export interface SnapshotInput {
   uid: string
   year: number
   month: number // 1-12
-  totaleInvestimenti: number
-  saldoContiCorrente: number
-  valoreMutuoResiduo: number
+  // Attivi
+  contiCorrenti: number
+  investimenti: number
+  immobili: number
+  fondoPensione: number
   tfr: number
-  altreAttivita?: number
-  altrePassivita?: number
+  // Passivi
+  mutuo: number
+  altriDebiti: number
+  note?: string
 }
 
 export interface SnapshotWithDelta extends PatrimonioSnapshot {
@@ -55,14 +59,14 @@ export function buildSnapshotId(year: number, month: number): string {
  * Calcola il patrimonio netto a partire dall'input.
  */
 export function calcPatrimonioNetto(input: SnapshotInput): number {
-  return (
-    input.totaleInvestimenti +
-    input.saldoContiCorrente +
-    input.tfr +
-    (input.altreAttivita ?? 0) -
-    input.valoreMutuoResiduo -
-    (input.altrePassivita ?? 0)
-  )
+  const attivi =
+    input.contiCorrenti +
+    input.investimenti +
+    input.immobili +
+    input.fondoPensione +
+    input.tfr
+  const passivi = input.mutuo + input.altriDebiti
+  return attivi - passivi
 }
 
 // --------------------------------------------------------
@@ -70,21 +74,14 @@ export function calcPatrimonioNetto(input: SnapshotInput): number {
 // --------------------------------------------------------
 
 /**
- * Crea o sovrascrive uno snapshot mensile.
+ * Crea uno snapshot mensile.
  * Lo snapshot e' immutabile: una volta creato non va modificato.
- * Usare createSnapshot solo la prima volta per ogni YYYY-MM.
  */
 export async function createSnapshot(
   input: SnapshotInput
 ): Promise<PatrimonioSnapshot> {
   const snapshotId = buildSnapshotId(input.year, input.month)
-  const ref = doc(
-    db,
-    'users',
-    input.uid,
-    'snapshots',
-    snapshotId
-  )
+  const ref = doc(db, 'users', input.uid, 'snapshots', snapshotId)
 
   // Verifica se esiste gia'
   const existing = await getDoc(ref)
@@ -100,16 +97,17 @@ export async function createSnapshot(
     id: snapshotId,
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
-    uid: input.uid,
     year: input.year,
     month: input.month as PatrimonioSnapshot['month'],
-    totaleInvestimenti: input.totaleInvestimenti,
-    saldoContiCorrente: input.saldoContiCorrente,
-    valoreMutuoResiduo: input.valoreMutuoResiduo,
+    contiCorrenti: input.contiCorrenti,
+    investimenti: input.investimenti,
+    immobili: input.immobili,
+    fondoPensione: input.fondoPensione,
     tfr: input.tfr,
-    altreAttivita: input.altreAttivita ?? 0,
-    altrePassivita: input.altrePassivita ?? 0,
+    mutuo: input.mutuo,
+    altriDebiti: input.altriDebiti,
     patrimonioNetto,
+    note: input.note,
   }
 
   await setDoc(ref, snapshot)
@@ -163,6 +161,7 @@ export async function listSnapshotsByYear(
 
 /**
  * Calcola il delta rispetto al mese precedente per una lista di snapshot.
+ * La lista deve essere ordinata per data decrescente (piu' recente prima).
  */
 export function computeDeltas(
   snapshots: PatrimonioSnapshot[]
