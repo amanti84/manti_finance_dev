@@ -30,3 +30,29 @@ assignees: ""
 - Leggere `AGENTS.md` integralmente prima di iniziare
 - Una issue = un branch = una PR
 - Budget crediti stimato: ____ crediti
+
+
+## Agent Instructions
+
+<!--
+SEZIONE OBBLIGATORIA per issue assegnate a Copilot Coding Agent.
+Descrivere in modo preciso il comportamento atteso dall'agente.
+-->
+
+### Azione richiesta
+<!-- Descrivi l'azione specifica che l'agente deve eseguire -->
+
+### Output atteso
+- File modificati/creati: `src/...`
+- Nessun file fuori dal perimetro AGENTS.md
+- Branch name: `copilot/[#N]-descrizione`
+
+### Modello preferito
+- [ ] Leggero (Haiku / GPT-4o mini) — task semplici
+- [ ] Standard (Claude Sonnet / GPT-4o) — task complessi
+
+### Vincoli
+- Seguire `.github/copilot-instructions.md`
+- TypeScript strict, nessun `any`
+- Test obbligatori per ogni funzione pubblica
+- PR titolo: `[#N] tipo: descrizione`
