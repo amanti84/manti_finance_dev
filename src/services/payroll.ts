@@ -29,7 +29,7 @@ const COLLECTION = (uid: string) => `users/${uid}/payslips`
  * Calcola il netto atteso sottraendo le detrazioni standard.
  * Formula: lordo - IRPEF - INPS + rimborsi + bonus
  */
-export function calculateExpectedNet(data: Omit<Payslip, keyof import('../types').BaseDocument | 'parsed'>): number {
+export function calculateExpectedNet(data: Pick<Payslip, 'grossSalary' | 'irpef' | 'inps' | 'fondoPensione' | 'bonus' | 'rimborsiSpese'>): number {
   const { grossSalary, irpef, inps, fondoPensione, bonus = 0, rimborsiSpese = 0 } = data
   return grossSalary - irpef - inps - fondoPensione + bonus + rimborsiSpese
 }
