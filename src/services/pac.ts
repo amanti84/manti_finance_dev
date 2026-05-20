@@ -192,8 +192,8 @@ export async function deletePacPayment(
     // Audit trail
     await logAudit({
       uid,
-      action: 'delete',
-      entityType: 'investment',
+          action: 'delete',
+          entityType: 'investment',
       entityId: paymentId,
     })
 
