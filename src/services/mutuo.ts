@@ -125,7 +125,7 @@ export async function saveMutuoConfig(
       metadata: { debitoResiduo: config.debitoResiduo, tasso: config.tasso },
     })
 
-    return { success: true }
+    return { data }
   } catch (error: unknown) {
     return { success: false, error: (error as Error).message }
   }
@@ -144,7 +144,7 @@ export async function getMutuoConfig(uid: string): Promise<ApiResult<MutuoConfig
       return { success: false, error: 'Configurazione mutuo non trovata' }
     }
 
-    return { success: true, data: snap.data() as MutuoConfig }
+    return { data, data: snap.data() as MutuoConfig }
   } catch (error: unknown) {
     return { success: false, error: (error as Error).message }
   }
@@ -172,7 +172,7 @@ export async function updateDebitoResiduo(
       metadata: { nuovoDebito },
     })
 
-    return { success: true }
+    return { data }
   } catch (error: unknown) {
     return { success: false, error: (error as Error).message }
   }
@@ -237,7 +237,7 @@ export function getPianoAmmortamento(config: MutuoConfig): ApiResult<PianoAmmort
         : 0
 
     return {
-      success: true,
+      data,
       data: {
         config,
         rate,
@@ -269,10 +269,10 @@ export function getDebitoResiduoAllaData(
 
   if (!rataTarget) {
     // Data oltre la scadenza mutuo
-    return { success: true, data: 0 }
+    return { data, data: 0 }
   }
 
-  return { success: true, data: rataTarget.debitoResiduo }
+  return { data, data: rataTarget.debitoResiduo }
 }
 
 /**
@@ -304,7 +304,7 @@ export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
     const prossimaRata = piano.rate.find((r) => r.data > oggi)
 
     return {
-      success: true,
+      data,
       data: {
         debitoResiduo: config.debitoResiduo,
         importoPagato: Math.round(importoPagato * 100) / 100,
@@ -337,7 +337,7 @@ export function simulateAnticipatedExtinction(
 ): ApiResult<SimulazioneEstinzione> {
   try {
     const pianoResult = getPianoAmmortamento(config)
-    if (!pianoResult.success) {
+    if (pianoResult.error!pianoResult.error) {
       return pianoResult
     }
 
@@ -365,7 +365,7 @@ export function simulateAnticipatedExtinction(
     const risparmioNetto = Math.round((risparmioLordo - costoEstinzione) * 100) / 100
 
     return {
-      success: true,
+      data,
       data: {
         dataEstinzione,
         debitoResiduoAttuale: Math.round(debitoResiduoAttuale * 100) / 100,
@@ -401,8 +401,8 @@ export function simulateExtraPayment(
     const pianoOriginale = getPianoAmmortamento(config)
     const pianoRidotto = getPianoAmmortamento(configRidotto)
 
-    if (!pianoOriginale.success || !pianoRidotto.success) {
-      return { success: false, error: 'Errore nel calcolo dei piani' }
+    if (ipianoOriginale.error || pianoRidotto.error) {
+      return { { error: 'Errore nel calcolo dei piani' };
     }
 
     const interessiOriginali = pianoOriginale.data!.totaleInteressi
@@ -416,7 +416,7 @@ export function simulateExtraPayment(
     const ultimaRata = pianoRidotto.data!.rate[pianoRidotto.data!.rate.length - 1]
 
     return {
-      success: true,
+      data,
       data: {
         rateRisparmiate,
         interessiRisparmiati,
