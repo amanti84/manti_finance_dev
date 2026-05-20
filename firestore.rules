@@ -24,7 +24,7 @@ service cloud.firestore {
     // Verifica che i dati in scrittura abbiano un timestamp valido
     function hasValidTimestamp() {
       return request.resource.data.keys().hasAll(['updatedAt'])
-        && request.resource.data.updatedAt is timestamp;
+          && request.resource.data.updatedAt is timestamp;
     }
 
     // =============================================
@@ -75,8 +75,9 @@ service cloud.firestore {
 
       // =============================================
       // AUDIT TRAIL (solo append, no delete/update)
+      // collection: 'audit' - allineata con audit.ts service
       // =============================================
-      match /auditLog/{logId} {
+      match /audit/{logId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId);
         // Audit log e' immutabile: no update, no delete
