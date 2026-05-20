@@ -43,18 +43,18 @@ describe('logAudit', () => {
       action: 'create',
       entityType: 'investment',
       entityId: 'inv-001',
-      changes: { after: { name: 'ETF World' } },
+      newValue: { name: 'ETF World' },
     })
 
     expect(addDoc).toHaveBeenCalledOnce()
     expect(result.id).toBe('mock-audit-id-123')
-    expect(result.uid).toBe('user123')
     expect(result.action).toBe('create')
     expect(result.entityType).toBe('investment')
     expect(result.entityId).toBe('inv-001')
+    expect(result.source).toBe('user')
   })
 
-  it('usa oggetti vuoti per changes e metadata se non forniti', async () => {
+  it('usa source user come default', async () => {
     const result = await logAudit({
       uid: 'user123',
       action: 'delete',
@@ -62,8 +62,19 @@ describe('logAudit', () => {
       entityId: 'pay-001',
     })
 
-    expect(result.changes).toEqual({})
-    expect(result.metadata).toEqual({})
+    expect(result.source).toBe('user')
+  })
+
+  it('accetta source personalizzato', async () => {
+    const result = await logAudit({
+      uid: 'user123',
+      action: 'import',
+      entityType: 'payslip',
+      entityId: 'pay-002',
+      source: 'import',
+    })
+
+    expect(result.source).toBe('import')
   })
 })
 
@@ -77,19 +88,20 @@ describe('logChange', () => {
   })
 
   it('delega a logAudit con action update', async () => {
-    const before = { amount: 1000 }
-    const after = { amount: 1500 }
+    const previousValue = { amount: 1000 }
+    const newValue = { amount: 1500 }
 
     const result = await logChange(
       'user123',
       'investment',
       'inv-001',
-      before,
-      after
+      previousValue,
+      newValue
     )
 
     expect(result.action).toBe('update')
-    expect(result.changes).toEqual({ before, after })
+    expect(result.previousValue).toEqual(previousValue)
+    expect(result.newValue).toEqual(newValue)
   })
 })
 
@@ -109,7 +121,7 @@ describe('logCreate', () => {
     )
 
     expect(result.action).toBe('create')
-    expect(result.changes).toEqual({ after: data })
+    expect(result.newValue).toEqual(data)
   })
 })
 
@@ -129,6 +141,6 @@ describe('logDelete', () => {
     )
 
     expect(result.action).toBe('delete')
-    expect(result.changes).toEqual({ before: data })
+    expect(result.previousValue).toEqual(data)
   })
 })
