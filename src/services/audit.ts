@@ -2,11 +2,6 @@
  * audit.ts
  * AuditService - tracciamento modifiche su dati finanziari
  * Issue #6 - M1 Foundation
- *
- * Principi:
- * - Write-only: ogni record audit non puo' essere modificato dopo la creazione
- * - Ogni scrittura su dati finanziari genera un record audit
- * - La collection users/{uid}/audit/{id} e' protetta da regole Firestore (no update/delete)
  */
 
 import {
@@ -49,25 +44,24 @@ export interface AuditFilter {
 // --------------------------------------------------------
 
 /**
- * Registra un evento audit.
- * E' write-only: non e' possibile modificare o cancellare record audit.
- * Le regole Firestore garantiscono questa proprieta' lato server.
+ * Registra un evento audit (write-only).
  */
 export async function logAudit(
   input: AuditEntryInput
 ): Promise<AuditLogEntry> {
   const ref = collection(db, 'users', input.uid, 'audit')
 
+  // Usa spread per gestire exactOptionalPropertyTypes
   const entry: Omit<AuditLogEntry, 'id'> = {
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
     action: input.action,
     entityType: input.entityType,
     entityId: input.entityId,
-    previousValue: input.previousValue,
-    newValue: input.newValue,
     source: input.source ?? 'user',
-    ipHash: input.ipHash,
+    ...(input.previousValue !== undefined ? { previousValue: input.previousValue } : {}),
+    ...(input.newValue !== undefined ? { newValue: input.newValue } : {}),
+    ...(input.ipHash !== undefined ? { ipHash: input.ipHash } : {}),
   }
 
   const docRef = await addDoc(ref, entry)
