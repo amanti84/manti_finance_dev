@@ -1,7 +1,6 @@
-# CI Pipeline — manti_finance_dev
-# Questo workflow viene completato nella issue #20 (GitHub Actions)
-# quando il codice applicativo sara' presente.
-# Per ora e' uno skeleton commentato pronto per essere attivato.
+# CI Pipeline - manti_finance_dev
+# I job reali (lint, test, build) saranno attivati dopo issue #2 (Setup React+TypeScript)
+# Per ora il workflow e' in modalita' ready - non blocca le notifiche
 
 name: CI
 
@@ -12,10 +11,26 @@ on:
     branches: [ main ]
 
 jobs:
-  # ---------------------------------------------------------
+  # --------------------------------------------------
+  # JOB PLACEHOLDER - passa sempre (exit 0)
+  # Rimuovere e decommentare i job reali dopo issue #2
+  # --------------------------------------------------
+  ci-ready:
+    name: CI Ready (placeholder - attesa issue #2)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Stato pipeline
+        run: |
+          echo "=================================================="
+          echo "CI skeleton attivo - manti_finance_dev"
+          echo "I job reali saranno abilitati dopo issue #2"
+          echo "Stack: React 18 + TypeScript + Vite + Vitest"
+          echo "=================================================="
+
+  # --------------------------------------------------
   # JOB 1: Type check + Lint
   # Da attivare dopo issue #2 (Setup React+TypeScript)
-  # ---------------------------------------------------------
+  # --------------------------------------------------
   # lint:
   #   name: TypeScript & ESLint
   #   runs-on: ubuntu-latest
@@ -26,13 +41,13 @@ jobs:
   #         node-version: '20'
   #         cache: 'npm'
   #     - run: npm ci
-  #     - run: npm run type-check   # tsc --noEmit
-  #     - run: npm run lint         # eslint src/
+  #     - run: npm run type-check  # tsc --noEmit
+  #     - run: npm run lint        # eslint src/
 
-  # ---------------------------------------------------------
+  # --------------------------------------------------
   # JOB 2: Unit Tests
   # Da attivare dopo issue #2 e i primi servizi con test
-  # ---------------------------------------------------------
+  # --------------------------------------------------
   # test:
   #   name: Vitest Unit Tests
   #   runs-on: ubuntu-latest
@@ -44,12 +59,12 @@ jobs:
   #         node-version: '20'
   #         cache: 'npm'
   #     - run: npm ci
-  #     - run: npm run test         # vitest run
+  #     - run: npm run test  # vitest run
 
-  # ---------------------------------------------------------
+  # --------------------------------------------------
   # JOB 3: Build check
   # Da attivare dopo issue #2
-  # ---------------------------------------------------------
+  # --------------------------------------------------
   # build:
   #   name: Vite Build
   #   runs-on: ubuntu-latest
@@ -62,11 +77,3 @@ jobs:
   #         cache: 'npm'
   #     - run: npm ci
   #     - run: npm run build
-
-  # Placeholder per mantenere il workflow valido
-  # fino all'attivazione dei job reali
-  placeholder:
-    name: Skeleton placeholder (remove after issue #2)
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "CI skeleton attivo. Decommentare i job dopo issue #2."
