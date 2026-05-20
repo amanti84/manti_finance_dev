@@ -1,0 +1,99 @@
+rules_version = '2';
+
+// Firestore Security Rules - manti_finance_dev
+// Principio: ogni utente accede SOLO ai propri dati
+// path: /users/{userId}/**
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =============================================
+    // HELPER FUNCTIONS
+    // =============================================
+
+    // Verifica che l'utente sia autenticato
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Verifica che l'utente acceda ai propri dati
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Verifica che i dati in scrittura abbiano un timestamp valido
+    function hasValidTimestamp() {
+      return request.resource.data.keys().hasAll(['updatedAt'])
+        && request.resource.data.updatedAt is timestamp;
+    }
+
+    // =============================================
+    // DATI UTENTE (root document)
+    // =============================================
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // =============================================
+      // SNAPSHOT MENSILI DEL PATRIMONIO
+      // =============================================
+      match /snapshots/{snapshotId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      // =============================================
+      // MOVIMENTI / TRANSAZIONI
+      // =============================================
+      match /transactions/{transactionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      // =============================================
+      // PORTAFOGLIO INVESTIMENTI
+      // =============================================
+      match /investments/{investmentId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      // =============================================
+      // CEDOLINI / PAYROLL
+      // =============================================
+      match /payslips/{payslipId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      // =============================================
+      // AUDIT TRAIL (solo append, no delete/update)
+      // =============================================
+      match /auditLog/{logId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId);
+        // Audit log e' immutabile: no update, no delete
+        allow update, delete: if false;
+      }
+
+      // =============================================
+      // CONFIGURAZIONE UTENTE
+      // =============================================
+      match /config/{configId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Blocca tutto il resto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
