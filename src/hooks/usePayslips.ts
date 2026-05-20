@@ -51,7 +51,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
   }, [user?.uid, year])
 
   useEffect(() => {
-    fetchPayslips()
+    void fetchPayslips()
   }, [fetchPayslips])
 
   const addPayslip = useCallback(
@@ -59,7 +59,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
       if (!user?.uid) return null
       const result = await createPayslip(user.uid, data)
       if (!result.error) {
-        fetchPayslips()
+        void fetchPayslips()
         return result.data
       }
       return null
@@ -72,7 +72,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
       if (!user?.uid) return false
       const result = await updatePayslip(user.uid, id, updates)
       if (!result.error) {
-        fetchPayslips()
+        void fetchPayslips()
         return true
       }
       return false
@@ -85,7 +85,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
       if (!user?.uid) return false
       const result = await deletePayslip(user.uid, id)
       if (!result.error) {
-        fetchPayslips()
+        void fetchPayslips()
         return true
       }
       return false
