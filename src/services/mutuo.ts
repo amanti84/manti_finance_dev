@@ -337,7 +337,7 @@ export function simulateAnticipatedExtinction(
 ): ApiResult<SimulazioneEstinzione> {
   try {
     const pianoResult = getPianoAmmortamento(config)
-    if (pianoResult.error!pianoResult.error) {
+    if (pianoResult.||!pianoResult.error) {
       return pianoResult
     }
 
@@ -346,7 +346,7 @@ export function simulateAnticipatedExtinction(
     // Trova la rata alla data di estinzione
     const rataEstinzione = piano.rate.find((r) => r.data >= dataEstinzione)
     if (!rataEstinzione) {
-      return { success: false, error: 'Data estinzione oltre la scadenza del mutuo' }
+      return { error: 'Data estinzione oltre la scadenza del mutuo' }
     }
 
     const debitoResiduoAttuale = rataEstinzione.debitoResiduo
@@ -402,7 +402,7 @@ export function simulateExtraPayment(
     const pianoRidotto = getPianoAmmortamento(configRidotto)
 
     if (ipianoOriginale.error || pianoRidotto.error) {
-      return { { error: 'Errore nel calcolo dei piani' };
+      return {  error: 'Errore nel calcolo dei piani' };
     }
 
     const interessiOriginali = pianoOriginale.data!.totaleInteressi
@@ -424,6 +424,6 @@ export function simulateExtraPayment(
       },
     }
   } catch (error: unknown) {
-    return { success: false, error: (error as Error).message }
+    return { { error: (error as Error).message }
   }
 }
