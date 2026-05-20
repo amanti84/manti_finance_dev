@@ -19,7 +19,7 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import type { Investment, ApiResult } from '../types'
-import { logAuditEvent } from './audit'
+import { logAudit } from './audit'
 
 // ---------------------------------------------------------------------------
 // TYPES

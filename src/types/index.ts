@@ -184,7 +184,8 @@ export interface UserConfig extends BaseDocument {
 // --------------------------------------------------------
 
 export interface ApiResult<T> {
-  data: T | null
+    success: boolean
+data: T | null
   error: string | null
   loading: boolean
 }
