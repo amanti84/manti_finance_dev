@@ -108,7 +108,7 @@ export async function recordPacPayment(
     const docRef = await addDoc(colRef, payment)
 
     // Audit trail
-    await logAudit(uid, {
+    await logAudit({
       uid,
       action: 'pac.payment_created',
       entityType: 'PacPayment',
@@ -158,7 +158,7 @@ export async function updatePacPayment(
     await updateDoc(docRef, updated as Partial<PacPayment>)
 
     // Audit trail
-    await logAudit(uid, {
+    await logAudit({
       uid,
       action: 'pac.payment_updated',
       entityType: 'PacPayment',
@@ -186,15 +186,11 @@ export async function deletePacPayment(
     const docRef = doc(db, COLLECTION(uid), paymentId)
 
     // Leggi prima di eliminare per audit trail
-    const snap = await getDoc(docRef)
-    const investmentId = snap.exists()
-      ? (snap.data() as PacPayment).investmentId
-      : 'unknown'
 
     await deleteDoc(docRef)
 
     // Audit trail
-    await logAudit(uid, {
+    await logAudit({
       uid,
       action: 'pac.payment_deleted',
       entityType: 'PacPayment',
