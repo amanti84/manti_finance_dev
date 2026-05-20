@@ -304,7 +304,6 @@ export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
     const prossimaRata = piano.rate.find((r) => r.data > oggi)
 
     return {
-      data,
       data: {
         debitoResiduo: config.debitoResiduo,
         importoPagato: Math.round(importoPagato * 100) / 100,
@@ -316,10 +315,11 @@ export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
         prossimaRata: prossimaRata ? prossimaRata.data : null,
         scadenza: dataFine,
       },
+            loading: false,
+      error: null
     }
   } catch (error: unknown) {
-    return { success: false, error: (error as Error).message }
-  }
+    return { data: null, loading: false, error: (error as Error).message }  }
 }
 
 // ---------------------------------------------------------------------------
@@ -363,7 +363,6 @@ export function simulateAnticipatedExtinction(
     const risparmioNetto = Math.round((risparmioLordo - costoEstinzione) * 100) / 100
 
     return {
-      data,
       data: {
         dataEstinzione,
         debitoResiduoAttuale: Math.round(debitoResiduoAttuale * 100) / 100,
@@ -373,10 +372,11 @@ export function simulateAnticipatedExtinction(
         costoEstinzioneAnticipata: costoEstinzione,
         convenienza: risparmioNetto > 0,
       },
+            loading: false,
+      error: null
     }
   } catch (error: unknown) {
-    return { success: false, error: (error as Error).message }
-  }
+    return { data: null, loading: false, error: (error as Error).message }  }
 }
 
 /**
@@ -414,14 +414,15 @@ export function simulateExtraPayment(
     const ultimaRata = pianoRidotto.data!.rate[pianoRidotto.data!.rate.length - 1]
 
     return {
-      data,
       data: {
         rateRisparmiate,
         interessiRisparmiati,
         nuovaScadenza: ultimaRata.data,
       },
+            loading: false,
+      error: null
     }
   } catch (error: unknown) {
-    return {  error: (error as Error).message }
-  }
+    return { data: null, loading: false, error: (error as Error).message }  }
+    
 }
