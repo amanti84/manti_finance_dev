@@ -10,8 +10,24 @@ che lavorano su questo repository. Leggilo prima di qualsiasi operazione.
 **manti_finance_dev** è una piattaforma di Personal Finance Copilot per gestione patrimoniale
 personale. Utente unico (+ moglie). Ogni decisione tecnica deve bilanciare:
 - Correttezza finanziaria (i calcoli devono essere esatti e auditabili)
-- Semplicità operativa (intervento umano minimo a regime)
+- Semplicità operativa (intervento umano ZERO a regime — solo approvazione merge finale)
 - Costo basso (Firebase free tier, < €1/mese a regime)
+
+---
+
+## Filosofia operativa — Zero Touch
+
+Il proprietario del progetto NON scrive codice e NON apre issue.
+Il suo unico intervento consentito è: **cliccare Merge su una PR già verde**.
+
+Ogni agente deve quindi:
+1. Leggere l'issue assegnata e iniziare in autonomia
+2. Scrivere il codice rispettando tutti i pattern di questo file
+3. Scrivere i test PRIMA di aprire la PR
+4. Aprire la PR con descrizione completa (cosa, come testare, closes #N)
+5. Aggiungere il label `automerge` se CI è verde e non ci sono ambiguità
+6. NON aspettare input umano per decisioni tecniche standard
+7. In caso di dubbio su logica finanziaria: lasciare commento nella PR, NON bloccare
 
 ---
 
@@ -22,6 +38,7 @@ personale. Utente unico (+ moglie). Ogni decisione tecnica deve bilanciare:
 2. Leggi `.github/copilot-instructions.md`
 3. Verifica le dipendenze dichiarate nell'issue (non iniziare se una dipendenza è open)
 4. Non creare file fuori dalla struttura cartelle definita
+5. Controlla `src/services/payroll.ts` come riferimento canonico per il pattern `ApiResult<T>`
 
 ### Durante lo sviluppo
 1. Un branch per issue. Nome branch: `feature/issue-N-titolo-breve` o `fix/issue-N-titolo`
@@ -29,16 +46,50 @@ personale. Utente unico (+ moglie). Ogni decisione tecnica deve bilanciare:
    - tipi validi: `feat`, `fix`, `chore`, `test`, `docs`, `refactor`
 3. Mai toccare file di altre issue nello stesso branch
 4. Ogni nuovo tipo TypeScript va in `src/types/index.ts` — mai inline
-5. Ogni nuovo servizio deve avere il suo file di test
+5. Ogni nuovo servizio DEVE avere il suo file di test (`*.test.ts`) — minimo 3 test: happy path, edge case, errore
+6. **Pattern obbligatorio return type**: tutti i servizi usano `ApiResult<T>` — vedere sezione sotto
 
 ### Alla fine del task
 1. Apri la PR verso `main`
-2. Titolo PR: `[#N] tipo: descrizione` (es. `[#2] feat: setup React+TypeScript scaffold`)
+2. Titolo PR: `[#N] tipo: descrizione` (es. `[#9] feat: payroll engine v2`)
 3. Descrizione PR deve includere:
-   - Cosa è stato implementato
+   - Cosa è stato implementato (max 5 righe)
    - Come testarlo localmente
    - `closes #N` per chiudere automaticamente l'issue al merge
-4. Non fare self-merge — lascia la PR aperta per review
+   - Checklist: [ ] test scritti [ ] ApiResult pattern rispettato [ ] auditService chiamato [ ] tipi in index.ts
+4. Aggiungere label `automerge` se CI verde e nessuna ambiguità finanziaria
+5. Non fare self-merge — la PR viene mergiata da workflow automatico se CI verde + label `automerge`
+
+---
+
+## Pattern ApiResult<T> — OBBLIGATORIO per tutti i servizi
+
+TUTTI i metodi di servizio devono restituire `ApiResult<T>`. MAI restituire `{success, data}` o oggetti custom.
+
+```typescript
+// src/types/index.ts — tipo già presente
+export type ApiResult<T> = {
+  data: T | null;
+  error: string | null;
+};
+
+// CORRETTO — pattern da seguire (riferimento canonico: src/services/payroll.ts)
+export const esempiService = {
+  async get(uid: string): Promise<ApiResult<TipoEsempio>> {
+    try {
+      await auditService.log(uid, 'ESEMPIO_GET', {});
+      const snap = await getDoc(doc(db, `users/${uid}/esempio`));
+      return { data: snap.data() as TipoEsempio, error: null };
+    } catch (e) {
+      return { data: null, error: (e as Error).message };
+    }
+  }
+};
+
+// SBAGLIATO — non fare mai così
+// return { success: true, data: result };
+// return { success: false, message: 'errore' };
+```
 
 ---
 
@@ -51,6 +102,7 @@ personale. Utente unico (+ moglie). Ogni decisione tecnica deve bilanciare:
 - Aggiornare `package.json` solo per aggiungere dipendenze approvate nel task
 - Creare Firebase Functions in `functions/`
 - Aggiornare `firestore.rules` solo se esplicitamente richiesto dall'issue
+- Aggiungere label `automerge` alle proprie PR se CI verde
 
 ### Richiede approvazione umana (non fare in autonomia)
 - Modificare la struttura del modello dati Firestore già in produzione
@@ -62,27 +114,32 @@ personale. Utente unico (+ moglie). Ogni decisione tecnica deve bilanciare:
 
 ---
 
-## Sequenza di esecuzione issue M1 (giugno 2026)
+## Sequenza di esecuzione issue M2 (sprint attivo — maggio/agosto 2026)
 
-L'ordine è rigido — non saltare step:
+M1 è COMPLETATO. Non riaprire issue M1.
+Ordine esecuzione M2 — rispettare le dipendenze:
 
 ```
-#32 Copilot Agent Setup          ← già parzialmente completato
-  ↓
-#2  Setup React+TypeScript        ← primo commit codice reale
-  ↓
-#3  Configurazione Firebase        ← dipende da #2
-  ↓
-#4  Modello dati v1                ← dipende da #3
-  ↓
-#5  Snapshot Engine               ← dipende da #4
-  ↓
-#6  Audit Trail                   ← dipende da #4, parallelo a #5
+#9  Payroll Engine v2      ← PR #35 open, aggiungere test e mergare
+    ↓
+#10 Investment Core        ← PR #36 open, aggiungere test e mergare
+    ↓ (parallelo a #10)
+#13 Mutuo Service          ← PR #37 open, aggiungere test e mergare
+    ↓
+#11 PAC Service            ← MERGED ✅ (PR #40)
+    ↓
+#12 Decision Engine        ← dipende da #9 (Payroll v2 merged)
+    ↓
+#14 Previdenza/TFR         ← logica fiscale TFR + Fon.Te, attenzione a rivalutazione
+    ↓
+#15 Cash Flow              ← dipende da #9, #10, #13 tutti merged
 ```
+
+**Priorità immediata**: chiudere le 3 PR aperte (#35, #36, #37) aggiungendo i test mancanti.
 
 ---
 
-## Dipendenze npm approvate per M1
+## Dipendenze npm approvate per M2
 
 ```json
 "dependencies": {
@@ -108,7 +165,6 @@ Non aggiungere altre dipendenze senza che siano esplicitamente richieste nell'is
 ## Note sulla logica finanziaria
 
 I moduli finanziari hanno requisiti di precisione elevati:
-
 - **Mutuo**: usa aritmetica con `number` standard, arrotonda a 2 decimali con `Math.round(val * 100) / 100`
 - **TFR**: calcolo annuale, non mensile — attenzione alla logica di rivalutazione
 - **Fon.Te**: tetto annuo deducibilità €5.164,57 — verificare superamento
@@ -119,12 +175,33 @@ In caso di dubbio su logica finanziaria: **non implementare**, lascia un comment
 
 ---
 
+## Workflow auto-merge (attivo su questo repo)
+
+Questo repo ha due workflow GitHub Actions attivi:
+
+1. **`automerge.yml`** — se una PR ha label `automerge` e la CI è verde (lint + typecheck + test + build), il merge viene eseguito automaticamente verso `main`.
+2. **`assign-copilot.yml`** — se un'issue viene aperta o aggiornata con label `copilot-ready`, viene assegnata automaticamente a GitHub Copilot.
+
+Quindi il loop operativo è:
+```
+[issue con label copilot-ready]
+        ↓ automatico
+[Copilot crea branch + scrive codice + scrive test + apre PR]
+        ↓ automatico
+[CI: lint + typecheck + test + build]
+        ↓ se tutto verde + label automerge
+[MERGE AUTOMATICO su main + issue chiusa]
+```
+
+---
+
 ## Contatti e riferimenti
 
 - Repository: `amanti84/manti_finance_dev`
-- Milestone attiva: M1 - Foundation (scadenza 30 giugno 2026)
-
-- - Blueprint: `.github/copilot-instructions.md` e `AGENTS.md`
+- Milestone attiva: M2 - Core Modules (scadenza 31 agosto 2026)
+- M1 completata: 20 maggio 2026
+- Blueprint: `.github/copilot-instructions.md` e `AGENTS.md`
+- Stack legacy di riferimento: `amanti84/manti_finance` (repo originale con 277 commit)
 
 ---
 
@@ -133,19 +210,14 @@ In caso di dubbio su logica finanziaria: **non implementare**, lascia un comment
 Dal 1° giugno 2026 GitHub Copilot usa un modello a crediti (1 credito = $0.01, piano Pro incluso = 1000 crediti/mese).
 
 ### Regole per gli agenti
-
 - Usare **modelli leggeri** (Haiku, GPT-4o mini) per completamenti e chat veloci.
 - Usare **modelli frontier** (Sonnet, Opus, GPT-4o) solo per task architetturali complessi.
 - **Una sessione agent = una issue atomica**. Non aprire sessioni multi-issue.
 - **Non caricare l'intero repo** come contesto: passare solo i file pertinenti al task corrente.
 - **Soglia mensile**: tetto assoluto $10 di crediti inclusi. Nessun budget extra senza approvazione esplicita.
-- **Nessuna code review automatica** durante M1 — review manuale da PM.
 - Se i crediti superano $8 nel mese, sospendere sessioni agent e proseguire solo con completamento inline.
 
-### Stima consumo M1
-
-- Scaffolding e setup (inline completions): < 5 crediti totali.
-- Issue complesse (Snapshot Engine, Audit Trail): ~2–4 crediti/sessione.
-- Totale M1 stimato: 20–40 crediti su 1000 disponibili. Rischio sforamento: basso.
-- Istruzioni dettagliate: `.github/copilot-instructions.md`
-- Stack legacy di riferimento: `amanti84/manti_finance` (repo originale con 277 commit)
+### Stima consumo M2
+- Issue con test inclusi (Payroll, Investment, Mutuo): ~3-5 crediti/sessione.
+- Issue complesse (Decision Engine, TFR): ~4-6 crediti/sessione.
+- Totale M2 stimato: 30-60 crediti su 1000 disponibili. Rischio sforamento: basso.
