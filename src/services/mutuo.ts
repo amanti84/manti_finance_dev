@@ -309,8 +309,8 @@ export function simulateAnticipatedExtinction(
 ): ApiResult<SimulazioneEstinzione> {
   try {
     const pianoResult = getPianoAmmortamento(config)
-    if (!pianoResult.success ?? !pianoResult.data) {
-      return { success: false, error: pianoResult.error }
+    if (!pianoResult.success) {
+      return pianoResult
     }
 
     const piano = pianoResult.data
@@ -369,19 +369,22 @@ export function simulateExtraPayment(
     const pianoOriginale = getPianoAmmortamento(config)
     const pianoRidotto = getPianoAmmortamento(configRidotto)
 
-    if (pianoOriginale.error ?? pianoRidotto.error) {
-      return { success: false, error: 'Errore nel calcolo dei piani' }
+    if (!pianoOriginale.success) {
+      return { success: false, error: pianoOriginale.error }
+    }
+    if (!pianoRidotto.success) {
+      return { success: false, error: pianoRidotto.error }
     }
 
-    const interessiOriginali = pianoOriginale.data?.totaleInteressi ?? 0
-    const interessiRidotti = pianoRidotto.data?.totaleInteressi ?? 0
+    const interessiOriginali = pianoOriginale.data.totaleInteressi
+    const interessiRidotti = pianoRidotto.data.totaleInteressi
     const interessiRisparmiati = Math.round((interessiOriginali - interessiRidotti) * 100) / 100
 
-    const rateOriginali = pianoOriginale.data?.rate.length ?? 0
-    const rateRidotte = pianoRidotto.data?.rate.length ?? 0
+    const rateOriginali = pianoOriginale.data.rate.length
+    const rateRidotte = pianoRidotto.data.rate.length
     const rateRisparmiate = rateOriginali - rateRidotte
 
-    const ultimaRata = pianoRidotto.data?.rate[pianoRidotto.data.rate.length - 1]
+    const ultimaRata = pianoRidotto.data.rate[pianoRidotto.data.rate.length - 1]
     if (!ultimaRata) {
       return { success: false, error: 'Piano ammortamento ridotto vuoto' }
     }
