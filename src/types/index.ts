@@ -183,11 +183,14 @@ export interface UserConfig extends BaseDocument {
 // UI / UTILITY TYPES
 // --------------------------------------------------------
 
-export interface ApiResult<T> {
-  data: T | null
-  error: string | null
-  loading: boolean
-}
+/**
+ * Pattern canonico per tutti i metodi di servizio.
+ * Usare sempre { success, data, error } — MAI { data, loading, error }.
+ * Riferimento: src/services/payroll.ts
+ */
+export type ApiResult<T> =
+  | { success: true; data: T; error?: never }
+  | { success: false; data?: never; error: string }
 
 export interface DateRange {
   from: Date
