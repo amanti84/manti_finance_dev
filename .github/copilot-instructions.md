@@ -124,5 +124,61 @@ Ogni piano include crediti inclusi pari al costo mensile (es. Pro = $10/mese = 1
 - Struttura cartelle e scaffolding: prevalentemente completamento inline → consumo minimo.
 - Sessioni agent su issue complesse (Snapshot Engine, Audit Trail): stimato 2-4 crediti/sessione.
 - Stima totale M1: 20-40 crediti su 1000 disponibili → ampiamente dentro il piano incluso.
+
+---
+
+## Pattern ApiResult<T> — OBBLIGATORIO per tutti i servizi (aggiornamento M2)
+
+Dopo l'incidente PAC service (PR #38 chiusa, refactor in PR #39/#40), questo pattern è ora regola non derogabile.
+
+TUTTI i metodi di servizio devono restituire `ApiResult<T>`. MAI usare `{success, data}` o strutture custom.
+
+RIFERIMENTO CANONICO: `src/services/payroll.ts` — leggilo prima di scrivere qualsiasi nuovo servizio.
+
+```typescript
+// PATTERN CORRETTO
+async nomeMetodo(uid: string, data: TipoInput): Promise<ApiResult<TipoOutput>> {
+  try {
+    await auditService.log(uid, 'EVENTO_NOME', data);
+    // ... logica Firebase ...
+    return { data: risultato, error: null };
+  } catch (e) {
+    return { data: null, error: (e as Error).message };
+  }
+}
+
+// PATTERN SBAGLIATO — non fare mai così
+// return { success: true, data: risultato };
+// return { success: false, message: 'errore' };
+// throw new Error('...');  // mai lanciare eccezioni, restituire error
+```
+
+---
+
+## Agent Instructions — come lavorare in modalità Zero Touch
+
+Questo progetto opera in modalità **Zero Touch**: il proprietario non scrive codice, non apre issue, non fa code review dettagliate.
+L'unico intervento umano è cliccare Merge su una PR già verde.
+
+### Checklist obbligatoria prima di aprire una PR
+- [ ] Ho letto l'issue integralmente
+- [ ] Ho verificato le dipendenze (nessuna issue dipendente è open)
+- [ ] Ho usato `ApiResult<T>` come return type su tutti i metodi del servizio
+- [ ] Ho chiamato `auditService.log()` prima di ogni write su Firestore
+- [ ] Ho definito tutti i nuovi tipi in `src/types/index.ts`
+- [ ] Ho scritto almeno 3 test (happy path, edge case, errore) in `nomeServizio.test.ts`
+- [ ] Il commit message include `closes #N`
+- [ ] Ho aggiunto il label `automerge` se non ci sono ambiguità sulla logica finanziaria
+
+### Riferimenti file per ogni modulo M2
+| Modulo | File servizio | File test | Tipi in index.ts |
+|--------|--------------|-----------|------------------|
+| #9 Payroll v2 | `src/services/payroll.ts` | `src/services/payroll.test.ts` | `PayrollData`, `PayrollEntry` |
+| #10 Investment | `src/services/investment.ts` | `src/services/investment.test.ts` | `Investment`, `InvestmentSummary` |
+| #11 PAC | `src/services/pac.ts` | `src/services/pac.test.ts` | `PACPlan`, `PACEntry` |
+| #12 Decision Engine | `src/services/decision.ts` | `src/services/decision.test.ts` | `DecisionRule`, `DecisionResult` |
+| #13 Mutuo | `src/services/mutuo.ts` | `src/services/mutuo.test.ts` | `MutuoData`, `MutuoRate` |
+| #14 Previdenza/TFR | `src/services/previdenza.ts` | `src/services/previdenza.test.ts` | `TFRData`, `FonteData` |
+| #15 Cash Flow | `src/services/cashflow.ts` | `src/services/cashflow.test.ts` | `CashFlowEntry`, `CashFlowSummary` |
 Usare free tier Firebase dove possibile.
 Evitare chiamate API inutili — preferire cache locale e snapshot listeners.
