@@ -22,6 +22,7 @@ import {
   getContributionsByFund,
 } from './previdenza'
 import type { Payslip, TFRData } from '../types'
+import type { Timestamp } from 'firebase/firestore'
 
 // -----------------------------------------------------------------------
 // MOCK FIREBASE
@@ -47,6 +48,11 @@ vi.mock('./audit', () => ({ logAudit: vi.fn() }))
 // -----------------------------------------------------------------------
 // HELPERS
 // -----------------------------------------------------------------------
+const makeTimestamp = (d: Date): Timestamp =>
+  ({ seconds: Math.floor(d.getTime() / 1000), nanoseconds: 0,
+     toDate: () => d, toMillis: () => d.getTime(),
+     isEqual: () => false }) as unknown as Timestamp
+
 const makePayslip = (overrides: Partial<Payslip> = {}): Payslip => ({
   id: 'pay-001',
   year: 2025,
@@ -60,8 +66,8 @@ const makePayslip = (overrides: Partial<Payslip> = {}): Payslip => ({
   bonus: 0,
   rimborsiSpese: 0,
   parsed: true,
-  createdAt: { toDate: () => new Date() } as unknown as import('firebase/firestore').Timestamp,
-  updatedAt: { toDate: () => new Date() } as unknown as import('firebase/firestore').Timestamp,
+  createdAt: makeTimestamp(new Date()),
+  updatedAt: makeTimestamp(new Date()),
   ...overrides,
 })
 
