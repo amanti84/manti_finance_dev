@@ -7,7 +7,7 @@
 
 ---
 
-## Executive Summary
+## Executve Summary
 
 `manti_finance_dev` is a personal finance operating system designed to centralize payroll, investments, mortgage, pension, cash flow, and document intake into a single decision-support platform.
 
