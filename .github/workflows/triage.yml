@@ -18,9 +18,9 @@ jobs:
 
       - name: Gemini Triage — analisi issue e routing
         id: gemini
-        uses: google-gemini/gemini-cli-action@main
+        uses: google-github-actions/run-gemini-cli@v0
         with:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
           prompt: |
             Sei un triage agent per il repository manti_finance_dev.
             Leggi il titolo e il body dell'issue:
@@ -31,11 +31,11 @@ jobs:
             Regola di routing:
             - Se l'issue richiede logica finanziaria complessa (calcoli fiscali,
               regole condizionali su TFR/Fon.Te/mutuo, simulazioni what-if,
-              confidence scoring, decision engine): rispondi SOLO con "claude-ready"
+              confidence scoring, decision engine): rispondi SOLO con la parola jules-ready oppure claude-ready
             - Per tutto il resto (CRUD, UI, routing, deploy, document intake,
-              servizi strutturati senza logica finanziaria): rispondi SOLO con "jules-ready"
+              servizi strutturati senza logica finanziaria): rispondi SOLO con jules-ready
 
-            Rispondi con UNA SOLA parola: jules-ready oppure claude-ready
+            Rispondi con UNA SOLA PAROLA senza punteggiatura: jules-ready oppure claude-ready
 
       - name: Applica label routing
         uses: actions/github-script@v7
@@ -43,9 +43,16 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `${{ steps.gemini.outputs.summary }}`;
-            const label = output.trim().toLowerCase();
+            const label = output.trim().toLowerCase().replace(/[^a-z-]/g, '');
             if (!['jules-ready', 'claude-ready'].includes(label)) {
-              console.log('Label non riconosciuto:', label);
+              console.log('Label non riconosciuto, uso jules-ready come fallback:', label);
+              const fallback = 'jules-ready';
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.issue.number,
+                labels: [fallback]
+              });
               return;
             }
             await github.rest.issues.addLabels({
