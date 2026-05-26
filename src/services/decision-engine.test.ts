@@ -32,8 +32,9 @@ vi.mock('firebase/firestore', () => ({
   Timestamp: { now: vi.fn(() => ({ toDate: () => new Date() })) },
 }));
 
+// fix: service chiama logAudit, non logAuditEvent
 vi.mock('./audit', () => ({
-  logAuditEvent: vi.fn().mockResolvedValue(undefined),
+  logAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ---------------------------------------------------------------------------
@@ -89,7 +90,6 @@ describe('Decision Engine', () => {
   // --- Regola 2: Pensione sotto target ---
   describe('rulePensioneSottoTarget', () => {
     it('si attiva quando saldo pensione < target', () => {
-      // target = 50000 * 20 / 100 = 10000; saldo = 5000 < 10000
       const ctx = makeCtx({ saldoPensione: 5000, targetPensionePct: 20, redditoAnnuo: 50000 });
       const result = rulePensioneSottoTarget(ctx);
       expect(result).not.toBeNull();
@@ -131,7 +131,7 @@ describe('Decision Engine', () => {
       const result = ruleSurplusInvestimento(ctx);
       expect(result).not.toBeNull();
       expect(result?.ruleTriggered).toBe('SURPLUS_INVESTIMENTO');
-      expect(result?.amount).toBe(480); // 800 * 0.6
+      expect(result?.amount).toBe(480);
     });
 
     it('non si attiva quando surplus < soglia', () => {
@@ -165,9 +165,9 @@ describe('Decision Engine', () => {
   describe('runDecisionEngine', () => {
     it('restituisce risultati ordinati per priorità', () => {
       const ctx = makeCtx({
-        saldoConto: 1000, // attiva buffer (p1)
-        saldoPensione: 1000, // attiva pensione (p2)
-        surplusMensile: 800, // attiva investimento (p4)
+        saldoConto: 1000,
+        saldoPensione: 1000,
+        surplusMensile: 800,
       });
       const result = runDecisionEngine(ctx);
       expect(result.success).toBe(true);
@@ -198,7 +198,7 @@ describe('Decision Engine', () => {
   // --- getTopRecommendation ---
   describe('getTopRecommendation', () => {
     it('restituisce raccomandazione con priorità più alta', () => {
-      const ctx = makeCtx({ saldoConto: 500 }); // buffer sicurezza ha priorità 1
+      const ctx = makeCtx({ saldoConto: 500 });
       const result = getTopRecommendation(ctx);
       expect(result.success).toBe(true);
       expect(result.data?.ruleTriggered).toBe('BUFFER_SICUREZZA');

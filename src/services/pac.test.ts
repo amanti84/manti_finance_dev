@@ -37,7 +37,7 @@ vi.mock('firebase/firestore', () => ({
 }))
 
 vi.mock('../firebase', () => ({ db: {} }))
-vi.mock('./audit', () => ({ logAudit: vi.fn() }))
+vi.mock('./audit', () => ({ logAudit: vi.fn().mockResolvedValue(undefined) }))
 
 // -----------------------------------------------------------------------
 // HELPERS
@@ -76,6 +76,12 @@ const makeInvestment = (): Investment => ({
   lastPriceUpdate: makeTimestamp(new Date()),
   createdAt: makeTimestamp(new Date()),
   updatedAt: makeTimestamp(new Date()),
+})
+
+// helper: mock snapshot con forEach
+const makeSnapshot = (items: PacPayment[]) => ({
+  forEach: (cb: (d: { id: string; data: () => Omit<PacPayment, 'id'> }) => void) =>
+    items.forEach(item => cb({ id: item.id, data: () => item })),
 })
 
 // -----------------------------------------------------------------------
@@ -128,14 +134,23 @@ describe('updatePacPayment', () => {
   beforeEach(() => { vi.clearAllMocks() })
 
   it('aggiorna un versamento PAC con successo', async () => {
-    const { updateDoc } = await import('firebase/firestore')
+    const { updateDoc, getDoc } = await import('firebase/firestore')
+    // updatePacPayment fetches existing doc when importo is provided
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      exists: () => true,
+      data: () => makePayment(),
+    })
     ;(updateDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined)
     const result = await updatePacPayment('user-123', 'pac-001', { importo: 250 })
     expect(result.success).toBe(true)
   })
 
   it('restituisce errore se updateDoc fallisce', async () => {
-    const { updateDoc } = await import('firebase/firestore')
+    const { updateDoc, getDoc } = await import('firebase/firestore')
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      exists: () => true,
+      data: () => makePayment(),
+    })
     ;(updateDoc as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase error'))
     const result = await updatePacPayment('user-123', 'pac-001', { importo: 250 })
     expect(result.success).toBe(false)
@@ -172,9 +187,9 @@ describe('getPacPaymentsByInvestment', () => {
   it('restituisce i versamenti filtrati per investimento', async () => {
     const { getDocs, query } = await import('firebase/firestore')
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
-    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      docs: [{ id: 'pac-001', data: () => makePayment() }],
-    })
+    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      makeSnapshot([makePayment()])
+    )
     const result = await getPacPaymentsByInvestment('user-123', 'inv-001')
     expect(result.success).toBe(true)
     if (result.success) {
@@ -201,12 +216,12 @@ describe('getAllPacPayments', () => {
   it('restituisce tutti i versamenti PAC', async () => {
     const { getDocs, query } = await import('firebase/firestore')
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
-    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      docs: [
-        { id: 'pac-001', data: () => makePayment() },
-        { id: 'pac-002', data: () => makePayment({ id: 'pac-002', importo: 300 }) },
-      ],
-    })
+    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      makeSnapshot([
+        makePayment(),
+        makePayment({ id: 'pac-002', importo: 300 }),
+      ])
+    )
     const result = await getAllPacPayments('user-123')
     expect(result.success).toBe(true)
     if (result.success) {
@@ -232,12 +247,12 @@ describe('getPacSummary', () => {
   it('calcola il summary PAC correttamente', async () => {
     const { getDocs, query } = await import('firebase/firestore')
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
-    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      docs: [
-        { id: 'pac-001', data: () => makePayment({ importo: 200, priceAtPayment: 80, quantityPurchased: 2.5 }) },
-        { id: 'pac-002', data: () => makePayment({ id: 'pac-002', importo: 200, priceAtPayment: 85, quantityPurchased: 2.35 }) },
-      ],
-    })
+    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      makeSnapshot([
+        makePayment({ importo: 200, priceAtPayment: 80, quantityPurchased: 2.5 }),
+        makePayment({ id: 'pac-002', importo: 200, priceAtPayment: 85, quantityPurchased: 2.35 }),
+      ])
+    )
     const result = await getPacSummary('user-123', makeInvestment())
     expect(result.success).toBe(true)
     if (result.success) {
@@ -264,9 +279,9 @@ describe('calculatePacProgress', () => {
   it('calcola il progresso verso un obiettivo', async () => {
     const { getDocs, query } = await import('firebase/firestore')
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
-    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      docs: [{ id: 'pac-001', data: () => makePayment({ importo: 500 }) }],
-    })
+    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      makeSnapshot([makePayment({ importo: 500 })])
+    )
     const result = await calculatePacProgress('user-123', makeInvestment(), 1000)
     expect(result.success).toBe(true)
     if (result.success) {
@@ -278,9 +293,9 @@ describe('calculatePacProgress', () => {
   it('funziona senza obiettivo (null)', async () => {
     const { getDocs, query } = await import('firebase/firestore')
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
-    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      docs: [{ id: 'pac-001', data: () => makePayment({ importo: 500 }) }],
-    })
+    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      makeSnapshot([makePayment({ importo: 500 })])
+    )
     const result = await calculatePacProgress('user-123', makeInvestment(), null)
     expect(result.success).toBe(true)
     if (result.success) {
@@ -299,11 +314,11 @@ describe('getPacAnalytics', () => {
   it('restituisce analytics aggregati per lista investimenti PAC', async () => {
     const { getDocs, query } = await import('firebase/firestore')
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
-    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValue({
-      docs: [
-        { id: 'pac-001', data: () => makePayment({ importo: 200, priceAtPayment: 80, quantityPurchased: 2.5 }) },
-      ],
-    })
+    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValue(
+      makeSnapshot([
+        makePayment({ importo: 200, priceAtPayment: 80, quantityPurchased: 2.5 }),
+      ])
+    )
     const result = await getPacAnalytics('user-123', [makeInvestment()])
     expect(result.success).toBe(true)
     if (result.success) {

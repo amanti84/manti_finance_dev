@@ -33,8 +33,9 @@ vi.mock('firebase/firestore', () => ({
   },
 }));
 
+// fix: service chiama logAudit, non logAuditEvent
 vi.mock('./audit', () => ({
-  logAuditEvent: vi.fn().mockResolvedValue(undefined),
+  logAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ---------------------------------------------------------------------------
