@@ -6,10 +6,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   createInvestment,
-  updateInvestment,
   deleteInvestment,
   getInvestment,
-  getAllInvestments,
   getInvestmentsByBroker,
   getInvestmentsByAssetClass,
   calculateUnrealizedPnL,
@@ -19,6 +17,7 @@ import {
   aggregateByAssetClass,
 } from './investment';
 import type { Investment, ApiResult } from '../types';
+import { Timestamp } from 'firebase/firestore';
 
 // ---------------------------------------------------------------------------
 // MOCK FIREBASE
@@ -35,23 +34,30 @@ vi.mock('firebase/firestore', () => ({
   query: vi.fn(),
   where: vi.fn(),
   orderBy: vi.fn(),
-  Timestamp: { now: vi.fn(() => ({ toDate: () => new Date() })) },
+  Timestamp: {
+    now: vi.fn(() => ({ seconds: 0, nanoseconds: 0, toDate: () => new Date(), toMillis: () => 0, isEqual: () => false })),
+    fromDate: vi.fn((d: Date) => ({ seconds: Math.floor(d.getTime() / 1000), nanoseconds: 0, toDate: () => d, toMillis: () => d.getTime(), isEqual: () => false })),
+  },
 }));
 
 vi.mock('./audit', () => ({
+  logAudit: vi.fn().mockResolvedValue(undefined),
   logAuditEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ---------------------------------------------------------------------------
 // MOCK FIXTURES
 // ---------------------------------------------------------------------------
+const makeTimestamp = (d: Date): Timestamp =>
+  ({ seconds: Math.floor(d.getTime() / 1000), nanoseconds: 0, toDate: () => d, toMillis: () => d.getTime(), isEqual: () => false }) as unknown as Timestamp;
+
 const makeInvestment = (overrides: Partial<Investment> = {}): Investment => ({
   id: 'inv-001',
   uid: 'user-123',
   name: 'Fondo Azionario ETF',
   ticker: 'VWCE',
-  assetClass: 'ETF',
-  broker: 'Degiro',
+  assetClass: 'etf',
+  broker: 'degiro',
   quantity: 10,
   avgCost: 90,
   currentPrice: 100,
@@ -60,8 +66,10 @@ const makeInvestment = (overrides: Partial<Investment> = {}): Investment => ({
   unrealizedPnL: 100,
   unrealizedPnLPct: 11.11,
   currency: 'EUR',
-  createdAt: new Date('2025-01-01'),
-  updatedAt: new Date('2025-01-01'),
+  isPac: false,
+  lastPriceUpdate: makeTimestamp(new Date('2025-01-01')),
+  createdAt: makeTimestamp(new Date('2025-01-01')),
+  updatedAt: makeTimestamp(new Date('2025-01-01')),
   ...overrides,
 });
 
@@ -74,7 +82,6 @@ describe('Investment Core Service', () => {
     vi.clearAllMocks();
   });
 
-  // --- calculateUnrealizedPnL ---
   describe('calculateUnrealizedPnL', () => {
     it('calcola correttamente il P&L non realizzato positivo', () => {
       const inv = makeInvestment({ quantity: 10, avgCost: 90, currentPrice: 100 });
@@ -99,7 +106,6 @@ describe('Investment Core Service', () => {
     });
   });
 
-  // --- calculatePortfolioPnL ---
   describe('calculatePortfolioPnL', () => {
     it('aggrega P&L su lista di investimenti', () => {
       const list = [
@@ -118,7 +124,6 @@ describe('Investment Core Service', () => {
     });
   });
 
-  // --- getPortfolioSummary ---
   describe('getPortfolioSummary', () => {
     it('calcola totalValue e costBasis correttamente', () => {
       const list = [
@@ -132,36 +137,33 @@ describe('Investment Core Service', () => {
     });
   });
 
-  // --- aggregateByBroker ---
   describe('aggregateByBroker', () => {
     it('raggruppa investimenti per broker', () => {
       const list = [
-        makeInvestment({ broker: 'Degiro', currentValue: 1000 }),
-        makeInvestment({ id: 'inv-002', broker: 'Fineco', currentValue: 2000 }),
-        makeInvestment({ id: 'inv-003', broker: 'Degiro', currentValue: 500 }),
+        makeInvestment({ broker: 'degiro', currentValue: 1000 }),
+        makeInvestment({ id: 'inv-002', broker: 'fineco', currentValue: 2000 }),
+        makeInvestment({ id: 'inv-003', broker: 'degiro', currentValue: 500 }),
       ];
       const result = aggregateByBroker(list);
       expect(result.success).toBe(true);
-      const degiro = result.data?.find(b => b.broker === 'Degiro');
+      const degiro = result.data?.find(b => b.broker === 'degiro');
       expect(degiro?.totalValue).toBeCloseTo(1500);
     });
   });
 
-  // --- aggregateByAssetClass ---
   describe('aggregateByAssetClass', () => {
     it('raggruppa per asset class con allocazione percentuale', () => {
       const list = [
-        makeInvestment({ assetClass: 'ETF', currentValue: 800 }),
-        makeInvestment({ id: 'inv-002', assetClass: 'Azioni', currentValue: 200 }),
+        makeInvestment({ assetClass: 'etf', currentValue: 800 }),
+        makeInvestment({ id: 'inv-002', assetClass: 'azioni', currentValue: 200 }),
       ];
       const result = aggregateByAssetClass(list);
       expect(result.success).toBe(true);
-      const etf = result.data?.find(a => a.assetClass === 'ETF');
+      const etf = result.data?.find(a => a.assetClass === 'etf');
       expect(etf?.allocationPct).toBeCloseTo(80);
     });
   });
 
-  // --- CRUD: createInvestment ---
   describe('createInvestment', () => {
     it('restituisce ApiResult con successo su creazione valida', async () => {
       const { addDoc } = await import('firebase/firestore');
@@ -181,7 +183,6 @@ describe('Investment Core Service', () => {
     });
   });
 
-  // --- CRUD: getInvestment ---
   describe('getInvestment', () => {
     it('ritorna investimento esistente', async () => {
       const { getDoc, doc } = await import('firebase/firestore');
@@ -205,7 +206,6 @@ describe('Investment Core Service', () => {
     });
   });
 
-  // --- CRUD: deleteInvestment ---
   describe('deleteInvestment', () => {
     it('elimina investimento e ritorna successo', async () => {
       const { deleteDoc, doc } = await import('firebase/firestore');
@@ -216,36 +216,34 @@ describe('Investment Core Service', () => {
     });
   });
 
-  // --- getInvestmentsByBroker ---
   describe('getInvestmentsByBroker', () => {
     it('filtra investimenti per broker', async () => {
       const { getDocs, query } = await import('firebase/firestore');
       (query as ReturnType<typeof vi.fn>).mockReturnValue({});
       (getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         docs: [
-          { id: 'inv-001', data: () => makeInvestment({ broker: 'Degiro' }) },
+          { id: 'inv-001', data: () => makeInvestment({ broker: 'degiro' }) },
         ],
       });
-      const result = await getInvestmentsByBroker('user-123', 'Degiro');
+      const result = await getInvestmentsByBroker('user-123', 'degiro');
       expect(result.success).toBe(true);
       expect(result.data?.length).toBe(1);
-      expect(result.data?.[0].broker).toBe('Degiro');
+      expect(result.data?.[0].broker).toBe('degiro');
     });
   });
 
-  // --- getInvestmentsByAssetClass ---
   describe('getInvestmentsByAssetClass', () => {
     it('filtra investimenti per asset class', async () => {
       const { getDocs, query } = await import('firebase/firestore');
       (query as ReturnType<typeof vi.fn>).mockReturnValue({});
       (getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         docs: [
-          { id: 'inv-001', data: () => makeInvestment({ assetClass: 'ETF' }) },
+          { id: 'inv-001', data: () => makeInvestment({ assetClass: 'etf' }) },
         ],
       });
-      const result = await getInvestmentsByAssetClass('user-123', 'ETF');
+      const result = await getInvestmentsByAssetClass('user-123', 'etf');
       expect(result.success).toBe(true);
-      expect(result.data?.[0].assetClass).toBe('ETF');
+      expect(result.data?.[0].assetClass).toBe('etf');
     });
   });
 

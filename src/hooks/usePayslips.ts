@@ -43,7 +43,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
     }
     setState(prev => ({ ...prev, loading: true, error: null }))
     const result = await getPayslipsByYear(user.uid, year)
-    if (result.error) {
+    if (!result.success) {
       setState({ payslips: [], loading: false, error: result.error })
     } else {
       setState({ payslips: result.data ?? [], loading: false, error: null })
@@ -58,9 +58,9 @@ export function usePayslips(year: number): UsePayslipsReturn {
     async (data: Omit<Payslip, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
       if (!user?.uid) return null
       const result = await createPayslip(user.uid, data)
-      if (!result.error) {
+      if (result.success) {
         void fetchPayslips()
-        return result.data
+        return result.data ?? null
       }
       return null
     },
@@ -71,7 +71,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
     async (id: string, updates: Partial<Omit<Payslip, 'id' | 'createdAt'>>): Promise<boolean> => {
       if (!user?.uid) return false
       const result = await updatePayslip(user.uid, id, updates)
-      if (!result.error) {
+      if (result.success) {
         void fetchPayslips()
         return true
       }
@@ -84,7 +84,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
     async (id: string): Promise<boolean> => {
       if (!user?.uid) return false
       const result = await deletePayslip(user.uid, id)
-      if (!result.error) {
+      if (result.success) {
         void fetchPayslips()
         return true
       }

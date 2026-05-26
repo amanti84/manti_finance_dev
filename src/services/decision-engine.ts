@@ -6,16 +6,14 @@
 import {
   getFirestore,
   collection,
-  doc,
   addDoc,
   getDocs,
   query,
-  where,
   orderBy,
   Timestamp,
 } from 'firebase/firestore';
 import type { ApiResult } from '../types';
-import { logAuditEvent } from './audit';
+import { logAudit } from './audit';
 
 // ---------------------------------------------------------------------------
 // TYPES
@@ -31,15 +29,15 @@ export interface DecisionRule {
 export interface DecisionContext {
   uid: string;
   surplusMensile: number;
-  sogliaInvestimento: number; // default 500
+  sogliaInvestimento: number;
   debitoResiduoMutuo: number;
   anniResiduiMutuo: number;
-  sogliaAnniMutuo: number; // default 5
+  sogliaAnniMutuo: number;
   saldoPensione: number;
-  targetPensionePct: number; // 0-100
+  targetPensionePct: number;
   redditoAnnuo: number;
   saldoConto: number;
-  bufferSicurezza: number; // default 3000
+  bufferSicurezza: number;
 }
 
 export interface DecisionResult {
@@ -62,9 +60,6 @@ export interface DecisionRecord {
 // REGOLE DI ALLOCAZIONE
 // ---------------------------------------------------------------------------
 
-/**
- * Regola 1: Conto < buffer sicurezza → no investimento, ricostituire liquidità
- */
 export function ruleBufferSicurezza(ctx: DecisionContext): DecisionResult | null {
   if (ctx.saldoConto < ctx.bufferSicurezza) {
     const importo = Math.min(ctx.surplusMensile, ctx.bufferSicurezza - ctx.saldoConto);
@@ -79,9 +74,6 @@ export function ruleBufferSicurezza(ctx: DecisionContext): DecisionResult | null
   return null;
 }
 
-/**
- * Regola 2: Fondo pensione < target → aumentare versamento previdenziale
- */
 export function rulePensioneSottoTarget(ctx: DecisionContext): DecisionResult | null {
   const targetAssoluto = (ctx.redditoAnnuo * ctx.targetPensionePct) / 100;
   if (ctx.saldoPensione < targetAssoluto) {
@@ -98,9 +90,6 @@ export function rulePensioneSottoTarget(ctx: DecisionContext): DecisionResult | 
   return null;
 }
 
-/**
- * Regola 3: Mutuo residuo > soglia anni → valutare estinzione parziale
- */
 export function ruleMutuoEsposizione(ctx: DecisionContext): DecisionResult | null {
   if (ctx.debitoResiduoMutuo > 0 && ctx.anniResiduiMutuo > ctx.sogliaAnniMutuo && ctx.surplusMensile > 0) {
     const suggerimento = Math.min(ctx.surplusMensile * 0.4, ctx.debitoResiduoMutuo * 0.01);
@@ -115,9 +104,6 @@ export function ruleMutuoEsposizione(ctx: DecisionContext): DecisionResult | nul
   return null;
 }
 
-/**
- * Regola 4: Surplus > soglia → investire in ETF
- */
 export function ruleSurplusInvestimento(ctx: DecisionContext): DecisionResult | null {
   if (ctx.surplusMensile >= ctx.sogliaInvestimento) {
     return {
@@ -131,9 +117,6 @@ export function ruleSurplusInvestimento(ctx: DecisionContext): DecisionResult | 
   return null;
 }
 
-/**
- * Regola 5: Surplus basso ma positivo → PAC minimo
- */
 export function rulePacMinimo(ctx: DecisionContext): DecisionResult | null {
   if (ctx.surplusMensile > 0 && ctx.surplusMensile < ctx.sogliaInvestimento) {
     return {
@@ -151,9 +134,6 @@ export function rulePacMinimo(ctx: DecisionContext): DecisionResult | null {
 // MOTORE DECISIONALE
 // ---------------------------------------------------------------------------
 
-/**
- * Esegue tutte le regole in ordine di priorità e restituisce le raccomandazioni attive.
- */
 export function runDecisionEngine(ctx: DecisionContext): ApiResult<DecisionResult[]> {
   try {
     if (!ctx.uid) {
@@ -178,9 +158,6 @@ export function runDecisionEngine(ctx: DecisionContext): ApiResult<DecisionResul
   }
 }
 
-/**
- * Restituisce la raccomandazione principale (priorità più alta).
- */
 export function getTopRecommendation(ctx: DecisionContext): ApiResult<DecisionResult | null> {
   const result = runDecisionEngine(ctx);
   if (!result.success) return result as ApiResult<DecisionResult | null>;
@@ -192,9 +169,6 @@ export function getTopRecommendation(ctx: DecisionContext): ApiResult<DecisionRe
 // PERSISTENZA FIRESTORE
 // ---------------------------------------------------------------------------
 
-/**
- * Salva una sessione decisionale in Firestore.
- */
 export async function saveDecisionRecord(
   uid: string,
   ctx: DecisionContext,
@@ -207,16 +181,19 @@ export async function saveDecisionRecord(
       results,
       createdAt: Timestamp.now(),
     });
-    await logAuditEvent(uid, 'decision_saved', { recordId: ref.id, rulesTriggered: results.length });
+    await logAudit({
+      uid,
+      action: 'create',
+      entityType: 'config',
+      entityId: ref.id,
+      newValue: { rulesTriggered: results.length },
+    });
     return { success: true, data: ref.id };
   } catch (e) {
     return { success: false, error: (e as Error).message };
   }
 }
 
-/**
- * Recupera lo storico delle decisioni.
- */
 export async function getDecisionHistory(uid: string): Promise<ApiResult<DecisionRecord[]>> {
   try {
     const db = getFirestore();
