@@ -5,6 +5,7 @@
  * Issue #11 — M2 Core Modules
  */
 import {
+  getFirestore,
   collection,
   doc,
   addDoc,
@@ -17,7 +18,6 @@ import {
   orderBy,
   Timestamp,
 } from 'firebase/firestore'
-import { db } from '../firebase'
 import type { Investment, ApiResult } from '../types'
 import { logAudit } from './audit'
 
@@ -87,6 +87,7 @@ export async function recordPacPayment(
   data: Omit<PacPayment, 'id' | 'quantityPurchased' | 'createdAt' | 'updatedAt'>
 ): Promise<ApiResult<string>> {
   try {
+    const db = getFirestore()
     const quantityPurchased = data.priceAtPayment > 0
       ? Math.round((data.importo / data.priceAtPayment) * 100000) / 100000
       : 0
@@ -111,6 +112,7 @@ export async function updatePacPayment(
   data: Partial<Omit<PacPayment, 'id' | 'createdAt' | 'updatedAt'>>
 ): Promise<ApiResult<undefined>> {
   try {
+    const db = getFirestore()
     const docRef = doc(db, COLLECTION(uid), paymentId)
     const updated: Partial<PacPayment> & { updatedAt: Timestamp } = {
       ...data,
@@ -139,6 +141,7 @@ export async function deletePacPayment(
   paymentId: string
 ): Promise<ApiResult<undefined>> {
   try {
+    const db = getFirestore()
     const docRef = doc(db, COLLECTION(uid), paymentId)
     await deleteDoc(docRef)
     await logAudit({ uid, action: 'delete', entityType: 'investment', entityId: paymentId })
@@ -153,6 +156,7 @@ export async function getPacPaymentsByInvestment(
   investmentId: string
 ): Promise<ApiResult<PacPayment[]>> {
   try {
+    const db = getFirestore()
     const q = query(
       collection(db, COLLECTION(uid)),
       where('investmentId', '==', investmentId),
@@ -171,6 +175,7 @@ export async function getAllPacPayments(
   uid: string
 ): Promise<ApiResult<PacPayment[]>> {
   try {
+    const db = getFirestore()
     const q = query(collection(db, COLLECTION(uid)), orderBy('data', 'desc'))
     const snapshot = await getDocs(q)
     const payments: PacPayment[] = []
