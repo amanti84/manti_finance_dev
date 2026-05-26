@@ -19,6 +19,8 @@ jobs:
       - name: Gemini Triage — analisi issue e routing
         id: gemini
         uses: google-github-actions/run-gemini-cli@v0
+        env:
+          GEMINI_CLI_TRUST_WORKSPACE: 'true'
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
           prompt: |
@@ -31,7 +33,7 @@ jobs:
             Regola di routing:
             - Se l'issue richiede logica finanziaria complessa (calcoli fiscali,
               regole condizionali su TFR/Fon.Te/mutuo, simulazioni what-if,
-              confidence scoring, decision engine): rispondi SOLO con la parola jules-ready oppure claude-ready
+              confidence scoring, decision engine): rispondi SOLO con claude-ready
             - Per tutto il resto (CRUD, UI, routing, deploy, document intake,
               servizi strutturati senza logica finanziaria): rispondi SOLO con jules-ready
 
@@ -46,12 +48,11 @@ jobs:
             const label = output.trim().toLowerCase().replace(/[^a-z-]/g, '');
             if (!['jules-ready', 'claude-ready'].includes(label)) {
               console.log('Label non riconosciuto, uso jules-ready come fallback:', label);
-              const fallback = 'jules-ready';
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.payload.issue.number,
-                labels: [fallback]
+                labels: ['jules-ready']
               });
               return;
             }
