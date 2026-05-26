@@ -60,9 +60,9 @@ export async function createPayslip(
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
-    return { data: docRef.id, loading: false, error: null }
+    return { success: true, data: docRef.id }
   } catch (error) {
-    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -80,9 +80,9 @@ export async function updatePayslip(
       ...updates,
       updatedAt: serverTimestamp(),
     })
-    return { data: undefined, loading: false, error: null }
+    return { success: true, data: undefined }
   } catch (error) {
-    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -96,9 +96,9 @@ export async function deletePayslip(
   try {
     const docRef = doc(db, COLLECTION(uid), payslipId)
     await deleteDoc(docRef)
-    return { data: undefined, loading: false, error: null }
+    return { success: true, data: undefined }
   } catch (error) {
-    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -112,10 +112,10 @@ export async function getPayslip(
   try {
     const docRef = doc(db, COLLECTION(uid), payslipId)
     const snap = await getDoc(docRef)
-    if (!snap.exists()) return { data: null, loading: false, error: null }
-    return { data: { id: snap.id, ...snap.data() } as Payslip, loading: false, error: null }
+    if (!snap.exists()) return { success: false, error: 'Cedolino non trovato' }
+    return { success: true, data: { id: snap.id, ...snap.data() } as Payslip }
   } catch (error) {
-    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -135,9 +135,9 @@ export async function getPayslipsByYear(
     )
     const snap = await getDocs(q)
     const payslips = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Payslip)
-    return { data: payslips, loading: false, error: null }
+    return { success: true, data: payslips }
   } catch (error) {
-    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
@@ -157,11 +157,11 @@ export async function getPayslipByMonth(
       where('month', '==', month)
     )
     const snap = await getDocs(q)
-    if (snap.empty) return { data: null, loading: false, error: null }
+    if (snap.empty) return { success: false, error: 'Cedolino non trovato' }
     const d = snap.docs[0]
-    return { data: { id: d.id, ...d.data() } as Payslip, loading: false, error: null }
+    return { success: true, data: { id: d.id, ...d.data() } as Payslip }
   } catch (error) {
-    return { data: null, loading: false, error: error instanceof Error ? error.message : String(error) }
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
