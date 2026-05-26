@@ -201,3 +201,46 @@ export interface MonthYear {
   year: number
   month: Month
 }
+
+// --------------------------------------------------------
+// PREVIDENZA / TFR (Issue #14)
+// --------------------------------------------------------
+
+export interface TFRData {
+  annoCompetenza: number
+  retribuzioneAnnuale: number
+  quota: number
+  rivalutazione: number
+  totale: number
+}
+
+export interface FonteData {
+  anno: number
+  quotaDipendente: number
+  quotaDatore: number
+  tfr: number
+  totale: number
+}
+
+export interface PensionFund {
+  id: string
+  nome: string
+  tipo: 'fonte' | 'fondoAperto' | 'pip' | 'altro'
+  lineaInvestimento: string
+  saldoAttuale: number
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
+
+export interface PensionContribution {
+  id: string
+  fundId: string
+  anno: number
+  mese: Month
+  quotaDipendente: number
+  quotaDatore: number
+  tfrConferito: number
+  totale: number
+  createdAt: Timestamp
+  updatedAt: Timestamp
+}
