@@ -1,0 +1,55 @@
+name: Assign Copilot to issue on copilot-ready label
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  assign-to-copilot:
+    name: Assign issue to GitHub Copilot agent
+    runs-on: ubuntu-latest
+    if: github.event.label.name == 'copilot-ready'
+
+    permissions:
+      issues: write
+
+    steps:
+      - name: Add copilot-ready label comment and assign
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issueNumber = issue.number;
+
+            // Aggiungi commento per triggerare Copilot agent
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              body: [
+                '## 🤖 Copilot Agent — Issue pronta per l\'esecuzione',
+                '',
+                'Questa issue ha ricevuto il label `copilot-ready`.',
+                '',
+                '**Prima di iniziare, leggere obbligatoriamente:**',
+                '- `.github/copilot-instructions.md` — regole, pattern, struttura',
+                '- `AGENTS.md` — sequenza M2, pattern ApiResult, perimetro consentito',
+                '- `src/services/payroll.ts` — riferimento canonico ApiResult<T>',
+                '',
+                '**Checklist obbligatoria prima di aprire la PR:**',
+                '- [ ] Dipendenze verificate (nessuna issue dipendente open)',
+                '- [ ] Tutti i metodi del servizio usano `ApiResult<T>`',
+                '- [ ] `auditService.log()` chiamato prima di ogni write Firestore',
+                '- [ ] Nuovi tipi aggiunti in `src/types/index.ts`',
+                '- [ ] File di test `*.test.ts` scritto con min. 3 test',
+                '- [ ] Commit message include `closes #' + issueNumber + '`',
+                '- [ ] Label `automerge` aggiunto alla PR se nessuna ambiguit\u00e0 finanziaria',
+                '',
+                '_Il merge avverr\u00e0 automaticamente se CI verde e label `automerge` presente._'
+              ].join('\n')
+            });
+
+            console.log(`Commented on issue #${issueNumber} with Copilot instructions`);
