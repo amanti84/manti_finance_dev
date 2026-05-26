@@ -424,4 +424,5 @@ export function simulateExtraPayment(
     }
   } catch (error: unknown) {
     return { data: null, loading: false, error: (error as Error).message }
+  }
 }
