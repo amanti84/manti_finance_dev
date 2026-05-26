@@ -75,25 +75,6 @@ function calcolaNumeroRate(dataInizio: Date, dataFine: Date): number {
   return mesi
 }
 
-/**
- * Calcola la rata mensile con formula ammortamento francese:
- * R = C * [i * (1+i)^n] / [(1+i)^n - 1]
- * dove C = capitale, i = tasso mensile, n = numero rate
- */
-function calcolaRataMensile(
-  capitale: number,
-  tassoAnnuo: number,
-  numeroRate: number
-): number {
-  if (tassoAnnuo === 0) {
-    return capitale / numeroRate
-  }
-  const tassoMensile = tassoAnnuo / 100 / 12
-  const fattore = Math.pow(1 + tassoMensile, numeroRate)
-  const rata = (capitale * tassoMensile * fattore) / (fattore - 1)
-  return Math.round(rata * 100) / 100
-}
-
 // ---------------------------------------------------------------------------
 // CRUD OPERATIONS
 // ---------------------------------------------------------------------------
