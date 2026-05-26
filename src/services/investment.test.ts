@@ -217,11 +217,15 @@ describe('Investment Core Service', () => {
 
   describe('getInvestmentsByBroker', () => {
     it('filtra investimenti per broker', async () => {
-      const { getDocs, query } = await import('firebase/firestore');
+      const { getDocs, query, collection, where, orderBy } = await import('firebase/firestore');
+      (collection as ReturnType<typeof vi.fn>).mockReturnValue({});
+      (where as ReturnType<typeof vi.fn>).mockReturnValue({});
+      (orderBy as ReturnType<typeof vi.fn>).mockReturnValue({});
       (query as ReturnType<typeof vi.fn>).mockReturnValue({});
+      const mockDocs = [{ id: 'inv-001', data: () => makeInvestment({ broker: 'degiro' }) }];
       (getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        docs: [{ id: 'inv-001', data: () => makeInvestment({ broker: 'degiro' }) }],
-        forEach: function(cb: (d: { id: string; data: () => Investment }) => void) { this.docs.forEach(cb); },
+        docs: mockDocs,
+        forEach: (cb: (d: { id: string; data: () => Investment }) => void) => { mockDocs.forEach(cb); },
       });
       const result = await getInvestmentsByBroker('user-123', 'degiro');
       expect(result.success).toBe(true);
@@ -232,11 +236,15 @@ describe('Investment Core Service', () => {
 
   describe('getInvestmentsByAssetClass', () => {
     it('filtra investimenti per asset class', async () => {
-      const { getDocs, query } = await import('firebase/firestore');
+      const { getDocs, query, collection, where, orderBy } = await import('firebase/firestore');
+      (collection as ReturnType<typeof vi.fn>).mockReturnValue({});
+      (where as ReturnType<typeof vi.fn>).mockReturnValue({});
+      (orderBy as ReturnType<typeof vi.fn>).mockReturnValue({});
       (query as ReturnType<typeof vi.fn>).mockReturnValue({});
+      const mockDocs = [{ id: 'inv-001', data: () => makeInvestment({ assetClass: 'etf' }) }];
       (getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        docs: [{ id: 'inv-001', data: () => makeInvestment({ assetClass: 'etf' }) }],
-        forEach: function(cb: (d: { id: string; data: () => Investment }) => void) { this.docs.forEach(cb); },
+        docs: mockDocs,
+        forEach: (cb: (d: { id: string; data: () => Investment }) => void) => { mockDocs.forEach(cb); },
       });
       const result = await getInvestmentsByAssetClass('user-123', 'etf');
       expect(result.success).toBe(true);
