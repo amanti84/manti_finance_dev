@@ -1,0 +1,57 @@
+name: AI Triage — Routing automatico issue
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  triage:
+    name: Gemini Triage — assegna agent corretto
+    runs-on: ubuntu-latest
+    if: |
+      github.event.action == 'opened' ||
+      github.event.label.name == 'triage-pending'
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gemini Triage — analisi issue e routing
+        id: gemini
+        uses: google-gemini/gemini-cli-action@v1
+        with:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          prompt: |
+            Sei un triage agent per il repository manti_finance_dev.
+            Leggi il titolo e il body dell'issue:
+
+            TITOLO: ${{ github.event.issue.title }}
+            BODY: ${{ github.event.issue.body }}
+
+            Regola di routing:
+            - Se l'issue richiede logica finanziaria complessa (calcoli fiscali,
+              regole condizionali su TFR/Fon.Te/mutuo, simulazioni what-if,
+              confidence scoring, decision engine): rispondi SOLO con "claude-ready"
+            - Per tutto il resto (CRUD, UI, routing, deploy, document intake,
+              servizi strutturati senza logica finanziaria): rispondi SOLO con "jules-ready"
+
+            Rispondi con UNA SOLA parola: jules-ready oppure claude-ready
+
+      - name: Applica label routing
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `${{ steps.gemini.outputs.response }}`;
+            const label = output.trim().toLowerCase();
+            if (!['jules-ready', 'claude-ready'].includes(label)) {
+              console.log('Label non riconosciuto:', label);
+              return;
+            }
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              labels: [label]
+            });
+            console.log(`Label applicato: ${label} su issue #${context.payload.issue.number}`);

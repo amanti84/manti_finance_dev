@@ -1,0 +1,38 @@
+name: Assign Jules — task standard
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  assign-jules:
+    name: Jules coding agent
+    runs-on: ubuntu-latest
+    if: github.event.label.name == 'jules-ready'
+    permissions:
+      issues: write
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Avvia Jules sul task
+        uses: google-labs-code/jules-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          instructions: |
+            Leggi obbligatoriamente prima di iniziare:
+            - AGENTS.md (root) — regole operative, pattern ApiResult<T>, perimetro consentito
+            - .github/copilot-instructions.md — stack, naming convention, dipendenze M2
+            - src/services/payroll.ts — riferimento canonico ApiResult<T>
+
+            Workflow obbligatorio:
+            1. Verifica dipendenze dichiarate nell'issue (non iniziare se una dipendenza è open)
+            2. Crea branch: feat/issue-${{ github.event.issue.number }}-titolo-breve
+            3. Scrivi il codice rispettando tutti i pattern di AGENTS.md
+            4. Scrivi i test PRIMA di aprire la PR (min. 3 test: happy path, edge case, errore)
+            5. Apri PR verso main con titolo: [#${{ github.event.issue.number }}] tipo: descrizione
+            6. Includi nella PR: closes #${{ github.event.issue.number }}
+            7. Aggiungi label automerge se CI verde e nessuna ambiguità finanziaria
+            8. NON aspettare input umano per decisioni tecniche standard
