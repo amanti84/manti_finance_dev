@@ -14,18 +14,20 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
-
       - name: Avvia Jules sul task
-        uses: google-labs-code/jules-action@v1
+        uses: google-labs-code/jules-invoke@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.issue.number }}
-          instructions: |
+          jules_api_key: ${{ secrets.JULES_API_KEY }}
+          prompt: |
+            Sei il coding agent per task standard su manti_finance_dev.
+
             Leggi obbligatoriamente prima di iniziare:
             - AGENTS.md (root) — regole operative, pattern ApiResult<T>, perimetro consentito
             - .github/copilot-instructions.md — stack, naming convention, dipendenze M2
             - src/services/payroll.ts — riferimento canonico ApiResult<T>
+
+            Issue assegnata: #${{ github.event.issue.number }}
+            Titolo: ${{ github.event.issue.title }}
 
             Workflow obbligatorio:
             1. Verifica dipendenze dichiarate nell'issue (non iniziare se una dipendenza è open)
@@ -36,3 +38,4 @@ jobs:
             6. Includi nella PR: closes #${{ github.event.issue.number }}
             7. Aggiungi label automerge se CI verde e nessuna ambiguità finanziaria
             8. NON aspettare input umano per decisioni tecniche standard
+          starting_branch: main
