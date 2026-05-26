@@ -287,7 +287,7 @@ describe('compareTFRAziendaVsFondo', () => {
 // --- createPensionFund ---
 // -----------------------------------------------------------------------
 describe('createPensionFund', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('crea un fondo pensione con successo', async () => {
     const { addDoc } = await import('firebase/firestore')
@@ -321,7 +321,7 @@ describe('createPensionFund', () => {
 // --- updatePensionFund ---
 // -----------------------------------------------------------------------
 describe('updatePensionFund', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('aggiorna un fondo pensione con successo', async () => {
     const { updateDoc } = await import('firebase/firestore')
@@ -342,7 +342,7 @@ describe('updatePensionFund', () => {
 // --- deletePensionFund ---
 // -----------------------------------------------------------------------
 describe('deletePensionFund', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('elimina un fondo pensione con successo', async () => {
     const { deleteDoc } = await import('firebase/firestore')
@@ -363,7 +363,7 @@ describe('deletePensionFund', () => {
 // --- getPensionFund ---
 // -----------------------------------------------------------------------
 describe('getPensionFund', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('recupera un fondo pensione esistente', async () => {
     const { getDoc } = await import('firebase/firestore')
@@ -391,7 +391,7 @@ describe('getPensionFund', () => {
 // --- getAllPensionFunds ---
 // -----------------------------------------------------------------------
 describe('getAllPensionFunds', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('restituisce tutti i fondi pensione', async () => {
     const { getDocs, query } = await import('firebase/firestore')
@@ -421,7 +421,7 @@ describe('getAllPensionFunds', () => {
 // --- recordContribution ---
 // -----------------------------------------------------------------------
 describe('recordContribution', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('registra un versamento con successo', async () => {
     const { addDoc } = await import('firebase/firestore')
@@ -459,7 +459,7 @@ describe('recordContribution', () => {
 // --- getContributionsByFund ---
 // -----------------------------------------------------------------------
 describe('getContributionsByFund', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('restituisce i versamenti per un fondo specifico', async () => {
     const { getDocs, query } = await import('firebase/firestore')
