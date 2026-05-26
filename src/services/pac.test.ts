@@ -15,6 +15,8 @@ import {
   getPacAnalytics,
 } from './pac'
 import type { PacPayment } from './pac'
+import type { Investment } from '../types'
+import type { Timestamp } from 'firebase/firestore'
 
 // -----------------------------------------------------------------------
 // MOCK FIREBASE
@@ -54,25 +56,33 @@ const makePayment = (overrides: Partial<PacPayment> = {}): PacPayment => ({
   ...overrides,
 })
 
-const makeInvestment = () => ({
+const makeTimestamp = (d: Date): Timestamp =>
+  ({ seconds: Math.floor(d.getTime() / 1000), nanoseconds: 0,
+     toDate: () => d, toMillis: () => d.getTime(),
+     isEqual: () => false }) as unknown as Timestamp
+
+const makeInvestment = (): Investment => ({
   id: 'inv-001',
   name: 'iShares MSCI World',
-  symbol: 'SWDA',
-  currentPrice: 90.0,
+  ticker: 'SWDA',
+  assetClass: 'etf',
+  broker: 'altri',
   quantity: 10,
-  avgBuyPrice: 80.5,
-  broker: 'Fineco',
-  category: 'etf' as const,
+  avgCost: 80.5,
+  currentPrice: 90.0,
+  currentValue: 900,
   currency: 'EUR',
-  createdAt: { toDate: () => new Date() } as unknown as import('firebase/firestore').Timestamp,
-  updatedAt: { toDate: () => new Date() } as unknown as import('firebase/firestore').Timestamp,
+  isPac: false,
+  lastPriceUpdate: makeTimestamp(new Date()),
+  createdAt: makeTimestamp(new Date()),
+  updatedAt: makeTimestamp(new Date()),
 })
 
 // -----------------------------------------------------------------------
 // --- recordPacPayment ---
 // -----------------------------------------------------------------------
 describe('recordPacPayment', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('registra un versamento PAC con successo', async () => {
     const { addDoc } = await import('firebase/firestore')
@@ -111,7 +121,7 @@ describe('recordPacPayment', () => {
 // --- updatePacPayment ---
 // -----------------------------------------------------------------------
 describe('updatePacPayment', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('aggiorna un versamento PAC con successo', async () => {
     const { updateDoc } = await import('firebase/firestore')
@@ -132,7 +142,7 @@ describe('updatePacPayment', () => {
 // --- deletePacPayment ---
 // -----------------------------------------------------------------------
 describe('deletePacPayment', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('elimina un versamento PAC con successo', async () => {
     const { deleteDoc } = await import('firebase/firestore')
@@ -153,7 +163,7 @@ describe('deletePacPayment', () => {
 // --- getPacPaymentsByInvestment ---
 // -----------------------------------------------------------------------
 describe('getPacPaymentsByInvestment', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('restituisce i versamenti filtrati per investimento', async () => {
     const { getDocs, query } = await import('firebase/firestore')
@@ -180,7 +190,7 @@ describe('getPacPaymentsByInvestment', () => {
 // --- getAllPacPayments ---
 // -----------------------------------------------------------------------
 describe('getAllPacPayments', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('restituisce tutti i versamenti PAC', async () => {
     const { getDocs, query } = await import('firebase/firestore')
@@ -209,7 +219,7 @@ describe('getAllPacPayments', () => {
 // --- getPacSummary ---
 // -----------------------------------------------------------------------
 describe('getPacSummary', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('calcola il summary PAC correttamente', async () => {
     const { getDocs, query } = await import('firebase/firestore')
@@ -239,7 +249,7 @@ describe('getPacSummary', () => {
 // --- calculatePacProgress ---
 // -----------------------------------------------------------------------
 describe('calculatePacProgress', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('calcola il progresso verso un obiettivo', async () => {
     const { getDocs, query } = await import('firebase/firestore')
@@ -270,7 +280,7 @@ describe('calculatePacProgress', () => {
 // --- getPacAnalytics ---
 // -----------------------------------------------------------------------
 describe('getPacAnalytics', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('restituisce analytics aggregati per lista investimenti PAC', async () => {
     const { getDocs, query } = await import('firebase/firestore')

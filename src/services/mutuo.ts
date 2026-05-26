@@ -6,15 +6,13 @@
  */
 import {
   getFirestore,
-  collection,
   doc,
   setDoc,
   getDoc,
   updateDoc,
-  Timestamp,
 } from 'firebase/firestore'
 import type { MutuoConfig, ApiResult } from '../types'
-import { logAuditEvent } from './audit'
+import { logAudit } from './audit'
 
 // ---------------------------------------------------------------------------
 // TYPES
@@ -117,12 +115,12 @@ export async function saveMutuoConfig(
 
     await setDoc(docRef, config, { merge: true })
 
-    // Audit trail
-    await logAuditEvent(uid, {
-      action: isUpdate ? 'mutuo.updated' : 'mutuo.created',
-      entityType: 'Mutuo',
+    await logAudit({
+      uid,
+      action: isUpdate ? 'update' : 'create',
+      entityType: 'config',
       entityId: MUTUO_DOC_ID,
-      metadata: { debitoResiduo: config.debitoResiduo, tasso: config.tasso },
+      newValue: { debitoResiduo: config.debitoResiduo, tasso: config.tasso },
     })
 
     return { success: true, data: undefined }
@@ -164,12 +162,12 @@ export async function updateDebitoResiduo(
 
     await updateDoc(docRef, { debitoResiduo: nuovoDebito })
 
-    // Audit trail
-    await logAuditEvent(uid, {
-      action: 'mutuo.debito_updated',
-      entityType: 'Mutuo',
+    await logAudit({
+      uid,
+      action: 'update',
+      entityType: 'config',
       entityId: MUTUO_DOC_ID,
-      metadata: { nuovoDebito },
+      newValue: { nuovoDebito },
     })
 
     return { success: true, data: undefined }

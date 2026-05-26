@@ -4,7 +4,7 @@
  * Issue #9 — M2 Core Modules
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
   calculateSurplus,
   calculateSurplusAbsolute,
@@ -13,7 +13,13 @@ import {
   calculateYoYComparison,
   calculateAllocatableSurplus,
 } from './payroll-v2'
-import type { Payslip } from '../types'
+import type { Payslip, Month } from '../types'
+import type { Timestamp } from 'firebase/firestore'
+
+const makeTimestamp = (d: Date): Timestamp =>
+  ({ seconds: Math.floor(d.getTime() / 1000), nanoseconds: 0,
+     toDate: () => d, toMillis: () => d.getTime(),
+     isEqual: () => false }) as unknown as Timestamp
 
 // ---------------------------------------------------------------------------
 // MOCK FIXTURES
@@ -21,16 +27,19 @@ import type { Payslip } from '../types'
 
 const makePayslip = (overrides: Partial<Payslip> = {}): Payslip => ({
   id: 'test-id',
-  uid: 'user-123',
-  month: 'gennaio',
   year: 2026,
+  month: 1,
   grossSalary: 4000,
   netSalary: 2800,
+  irpef: 800,
+  inps: 300,
+  tfr: 200,
+  fondoPensione: 100,
   bonus: 0,
   rimborsiSpese: 0,
-  tfr: 200,
-  fonteContribution: 100,
-  createdAt: new Date().toISOString(),
+  parsed: true,
+  createdAt: makeTimestamp(new Date()),
+  updatedAt: makeTimestamp(new Date()),
   ...overrides,
 })
 
@@ -38,7 +47,7 @@ const makePayslips12Months = (year: number, netSalary = 2800): Payslip[] =>
   Array.from({ length: 12 }, (_, i) => makePayslip({
     id: `ps-${year}-${i}`,
     year,
-    month: String(i + 1) as any,
+    month: (i + 1) as Month,
     netSalary,
   }))
 
@@ -110,13 +119,13 @@ describe('calculateSurplusAbsolute', () => {
 describe('getVariableComponents', () => {
   it('happy path: estrae bonus e rimborsi per anno', () => {
     const payslips = [
-      makePayslip({ year: 2026, month: 'gennaio', bonus: 500, rimborsiSpese: 100 }),
-      makePayslip({ year: 2026, month: 'febbraio', bonus: 0, rimborsiSpese: 0 }),
-      makePayslip({ year: 2025, month: 'dicembre', bonus: 1000, rimborsiSpese: 0 }),
+      makePayslip({ year: 2026, month: 1, bonus: 500, rimborsiSpese: 100 }),
+      makePayslip({ year: 2026, month: 2, bonus: 0, rimborsiSpese: 0 }),
+      makePayslip({ year: 2025, month: 12, bonus: 1000, rimborsiSpese: 0 }),
     ]
     const result = getVariableComponents(payslips, 2026)
     expect(result).toHaveLength(2)
-    const gennaio = result.find(r => r.month === 'gennaio')
+    const gennaio = result.find(r => r.month === 1)
     expect(gennaio?.bonus).toBe(500)
     expect(gennaio?.rimborsiSpese).toBe(100)
   })
