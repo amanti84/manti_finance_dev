@@ -12,6 +12,7 @@ import {
   orderBy,
   Timestamp,
 } from 'firebase/firestore';
+import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import type { ApiResult } from '../types';
 import { logAudit } from './audit';
 
@@ -54,6 +55,13 @@ export interface DecisionRecord {
   context: DecisionContext;
   results: DecisionResult[];
   createdAt: Date;
+}
+
+interface DecisionRecordData {
+  uid: string;
+  context: DecisionContext;
+  results: DecisionResult[];
+  createdAt: { toDate: () => Date };
 }
 
 // ---------------------------------------------------------------------------
@@ -202,11 +210,16 @@ export async function getDecisionHistory(uid: string): Promise<ApiResult<Decisio
       orderBy('createdAt', 'desc')
     );
     const snap = await getDocs(q);
-    const records: DecisionRecord[] = snap.docs.map(d => ({
-      id: d.id,
-      ...(d.data() as Omit<DecisionRecord, 'id'>),
-      createdAt: d.data().createdAt.toDate(),
-    }));
+    const records: DecisionRecord[] = snap.docs.map((d: QueryDocumentSnapshot<DocumentData>) => {
+      const data = d.data() as DecisionRecordData;
+      return {
+        id: d.id,
+        uid: data.uid,
+        context: data.context,
+        results: data.results,
+        createdAt: data.createdAt.toDate(),
+      };
+    });
     return { success: true, data: records };
   } catch (e) {
     return { success: false, error: (e as Error).message };

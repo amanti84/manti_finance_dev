@@ -81,7 +81,6 @@ function calcolaNumeroRate(dataInizio: Date, dataFine: Date): number {
 
 /**
  * Salva o aggiorna la configurazione del mutuo.
- * Usa un singolo documento con ID fisso 'config' per semplicità.
  */
 export async function saveMutuoConfig(
   uid: string,
@@ -131,7 +130,6 @@ export async function getMutuoConfig(uid: string): Promise<ApiResult<MutuoConfig
 
 /**
  * Aggiorna il debito residuo del mutuo.
- * Utile per allineare dopo pagamenti extra o ricalcoli.
  */
 export async function updateDebitoResiduo(
   uid: string,
@@ -162,8 +160,7 @@ export async function updateDebitoResiduo(
 // ---------------------------------------------------------------------------
 
 /**
- * Genera il piano di ammortamento completo con dettaglio di ogni rata.
- * Usa ammortamento francese (rata costante, quota capitale crescente).
+ * Genera il piano di ammortamento completo.
  */
 export function getPianoAmmortamento(config: MutuoConfig): ApiResult<PianoAmmortamento> {
   try {
@@ -243,7 +240,7 @@ export function getDebitoResiduoAllaData(
     return pianoResult
   }
 
-  const piano = pianoResult.data!
+  const piano = pianoResult.data
   const rataTarget = piano.rate.find((r) => r.data >= data)
 
   if (!rataTarget) {
@@ -254,7 +251,7 @@ export function getDebitoResiduoAllaData(
 }
 
 /**
- * Genera un summary sintetico del mutuo con i dati principali.
+ * Genera un summary sintetico del mutuo.
  */
 export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
   try {
@@ -267,7 +264,7 @@ export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
       return pianoResult
     }
 
-    const piano = pianoResult.data!
+    const piano = pianoResult.data
     const importoPagato = config.importoOriginale - config.debitoResiduo
     const ratePagate = piano.rate.findIndex((r) => r.debitoResiduo <= config.debitoResiduo)
     const rateRimanenti = numeroRateTotali - (ratePagate >= 0 ? ratePagate : 0)
@@ -303,7 +300,7 @@ export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
 // ---------------------------------------------------------------------------
 
 /**
- * Simula l'estinzione anticipata del mutuo a una data specifica.
+ * Simula l'estinzione anticipata del mutuo.
  */
 export function simulateAnticipatedExtinction(
   config: MutuoConfig,
@@ -312,7 +309,7 @@ export function simulateAnticipatedExtinction(
 ): ApiResult<SimulazioneEstinzione> {
   try {
     const pianoResult = getPianoAmmortamento(config)
-    if (!pianoResult.success || !pianoResult.data) {
+    if (!pianoResult.success ?? !pianoResult.data) {
       return { success: false, error: pianoResult.error }
     }
 
@@ -355,8 +352,7 @@ export function simulateAnticipatedExtinction(
 }
 
 /**
- * Calcola quanto si risparmierebbe facendo un pagamento extra (capitale aggiuntivo)
- * senza estinguere completamente il mutuo.
+ * Calcola il risparmio da un pagamento extra.
  */
 export function simulateExtraPayment(
   config: MutuoConfig,
@@ -373,19 +369,22 @@ export function simulateExtraPayment(
     const pianoOriginale = getPianoAmmortamento(config)
     const pianoRidotto = getPianoAmmortamento(configRidotto)
 
-    if (pianoOriginale.error || pianoRidotto.error) {
+    if (pianoOriginale.error ?? pianoRidotto.error) {
       return { success: false, error: 'Errore nel calcolo dei piani' }
     }
 
-    const interessiOriginali = pianoOriginale.data!.totaleInteressi
-    const interessiRidotti = pianoRidotto.data!.totaleInteressi
+    const interessiOriginali = pianoOriginale.data?.totaleInteressi ?? 0
+    const interessiRidotti = pianoRidotto.data?.totaleInteressi ?? 0
     const interessiRisparmiati = Math.round((interessiOriginali - interessiRidotti) * 100) / 100
 
-    const rateOriginali = pianoOriginale.data!.rate.length
-    const rateRidotte = pianoRidotto.data!.rate.length
+    const rateOriginali = pianoOriginale.data?.rate.length ?? 0
+    const rateRidotte = pianoRidotto.data?.rate.length ?? 0
     const rateRisparmiate = rateOriginali - rateRidotte
 
-    const ultimaRata = pianoRidotto.data!.rate[pianoRidotto.data!.rate.length - 1]
+    const ultimaRata = pianoRidotto.data?.rate[pianoRidotto.data.rate.length - 1]
+    if (!ultimaRata) {
+      return { success: false, error: 'Piano ammortamento ridotto vuoto' }
+    }
 
     return {
       success: true,

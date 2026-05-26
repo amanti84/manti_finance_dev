@@ -42,24 +42,24 @@ vi.mock('./audit', () => ({ logAudit: vi.fn() }))
 // -----------------------------------------------------------------------
 // HELPERS
 // -----------------------------------------------------------------------
-const makePayment = (overrides: Partial<PacPayment> = {}): PacPayment => ({
-  id: 'pac-001',
-  investmentId: 'inv-001',
-  investmentName: 'iShares MSCI World',
-  data: { toDate: () => new Date('2024-01-15') } as unknown as import('firebase/firestore').Timestamp,
-  importo: 200,
-  priceAtPayment: 80.5,
-  quantityPurchased: 2.48,
-  broker: 'Fineco',
-  createdAt: { toDate: () => new Date() } as unknown as import('firebase/firestore').Timestamp,
-  updatedAt: { toDate: () => new Date() } as unknown as import('firebase/firestore').Timestamp,
-  ...overrides,
-})
-
 const makeTimestamp = (d: Date): Timestamp =>
   ({ seconds: Math.floor(d.getTime() / 1000), nanoseconds: 0,
      toDate: () => d, toMillis: () => d.getTime(),
      isEqual: () => false }) as unknown as Timestamp
+
+const makePayment = (overrides: Partial<PacPayment> = {}): PacPayment => ({
+  id: 'pac-001',
+  investmentId: 'inv-001',
+  investmentName: 'iShares MSCI World',
+  data: makeTimestamp(new Date('2024-01-15')),
+  importo: 200,
+  priceAtPayment: 80.5,
+  quantityPurchased: 2.48,
+  broker: 'Fineco',
+  createdAt: makeTimestamp(new Date()),
+  updatedAt: makeTimestamp(new Date()),
+  ...overrides,
+})
 
 const makeInvestment = (): Investment => ({
   id: 'inv-001',
@@ -90,14 +90,16 @@ describe('recordPacPayment', () => {
     const payload = {
       investmentId: 'inv-001',
       investmentName: 'iShares MSCI World',
-      data: { toDate: () => new Date() } as unknown as import('firebase/firestore').Timestamp,
+      data: makeTimestamp(new Date()),
       importo: 200,
       priceAtPayment: 80.5,
       broker: 'Fineco',
     }
     const result = await recordPacPayment('user-123', payload)
-    expect(result.data).toBe('pac-001')
-    expect(result.error).toBeNull()
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data).toBe('pac-001')
+    }
   })
 
   it('restituisce errore su Firebase failure', async () => {
@@ -106,14 +108,16 @@ describe('recordPacPayment', () => {
     const payload = {
       investmentId: 'inv-001',
       investmentName: 'iShares MSCI World',
-      data: { toDate: () => new Date() } as unknown as import('firebase/firestore').Timestamp,
+      data: makeTimestamp(new Date()),
       importo: 200,
       priceAtPayment: 80.5,
       broker: 'Fineco',
     }
     const result = await recordPacPayment('user-123', payload)
-    expect(result.error).toBeTruthy()
-    expect(result.data).toBeNull()
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toBeDefined()
+    }
   })
 })
 
@@ -127,14 +131,14 @@ describe('updatePacPayment', () => {
     const { updateDoc } = await import('firebase/firestore')
     ;(updateDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined)
     const result = await updatePacPayment('user-123', 'pac-001', { importo: 250 })
-    expect(result.error).toBeNull()
+    expect(result.success).toBe(true)
   })
 
   it('restituisce errore se updateDoc fallisce', async () => {
     const { updateDoc } = await import('firebase/firestore')
     ;(updateDoc as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase error'))
     const result = await updatePacPayment('user-123', 'pac-001', { importo: 250 })
-    expect(result.error).toBeTruthy()
+    expect(result.success).toBe(false)
   })
 })
 
@@ -148,14 +152,14 @@ describe('deletePacPayment', () => {
     const { deleteDoc } = await import('firebase/firestore')
     ;(deleteDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined)
     const result = await deletePacPayment('user-123', 'pac-001')
-    expect(result.error).toBeNull()
+    expect(result.success).toBe(true)
   })
 
   it('restituisce errore se deleteDoc fallisce', async () => {
     const { deleteDoc } = await import('firebase/firestore')
     ;(deleteDoc as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase error'))
     const result = await deletePacPayment('user-123', 'pac-001')
-    expect(result.error).toBeTruthy()
+    expect(result.success).toBe(false)
   })
 })
 
@@ -172,9 +176,11 @@ describe('getPacPaymentsByInvestment', () => {
       docs: [{ id: 'pac-001', data: () => makePayment() }],
     })
     const result = await getPacPaymentsByInvestment('user-123', 'inv-001')
-    expect(result.error).toBeNull()
-    expect(result.data?.length).toBe(1)
-    expect(result.data?.[0].id).toBe('pac-001')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.length).toBe(1)
+      expect(result.data[0].id).toBe('pac-001')
+    }
   })
 
   it('restituisce errore Firebase', async () => {
@@ -182,7 +188,7 @@ describe('getPacPaymentsByInvestment', () => {
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(getDocs as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase error'))
     const result = await getPacPaymentsByInvestment('user-123', 'inv-001')
-    expect(result.error).toBeTruthy()
+    expect(result.success).toBe(false)
   })
 })
 
@@ -202,8 +208,10 @@ describe('getAllPacPayments', () => {
       ],
     })
     const result = await getAllPacPayments('user-123')
-    expect(result.error).toBeNull()
-    expect(result.data?.length).toBe(2)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.length).toBe(2)
+    }
   })
 
   it('restituisce errore Firebase', async () => {
@@ -211,7 +219,7 @@ describe('getAllPacPayments', () => {
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(getDocs as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase error'))
     const result = await getAllPacPayments('user-123')
-    expect(result.error).toBeTruthy()
+    expect(result.success).toBe(false)
   })
 })
 
@@ -231,9 +239,11 @@ describe('getPacSummary', () => {
       ],
     })
     const result = await getPacSummary('user-123', makeInvestment())
-    expect(result.error).toBeNull()
-    expect(result.data?.totaleVersato).toBe(400)
-    expect(result.data?.numeroVersamenti).toBe(2)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.totaleVersato).toBe(400)
+      expect(result.data.numeroVersamenti).toBe(2)
+    }
   })
 
   it('restituisce errore se getDocs fallisce', async () => {
@@ -241,7 +251,7 @@ describe('getPacSummary', () => {
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(getDocs as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase error'))
     const result = await getPacSummary('user-123', makeInvestment())
-    expect(result.error).toBeTruthy()
+    expect(result.success).toBe(false)
   })
 })
 
@@ -258,9 +268,11 @@ describe('calculatePacProgress', () => {
       docs: [{ id: 'pac-001', data: () => makePayment({ importo: 500 }) }],
     })
     const result = await calculatePacProgress('user-123', makeInvestment(), 1000)
-    expect(result.error).toBeNull()
-    expect(result.data?.progressoPercent).toBeGreaterThan(0)
-    expect(result.data?.obiettivo).toBe(1000)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.progressoPercent).toBeGreaterThan(0)
+      expect(result.data.obiettivo).toBe(1000)
+    }
   })
 
   it('funziona senza obiettivo (null)', async () => {
@@ -270,9 +282,11 @@ describe('calculatePacProgress', () => {
       docs: [{ id: 'pac-001', data: () => makePayment({ importo: 500 }) }],
     })
     const result = await calculatePacProgress('user-123', makeInvestment(), null)
-    expect(result.error).toBeNull()
-    expect(result.data?.obiettivo).toBeNull()
-    expect(result.data?.proiezioneCompletamento).toBeNull()
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.obiettivo).toBeNull()
+      expect(result.data.proiezioneCompletamento).toBeNull()
+    }
   })
 })
 
@@ -291,8 +305,10 @@ describe('getPacAnalytics', () => {
       ],
     })
     const result = await getPacAnalytics('user-123', [makeInvestment()])
-    expect(result.error).toBeNull()
-    expect(result.data?.totalePacAttivi).toBe(1)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.totalePacAttivi).toBe(1)
+    }
   })
 
   it('restituisce errore se getDocs fallisce', async () => {
@@ -300,6 +316,6 @@ describe('getPacAnalytics', () => {
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(getDocs as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Firebase error'))
     const result = await getPacAnalytics('user-123', [makeInvestment()])
-    expect(result.error).toBeTruthy()
+    expect(result.success).toBe(false)
   })
 })
