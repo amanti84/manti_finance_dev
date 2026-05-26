@@ -125,7 +125,7 @@ export async function saveMutuoConfig(
       metadata: { debitoResiduo: config.debitoResiduo, tasso: config.tasso },
     })
 
-    return { data }
+    return { success: true, data: undefined }
   } catch (error: unknown) {
     return { success: false, error: (error as Error).message }
   }
@@ -144,7 +144,7 @@ export async function getMutuoConfig(uid: string): Promise<ApiResult<MutuoConfig
       return { success: false, error: 'Configurazione mutuo non trovata' }
     }
 
-    return { data, data: snap.data() as MutuoConfig }
+    return { success: true, data: snap.data() as MutuoConfig }
   } catch (error: unknown) {
     return { success: false, error: (error as Error).message }
   }
@@ -172,7 +172,7 @@ export async function updateDebitoResiduo(
       metadata: { nuovoDebito },
     })
 
-    return { data }
+    return { success: true, data: undefined }
   } catch (error: unknown) {
     return { success: false, error: (error as Error).message }
   }
@@ -237,7 +237,7 @@ export function getPianoAmmortamento(config: MutuoConfig): ApiResult<PianoAmmort
         : 0
 
     return {
-      data,
+      success: true,
       data: {
         config,
         rate,
@@ -268,11 +268,10 @@ export function getDebitoResiduoAllaData(
   const rataTarget = piano.rate.find((r) => r.data >= data)
 
   if (!rataTarget) {
-    // Data oltre la scadenza mutuo
-    return { data, data: 0 }
+    return { success: true, data: 0 }
   }
 
-  return { data, data: rataTarget.debitoResiduo }
+  return { success: true, data: rataTarget.debitoResiduo }
 }
 
 /**
@@ -294,16 +293,15 @@ export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
     const ratePagate = piano.rate.findIndex((r) => r.debitoResiduo <= config.debitoResiduo)
     const rateRimanenti = numeroRateTotali - (ratePagate >= 0 ? ratePagate : 0)
 
-    // Calcola interessi pagati fino ad ora
     const interessiPagati = piano.rate
       .slice(0, ratePagate >= 0 ? ratePagate : 0)
       .reduce((sum, r) => sum + r.quotaInteressi, 0)
 
-    // Prossima rata
     const oggi = new Date()
     const prossimaRata = piano.rate.find((r) => r.data > oggi)
 
     return {
+      success: true,
       data: {
         debitoResiduo: config.debitoResiduo,
         importoPagato: Math.round(importoPagato * 100) / 100,
@@ -315,11 +313,11 @@ export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
         prossimaRata: prossimaRata ? prossimaRata.data : null,
         scadenza: dataFine,
       },
-            loading: false,
-      error: null
     }
   } catch (error: unknown) {
-    return { data: null, loading: false, error: (error as Error).message }}
+    return { success: false, error: (error as Error).message }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // SIMULAZIONI
@@ -327,28 +325,27 @@ export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
 
 /**
  * Simula l'estinzione anticipata del mutuo a una data specifica.
- * Calcola il risparmio di interessi e verifica la convenienza economica.
  */
 export function simulateAnticipatedExtinction(
   config: MutuoConfig,
   dataEstinzione: Date,
-  penalePercentuale = 0 // % sul debito residuo come penale (default: 0)
+  penalePercentuale = 0
 ): ApiResult<SimulazioneEstinzione> {
   try {
     const pianoResult = getPianoAmmortamento(config)
-    if (pianoResult.error || !pianoResult.data) {      return pianoResult
+    if (!pianoResult.success || !pianoResult.data) {
+      return { success: false, error: pianoResult.error }
+    }
 
-    const piano = pianoResult.data!
+    const piano = pianoResult.data
 
-    // Trova la rata alla data di estinzione
     const rataEstinzione = piano.rate.find((r) => r.data >= dataEstinzione)
     if (!rataEstinzione) {
-      return { error: 'Data estinzione oltre la scadenza del mutuo' }
+      return { success: false, error: 'Data estinzione oltre la scadenza del mutuo' }
     }
 
     const debitoResiduoAttuale = rataEstinzione.debitoResiduo
 
-    // Calcola interessi rimanenti se non si estingue
     const interessiRimanenti = piano.rate
       .filter((r) => r.numero >= rataEstinzione.numero)
       .reduce((sum, r) => sum + r.quotaInteressi, 0)
@@ -362,6 +359,7 @@ export function simulateAnticipatedExtinction(
     const risparmioNetto = Math.round((risparmioLordo - costoEstinzione) * 100) / 100
 
     return {
+      success: true,
       data: {
         dataEstinzione,
         debitoResiduoAttuale: Math.round(debitoResiduoAttuale * 100) / 100,
@@ -371,12 +369,10 @@ export function simulateAnticipatedExtinction(
         costoEstinzioneAnticipata: costoEstinzione,
         convenienza: risparmioNetto > 0,
       },
-            loading: false,
-      error: null
-        }
-        
+    }
   } catch (error: unknown) {
-    return { data: null, loading: false, error: (error as Error).message } 
+    return { success: false, error: (error as Error).message }
+  }
 }
 
 /**
@@ -388,7 +384,6 @@ export function simulateExtraPayment(
   importoExtra: number
 ): ApiResult<{ rateRisparmiate: number; interessiRisparmiati: number; nuovaScadenza: Date }> {
   try {
-    // Ricalcola mutuo con debito ridotto
     const nuovoDebito = Math.max(0, config.debitoResiduo - importoExtra)
     const configRidotto: MutuoConfig = {
       ...config,
@@ -399,8 +394,8 @@ export function simulateExtraPayment(
     const pianoOriginale = getPianoAmmortamento(config)
     const pianoRidotto = getPianoAmmortamento(configRidotto)
 
-    if (ipianoOriginale.error || pianoRidotto.error) {
-      return {  error: 'Errore nel calcolo dei piani' };
+    if (pianoOriginale.error || pianoRidotto.error) {
+      return { success: false, error: 'Errore nel calcolo dei piani' }
     }
 
     const interessiOriginali = pianoOriginale.data!.totaleInteressi
@@ -414,14 +409,14 @@ export function simulateExtraPayment(
     const ultimaRata = pianoRidotto.data!.rate[pianoRidotto.data!.rate.length - 1]
 
     return {
+      success: true,
       data: {
         rateRisparmiate,
         interessiRisparmiati,
         nuovaScadenza: ultimaRata.data,
       },
-            loading: false,
-      error: null
     }
   } catch (error: unknown) {
-    return { data: null, loading: false, error: (error as Error).message }
+    return { success: false, error: (error as Error).message }
+  }
 }
