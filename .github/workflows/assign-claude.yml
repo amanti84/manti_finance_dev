@@ -45,5 +45,5 @@ jobs:
             1. Verifica dipendenze (non iniziare se dipendenza open)
             2. Crea branch: feat/issue-${{ github.event.issue.number }}-titolo-breve
             3. Scrivi codice + test (min. 3 test)
-            4. Apri PR verso main con closes #${{ github.event.issue.number }}
+            4. Esegui: gh pr create --base main --title "[#${{ github.event.issue.number }}] feat: <descrizione>" --body "closes #${{ github.event.issue.number }}" e aggiungi label automerge con: gh pr edit --add-label automerge
             5. Aggiungi label automerge SOLO se nessuna ambiguità finanziaria
