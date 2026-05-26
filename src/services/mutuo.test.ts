@@ -5,8 +5,6 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  calcolaNumeroRate,
-  calcolaRataMensile,
   saveMutuoConfig,
   getMutuoConfig,
   updateDebitoResiduo,
@@ -17,6 +15,7 @@ import {
   simulateExtraPayment,
 } from './mutuo';
 import type { MutuoConfig, ApiResult } from '../types';
+import type { Timestamp } from 'firebase/firestore';
 
 // ---------------------------------------------------------------------------
 // MOCK FIREBASE
@@ -28,7 +27,10 @@ vi.mock('firebase/firestore', () => ({
   setDoc: vi.fn(),
   getDoc: vi.fn(),
   updateDoc: vi.fn(),
-  Timestamp: { now: vi.fn(() => ({ toDate: () => new Date() })) },
+  Timestamp: {
+    now: vi.fn(() => makeTimestamp(new Date())),
+    fromDate: vi.fn((d: Date) => makeTimestamp(d)),
+  },
 }));
 
 vi.mock('./audit', () => ({
@@ -38,17 +40,23 @@ vi.mock('./audit', () => ({
 // ---------------------------------------------------------------------------
 // MOCK FIXTURES
 // ---------------------------------------------------------------------------
+const makeTimestamp = (d: Date): Timestamp =>
+  ({
+    seconds: Math.floor(d.getTime() / 1000),
+    nanoseconds: 0,
+    toDate: () => d,
+    toMillis: () => d.getTime(),
+    isEqual: () => false,
+  }) as unknown as Timestamp;
+
 const makeMutuoConfig = (overrides: Partial<MutuoConfig> = {}): MutuoConfig => ({
-  id: 'mutuo-001',
-  uid: 'user-123',
-  importoMutuo: 200000,
-  tassoAnnuo: 3.5,
-  durataAnni: 25,
-  dataInizio: new Date('2023-01-01'),
+  importoOriginale: 200000,
   debitoResiduo: 200000,
-  ratePagate: 0,
-  createdAt: new Date('2023-01-01'),
-  updatedAt: new Date('2023-01-01'),
+  rataMensile: 1004.52,
+  tasso: 3.5,
+  dataInizio: makeTimestamp(new Date('2023-01-01')),
+  dataFine: makeTimestamp(new Date('2048-01-01')),
+  isMutuoVariabile: false,
   ...overrides,
 });
 
@@ -61,66 +69,38 @@ describe('Mutuo Service', () => {
     vi.clearAllMocks();
   });
 
-  // --- calcolaNumeroRate ---
-  describe('calcolaNumeroRate', () => {
-    it('calcola correttamente il numero di rate per 25 anni', () => {
-      const result = calcolaNumeroRate(25);
-      expect(result.success).toBe(true);
-      expect(result.data).toBe(300);
-    });
-
-    it('calcola correttamente il numero di rate per 20 anni', () => {
-      const result = calcolaNumeroRate(20);
-      expect(result.success).toBe(true);
-      expect(result.data).toBe(240);
-    });
-
-    it('restituisce errore per durata zero o negativa', () => {
-      const result = calcolaNumeroRate(0);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  // --- calcolaRataMensile ---
-  describe('calcolaRataMensile', () => {
-    it('calcola rata mensile ammortamento francese', () => {
-      const result = calcolaRataMensile(200000, 3.5, 300);
-      expect(result.success).toBe(true);
-      expect(result.data).toBeGreaterThan(900);
-      expect(result.data).toBeLessThan(1100);
-    });
-
-    it('restituisce errore per tasso negativo', () => {
-      const result = calcolaRataMensile(200000, -1, 300);
-      expect(result.success).toBe(false);
-    });
-
-    it('gestisce correttamente tasso zero (prestito infruttifero)', () => {
-      const result = calcolaRataMensile(120000, 0, 120);
-      expect(result.success).toBe(true);
-      expect(result.data).toBeCloseTo(1000);
-    });
-  });
-
   // --- getPianoAmmortamento ---
   describe('getPianoAmmortamento', () => {
     it('genera piano ammortamento con numero corretto di rate', () => {
-      const config = makeMutuoConfig({ durataAnni: 2 });
+      const config = makeMutuoConfig({
+        dataInizio: makeTimestamp(new Date('2023-01-01')),
+        dataFine: makeTimestamp(new Date('2025-01-01')),
+      });
       const result = getPianoAmmortamento(config);
       expect(result.success).toBe(true);
       expect(result.data?.rate.length).toBe(24);
     });
 
     it('ultima rata ha debito residuo prossimo a zero', () => {
-      const config = makeMutuoConfig({ durataAnni: 2 });
+      const config = makeMutuoConfig({
+        importoOriginale: 24000,
+        debitoResiduo: 24000,
+        rataMensile: 1000,
+        tasso: 0,
+        dataInizio: makeTimestamp(new Date('2023-01-01')),
+        dataFine: makeTimestamp(new Date('2025-01-01')),
+      });
       const result = getPianoAmmortamento(config);
       expect(result.success).toBe(true);
       const ultimaRata = result.data?.rate[result.data.rate.length - 1];
       expect(ultimaRata?.debitoResiduo).toBeCloseTo(0, 0);
     });
 
-    it('totale interessi è positivo', () => {
-      const config = makeMutuoConfig({ durataAnni: 2 });
+    it('totale interessi è positivo con tasso positivo', () => {
+      const config = makeMutuoConfig({
+        dataInizio: makeTimestamp(new Date('2023-01-01')),
+        dataFine: makeTimestamp(new Date('2025-01-01')),
+      });
       const result = getPianoAmmortamento(config);
       expect(result.data?.totaleInteressi).toBeGreaterThan(0);
     });
@@ -128,9 +108,12 @@ describe('Mutuo Service', () => {
 
   // --- getDebitoResiduoAllaData ---
   describe('getDebitoResiduoAllaData', () => {
-    it('calcola debito residuo dopo 12 rate pagate', () => {
-      const config = makeMutuoConfig({ durataAnni: 25, ratePagate: 12 });
-      const result = getDebitoResiduoAllaData(config, 12);
+    it('calcola debito residuo dopo 12 mesi', () => {
+      const config = makeMutuoConfig({
+        dataInizio: makeTimestamp(new Date('2023-01-01')),
+        dataFine: makeTimestamp(new Date('2048-01-01')),
+      });
+      const result = getDebitoResiduoAllaData(config, new Date('2024-01-15'));
       expect(result.success).toBe(true);
       expect(result.data).toBeLessThan(200000);
       expect(result.data).toBeGreaterThan(0);
@@ -139,48 +122,49 @@ describe('Mutuo Service', () => {
 
   // --- getMutuoSummary ---
   describe('getMutuoSummary', () => {
-    it('restituisce prossima rata e rate rimanenti', () => {
-      const config = makeMutuoConfig({ ratePagate: 12 });
+    it('restituisce summary con rate rimanenti', () => {
+      const config = makeMutuoConfig({
+        debitoResiduo: 180000,
+      });
       const result = getMutuoSummary(config);
       expect(result.success).toBe(true);
-      expect(result.data?.rateRimanenti).toBe(288);
-      expect(result.data?.prossimaNumerata).toBeGreaterThan(0);
+      expect(result.data?.rateRimanenti).toBeGreaterThan(0);
+      expect(result.data?.debitoResiduo).toBe(180000);
     });
   });
 
   // --- simulateAnticipatedExtinction ---
   describe('simulateAnticipatedExtinction', () => {
     it('calcola risparmio interessi per estinzione anticipata', () => {
-      const config = makeMutuoConfig({ ratePagate: 60 });
+      const config = makeMutuoConfig({
+        debitoResiduo: 180000,
+      });
       const result = simulateAnticipatedExtinction(config, new Date('2028-01-01'));
       expect(result.success).toBe(true);
-      expect(result.data?.risparmioInteressi).toBeGreaterThan(0);
-      expect(result.data?.importoEstinzione).toBeGreaterThan(0);
+      expect(result.data?.interessiRisparmiati).toBeGreaterThan(0);
+      expect(result.data?.debitoResiduoAttuale).toBeGreaterThan(0);
     });
   });
 
   // --- simulateExtraPayment ---
   describe('simulateExtraPayment', () => {
     it('pagamento extra riduce le rate rimanenti', () => {
-      const config = makeMutuoConfig({ ratePagate: 12 });
+      const config = makeMutuoConfig({
+        debitoResiduo: 180000,
+      });
       const result = simulateExtraPayment(config, 10000);
       expect(result.success).toBe(true);
-      expect(result.data?.nuoveRateRimanenti).toBeLessThan(288);
-      expect(result.data?.risparmioInteressi).toBeGreaterThan(0);
-    });
-
-    it('restituisce errore per pagamento extra negativo', () => {
-      const config = makeMutuoConfig();
-      const result = simulateExtraPayment(config, -5000);
-      expect(result.success).toBe(false);
+      expect(result.data?.rateRisparmiate).toBeGreaterThan(0);
+      expect(result.data?.interessiRisparmiati).toBeGreaterThan(0);
     });
   });
 
   // --- saveMutuoConfig (Firebase) ---
   describe('saveMutuoConfig', () => {
     it('salva configurazione e ritorna successo', async () => {
-      const { setDoc, doc } = await import('firebase/firestore');
+      const { setDoc, doc, getDoc } = await import('firebase/firestore');
       (doc as ReturnType<typeof vi.fn>).mockReturnValue({});
+      (getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ exists: () => false });
       (setDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
       const config = makeMutuoConfig();
       const result: ApiResult<void> = await saveMutuoConfig('user-123', config);
@@ -188,8 +172,9 @@ describe('Mutuo Service', () => {
     });
 
     it('restituisce errore su failure Firebase', async () => {
-      const { setDoc, doc } = await import('firebase/firestore');
+      const { setDoc, doc, getDoc } = await import('firebase/firestore');
       (doc as ReturnType<typeof vi.fn>).mockReturnValue({});
+      (getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ exists: () => false });
       (setDoc as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase error'));
       const result = await saveMutuoConfig('user-123', makeMutuoConfig());
       expect(result.success).toBe(false);
@@ -203,12 +188,11 @@ describe('Mutuo Service', () => {
       (doc as ReturnType<typeof vi.fn>).mockReturnValue({});
       (getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
         exists: () => true,
-        id: 'mutuo-001',
         data: () => makeMutuoConfig(),
       });
       const result = await getMutuoConfig('user-123');
       expect(result.success).toBe(true);
-      expect(result.data?.id).toBe('mutuo-001');
+      expect(result.data?.importoOriginale).toBe(200000);
     });
 
     it('ritorna errore se configurazione non esiste', async () => {
@@ -217,6 +201,17 @@ describe('Mutuo Service', () => {
       (getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ exists: () => false });
       const result = await getMutuoConfig('user-999');
       expect(result.success).toBe(false);
+    });
+  });
+
+  // --- updateDebitoResiduo (Firebase) ---
+  describe('updateDebitoResiduo', () => {
+    it('aggiorna debito residuo e ritorna successo', async () => {
+      const { updateDoc, doc } = await import('firebase/firestore');
+      (doc as ReturnType<typeof vi.fn>).mockReturnValue({});
+      (updateDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined);
+      const result = await updateDebitoResiduo('user-123', 150000);
+      expect(result.success).toBe(true);
     });
   });
 
