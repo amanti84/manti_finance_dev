@@ -18,7 +18,7 @@ jobs:
 
       - name: Gemini Triage — analisi issue e routing
         id: gemini
-        uses: google-gemini/gemini-cli-action@v1
+        uses: google-gemini/gemini-cli-action@main
         with:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           prompt: |
@@ -42,7 +42,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `${{ steps.gemini.outputs.response }}`;
+            const output = `${{ steps.gemini.outputs.summary }}`;
             const label = output.trim().toLowerCase();
             if (!['jules-ready', 'claude-ready'].includes(label)) {
               console.log('Label non riconosciuto:', label);
