@@ -1,8 +1,10 @@
-name: Assign Copilot to issue on copilot-ready label
+# WORKFLOW DISABILITATO — sostituito da triage.yml + assign-jules.yml + assign-claude.yml
+# Mantenuto come riferimento storico. Non riattivare senza GitHub Copilot Agent disponibile.
+
+name: Assign Copilot to issue on copilot-ready label [DISABLED]
 
 on:
-  issues:
-    types: [labeled]
+  workflow_dispatch: # trigger manuale only — non si attiva automaticamente
 
 jobs:
   assign-to-copilot:
@@ -24,7 +26,6 @@ jobs:
             const repo = context.repo.repo;
             const issueNumber = issue.number;
 
-            // Aggiungi commento per triggerare Copilot agent
             await github.rest.issues.createComment({
               owner,
               repo,
