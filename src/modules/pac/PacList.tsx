@@ -61,7 +61,7 @@ export const PacList: FC<PacListProps> = ({
   }, [uid, onError])
 
   useEffect(() => {
-    loadPacList()
+    void loadPacList()
   }, [loadPacList, refreshTrigger])
 
   const handleDelete = (investmentId: string): void => {
@@ -84,7 +84,7 @@ export const PacList: FC<PacListProps> = ({
         }
 
         onSuccess('PAC eliminato con successo')
-        loadPacList()
+        void loadPacList()
       } catch (err) {
         onError(err instanceof Error ? err.message : 'Errore eliminazione')
       }

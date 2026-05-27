@@ -49,7 +49,7 @@ export const PacDetail: FC<PacDetailProps> = ({ uid, investment, onBack, onError
   }, [uid, investment, onError])
 
   useEffect(() => {
-    loadData()
+    void loadData()
   }, [loadData])
 
   useEffect(() => {
