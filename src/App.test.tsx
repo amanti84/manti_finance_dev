@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 
 vi.mock('./firebase', () => ({
   db: {},
@@ -39,11 +39,20 @@ vi.mock('firebase/storage', () => ({
   getStorage: vi.fn(),
 }))
 
+vi.mock('./hooks/useAuth', () => ({
+  useAuth: () => ({ user: null, loading: false }),
+}))
+
 import App from './App'
 
 describe('App', () => {
   it('renders without crashing', () => {
     const { container } = render(<App />)
     expect(container).toBeTruthy()
+  })
+
+  it('shows login message when not authenticated', () => {
+    render(<App />)
+    expect(screen.getByText('Effettua il login per accedere')).toBeTruthy()
   })
 })
