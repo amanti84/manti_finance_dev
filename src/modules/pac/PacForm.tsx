@@ -40,7 +40,25 @@ export const PacForm: FC<PacFormProps> = ({
       const price = priceAtPayment ? Math.round(parseFloat(priceAtPayment) * 100) / 100 : 0
 
       if (isNaN(importo) || importo <= 0) {
-        onError('Importo non valido')
+        onError('Importo deve essere maggiore di zero')
+        setIsSubmitting(false)
+        return
+      }
+
+      if (priceAtPayment !== '' && (isNaN(price) || price < 0)) {
+        onError('Prezzo non valido')
+        setIsSubmitting(false)
+        return
+      }
+
+      if (!dataInizio) {
+        onError('Data obbligatoria')
+        setIsSubmitting(false)
+        return
+      }
+
+      if (!existingInvestmentId && !name.trim()) {
+        onError('Nome PAC obbligatorio')
         setIsSubmitting(false)
         return
       }

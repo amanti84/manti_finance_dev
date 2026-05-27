@@ -64,6 +64,16 @@ service cloud.firestore {
       }
 
       // =============================================
+      // PAC PAYMENTS (Issue #22)
+      // =============================================
+      match /pac_payments/{paymentId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      // =============================================
       // CEDOLINI / PAYROLL
       // =============================================
       match /payslips/{payslipId} {
@@ -82,6 +92,33 @@ service cloud.firestore {
         allow create: if isOwner(userId);
         // Audit log e' immutabile: no update, no delete
         allow update, delete: if false;
+      }
+
+      // =============================================
+      // DECISION ENGINE
+      // =============================================
+      match /decisions/{decisionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      // =============================================
+      // PREVIDENZA / FONDI PENSIONE
+      // =============================================
+      match /funds/{fundId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      match /contributions/{contributionId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
       }
 
       // =============================================

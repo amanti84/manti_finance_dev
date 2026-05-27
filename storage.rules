@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// Storage Security Rules - manti_finance_dev
+// Ogni utente accede SOLO alla propria cartella
+// Limite file: 10MB
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /users/{userId}/{allPaths=**} {
+      // Lettura: solo se proprietario
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Scrittura: solo se proprietario + max 10MB
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && (request.resource == null || request.resource.size < 10 * 1024 * 1024);
+    }
+
+    // Blocca tutto il resto
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
