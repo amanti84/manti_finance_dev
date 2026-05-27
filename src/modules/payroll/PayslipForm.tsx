@@ -87,6 +87,8 @@ export const PayslipForm: FC<Props> = ({ onSubmit, onSuccess, onError }) => {
     if (form.inps < 0) return 'INPS non può essere negativo'
     if (form.tfr < 0) return 'TFR non può essere negativo'
     if (form.fondoPensione < 0) return 'Fondo Pensione non può essere negativo'
+    if (form.bonus !== undefined && form.bonus < 0) return 'Bonus non può essere negativo'
+    if (form.rimborsiSpese !== undefined && form.rimborsiSpese < 0) return 'Rimborsi Spese non può essere negativo'
     return null
   }
 
