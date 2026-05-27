@@ -62,7 +62,7 @@ export async function logAudit(
   return {
     id: docRef.id,
     ...entry,
-  } as AuditLogEntry
+  }
 }
 
 /**

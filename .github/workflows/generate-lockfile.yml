@@ -1,0 +1,43 @@
+# Workflow una-tantum: genera package-lock.json e apre una PR verso main
+# Eseguire manualmente da Actions > Generate package-lock.json > Run workflow
+# Una volta mergiata la PR, questo workflow può essere eliminato.
+
+name: Generate package-lock.json
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    name: Generate and open PR with package-lock.json
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Generate package-lock.json
+        run: npm install
+
+      - name: Push to branch and open PR
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b chore/add-package-lock
+          git add package-lock.json
+          git diff --cached --quiet || git commit -m "chore: add package-lock.json for deterministic installs"
+          git push origin chore/add-package-lock --force
+          gh pr create \
+            --title "chore: add package-lock.json for deterministic installs" \
+            --body "Aggiunge \`package-lock.json\` generato automaticamente dal runner GitHub Actions. Necessario per abilitare \`npm ci\` + cache nel CI pipeline." \
+            --base main \
+            --head chore/add-package-lock
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
