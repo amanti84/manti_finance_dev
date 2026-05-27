@@ -38,21 +38,21 @@ const MONTHS: { value: Month; label: string }[] = [
 
 const currentYear = new Date().getFullYear()
 
+const emptyForm = (): PayslipFormData => ({
+  year: currentYear,
+  month: (new Date().getMonth() + 1) as Month,
+  grossSalary: 0,
+  netSalary: 0,
+  irpef: 0,
+  inps: 0,
+  tfr: 0,
+  fondoPensione: 0,
+})
+
 export const PayslipForm: FC<Props> = ({ onSubmit, onSuccess, onError }) => {
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
-  const [form, setForm] = useState<PayslipFormData>({
-    year: currentYear,
-    month: (new Date().getMonth() + 1) as Month,
-    grossSalary: 0,
-    netSalary: 0,
-    irpef: 0,
-    inps: 0,
-    tfr: 0,
-    fondoPensione: 0,
-    bonus: undefined,
-    rimborsiSpese: undefined,
-  })
+  const [form, setForm] = useState<PayslipFormData>(emptyForm())
 
   const showToast = (type: 'success' | 'error', message: string) => {
     setToast({ type, message })
@@ -65,8 +65,16 @@ export const PayslipForm: FC<Props> = ({ onSubmit, onSuccess, onError }) => {
     } else if (field === 'year') {
       setForm(prev => ({ ...prev, [field]: Number(value) }))
     } else {
-      const numValue = value === '' ? undefined : Math.round(Number(value) * 100) / 100
-      setForm(prev => ({ ...prev, [field]: numValue }))
+      if (value === '') {
+        setForm(prev => {
+          const next = { ...prev }
+          delete next[field as 'bonus' | 'rimborsiSpese']
+          return next
+        })
+      } else {
+        const numValue = Math.round(Number(value) * 100) / 100
+        setForm(prev => ({ ...prev, [field]: numValue }))
+      }
     }
   }
 
@@ -102,27 +110,16 @@ export const PayslipForm: FC<Props> = ({ onSubmit, onSuccess, onError }) => {
         inps: form.inps,
         tfr: form.tfr,
         fondoPensione: form.fondoPensione,
-        bonus: form.bonus,
-        rimborsiSpese: form.rimborsiSpese,
         parsed: false,
+        ...(form.bonus !== undefined && { bonus: form.bonus }),
+        ...(form.rimborsiSpese !== undefined && { rimborsiSpese: form.rimborsiSpese }),
       }
 
       const result = await onSubmit(payslipData)
       if (result) {
         showToast('success', 'Cedolino salvato con successo')
         onSuccess?.()
-        setForm({
-          year: currentYear,
-          month: (new Date().getMonth() + 1) as Month,
-          grossSalary: 0,
-          netSalary: 0,
-          irpef: 0,
-          inps: 0,
-          tfr: 0,
-          fondoPensione: 0,
-          bonus: undefined,
-          rimborsiSpese: undefined,
-        })
+        setForm(emptyForm())
       } else {
         showToast('error', 'Errore nel salvataggio del cedolino')
         onError?.('Errore nel salvataggio del cedolino')
