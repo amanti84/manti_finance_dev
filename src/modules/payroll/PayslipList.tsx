@@ -1,5 +1,6 @@
 import type { FC } from 'react'
 import type { Payslip, Month } from '../../types'
+import { formatCurrency } from '../../utils/format'
 
 interface Props {
   payslips: Payslip[]
@@ -21,13 +22,6 @@ const MONTH_NAMES: Record<Month, string> = {
   10: 'Ottobre',
   11: 'Novembre',
   12: 'Dicembre',
-}
-
-const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(value)
 }
 
 export const PayslipList: FC<Props> = ({ payslips, loading, error, onRowClick }) => {
