@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import React, { useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import type { Investment } from '../../types'
 import { PacForm } from './PacForm'
 import { PacList } from './PacList'

@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import React, { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import type { Investment } from '../../types'
 import { getAllInvestments, deleteInvestment } from '../../services/investment'
 import { getPacSummary, deletePacPayment, getAllPacPayments, type PacSummary, type PacPayment } from '../../services/pac'
@@ -64,29 +64,31 @@ export const PacList: FC<PacListProps> = ({
     loadPacList()
   }, [loadPacList, refreshTrigger])
 
-  const handleDelete = async (investmentId: string) => {
-    if (!confirm('Eliminare questo PAC e tutti i suoi versamenti?')) return
+  const handleDelete = (investmentId: string): void => {
+    void (async () => {
+      if (!confirm('Eliminare questo PAC e tutti i suoi versamenti?')) return
 
-    try {
-      const paymentsResult = await getAllPacPayments(uid)
-      if (paymentsResult.success) {
-        const payments = paymentsResult.data.filter((p: PacPayment) => p.investmentId === investmentId)
-        for (const payment of payments) {
-          await deletePacPayment(uid, payment.id)
+      try {
+        const paymentsResult = await getAllPacPayments(uid)
+        if (paymentsResult.success) {
+          const payments = paymentsResult.data.filter((p: PacPayment) => p.investmentId === investmentId)
+          for (const payment of payments) {
+            await deletePacPayment(uid, payment.id)
+          }
         }
-      }
 
-      const deleteResult = await deleteInvestment(uid, investmentId)
-      if (!deleteResult.success) {
-        onError(deleteResult.error)
-        return
-      }
+        const deleteResult = await deleteInvestment(uid, investmentId)
+        if (!deleteResult.success) {
+          onError(deleteResult.error)
+          return
+        }
 
-      onSuccess('PAC eliminato con successo')
-      loadPacList()
-    } catch (err) {
-      onError(err instanceof Error ? err.message : 'Errore eliminazione')
-    }
+        onSuccess('PAC eliminato con successo')
+        loadPacList()
+      } catch (err) {
+        onError(err instanceof Error ? err.message : 'Errore eliminazione')
+      }
+    })()
   }
 
   const formatCurrency = (value: number): string => {

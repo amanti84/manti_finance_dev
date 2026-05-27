@@ -1,5 +1,5 @@
 import type { FC, FormEvent } from 'react'
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Timestamp } from 'firebase/firestore'
 import { recordPacPayment } from '../../services/pac'
 import { createInvestment } from '../../services/investment'
@@ -31,7 +31,7 @@ export const PacForm: FC<PacFormProps> = ({
   const [priceAtPayment, setPriceAtPayment] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmitAsync = async (e: FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
@@ -46,7 +46,7 @@ export const PacForm: FC<PacFormProps> = ({
       }
 
       let investmentId = existingInvestmentId ?? ''
-      let investmentName = name.trim()
+      const investmentName = name.trim()
 
       if (!existingInvestmentId) {
         const investmentData = {
@@ -56,6 +56,7 @@ export const PacForm: FC<PacFormProps> = ({
           quantity: 0,
           avgCost: 0,
           currentPrice: price,
+          currentValue: 0,
           currency: 'EUR' as const,
           isPac: true,
           pacMonthlyAmount: importo,
@@ -100,6 +101,11 @@ export const PacForm: FC<PacFormProps> = ({
       setIsSubmitting(false)
     }
   }
+
+  const handleSubmit = (e: FormEvent): void => { void handleSubmitAsync(e) }
+
+  // frequency is used for UI display but not sent to backend yet — kept for future use
+  void frequency
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '400px' }}>
