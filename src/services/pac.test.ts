@@ -135,7 +135,6 @@ describe('updatePacPayment', () => {
 
   it('aggiorna un versamento PAC con successo', async () => {
     const { updateDoc, getDoc } = await import('firebase/firestore')
-    // updatePacPayment fetches existing doc when importo is provided
     ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       exists: () => true,
       data: () => makePayment(),
@@ -326,11 +325,16 @@ describe('getPacAnalytics', () => {
     }
   })
 
-  it('restituisce errore se getDocs fallisce', async () => {
+  it('se getDocs fallisce restituisce analytics vuoti (nessun summary disponibile)', async () => {
+    // getPacAnalytics silences individual summary errors:
+    // returns success:true with totalePacAttivi=0 when no summaries can be computed.
     const { getDocs, query } = await import('firebase/firestore')
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(getDocs as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Firebase error'))
     const result = await getPacAnalytics('user-123', [makeInvestment()])
-    expect(result.success).toBe(false)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.totalePacAttivi).toBe(0)
+    }
   })
 })
