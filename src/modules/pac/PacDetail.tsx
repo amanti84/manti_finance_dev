@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import React, { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import type { Investment } from '../../types'
 import { getPacPaymentsByInvestment, getPacSummary, type PacPayment, type PacSummary } from '../../services/pac'
 
@@ -70,7 +70,6 @@ export const PacDetail: FC<PacDetailProps> = ({ uid, investment, onBack, onError
       let valoreProiettato = currentTotal * Math.pow(1 + rate, y)
       for (let m = 1; m <= months; m++) {
         const remainingMonths = months - m
-        const yearsRemaining = remainingMonths / 12
         valoreProiettato += monthlyAmount * Math.pow(1 + monthlyRate, remainingMonths)
       }
       valoreProiettato = Math.round(valoreProiettato * 100) / 100
