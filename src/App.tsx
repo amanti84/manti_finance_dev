@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
+import { PayrollPage } from './modules/payroll'
 import { PacPage } from './modules/pac'
 
 function App(): React.ReactElement {
@@ -16,6 +17,9 @@ function App(): React.ReactElement {
         <nav style={{ padding: '16px', backgroundColor: '#f8f9fa', borderBottom: '1px solid #ddd' }}>
           <Link to="/" style={{ marginRight: '16px', textDecoration: 'none', color: '#007bff' }}>
             Home
+          </Link>
+          <Link to="/payroll" style={{ marginRight: '16px', textDecoration: 'none', color: '#007bff' }}>
+            Cedolini
           </Link>
           <Link to="/investimenti/pac" style={{ textDecoration: 'none', color: '#007bff' }}>
             PAC
@@ -35,6 +39,10 @@ function App(): React.ReactElement {
                 )}
               </div>
             }
+          />
+          <Route
+            path="/payroll"
+            element={<PayrollPage />}
           />
           <Route
             path="/investimenti/pac"
