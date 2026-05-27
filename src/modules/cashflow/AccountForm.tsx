@@ -54,7 +54,7 @@ export const AccountForm: FC<AccountFormProps> = ({
         iban: iban.trim() || undefined,
         currentBalance: balance,
         currency,
-      } as any)
+      } as Parameters<typeof saveAccount>[1])
 
       if (result.success) {
         onSuccess()

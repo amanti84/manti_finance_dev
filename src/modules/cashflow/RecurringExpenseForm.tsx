@@ -72,7 +72,7 @@ export const RecurringExpenseForm: FC<RecurringExpenseFormProps> = ({
         category,
         accountId,
         dayOfMonth: parsedDay,
-      } as any)
+      })
 
       if (result.success) {
         onSuccess()

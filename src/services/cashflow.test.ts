@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getAvailableBalance } from './cashflow'
+import type { Mock } from 'vitest'
 
 // -----------------------------------------------------------------------
 // MOCK FIREBASE
@@ -45,13 +46,14 @@ describe('cashflow service', () => {
       ]
 
       const { getDocs } = await import('firebase/firestore')
+      const getDocsMock = getDocs as Mock
 
       // First call for accounts
-      ;(getDocs as any).mockResolvedValueOnce({
+      getDocsMock.mockResolvedValueOnce({
         docs: mockAccounts.map(a => ({ id: a.id, data: () => a }))
       })
       // Second call for expenses
-      ;(getDocs as any).mockResolvedValueOnce({
+      getDocsMock.mockResolvedValueOnce({
         docs: mockExpenses.map(e => ({ id: e.id, data: () => e }))
       })
 
@@ -68,7 +70,8 @@ describe('cashflow service', () => {
 
     it('should handle zero accounts and zero expenses', async () => {
       const { getDocs } = await import('firebase/firestore')
-      ;(getDocs as any).mockResolvedValue({ docs: [] })
+      const getDocsMock = getDocs as Mock
+      getDocsMock.mockResolvedValue({ docs: [] })
 
       const result = await getAvailableBalance('user123')
 
@@ -82,10 +85,11 @@ describe('cashflow service', () => {
 
     it('should handle only accounts', async () => {
       const { getDocs } = await import('firebase/firestore')
-      ;(getDocs as any).mockResolvedValueOnce({
+      const getDocsMock = getDocs as Mock
+      getDocsMock.mockResolvedValueOnce({
         docs: [{ id: '1', data: () => ({ name: 'Conto 1', currentBalance: 5000 }) }]
       })
-      ;(getDocs as any).mockResolvedValueOnce({ docs: [] })
+      getDocsMock.mockResolvedValueOnce({ docs: [] })
 
       const result = await getAvailableBalance('user123')
 
@@ -99,8 +103,9 @@ describe('cashflow service', () => {
 
     it('should handle only expenses', async () => {
       const { getDocs } = await import('firebase/firestore')
-      ;(getDocs as any).mockResolvedValueOnce({ docs: [] })
-      ;(getDocs as any).mockResolvedValueOnce({
+      const getDocsMock = getDocs as Mock
+      getDocsMock.mockResolvedValueOnce({ docs: [] })
+      getDocsMock.mockResolvedValueOnce({
         docs: [{ id: 'e1', data: () => ({ name: 'Affitto', amount: 1000, frequency: 'monthly' }) }]
       })
 
@@ -116,7 +121,8 @@ describe('cashflow service', () => {
 
     it('should return error if getAccounts fails', async () => {
       const { getDocs } = await import('firebase/firestore')
-      ;(getDocs as any).mockRejectedValueOnce(new Error('Database error'))
+      const getDocsMock = getDocs as Mock
+      getDocsMock.mockRejectedValueOnce(new Error('Database error'))
 
       const result = await getAvailableBalance('user123')
 
@@ -128,8 +134,9 @@ describe('cashflow service', () => {
 
     it('should return error if getRecurringExpenses fails', async () => {
       const { getDocs } = await import('firebase/firestore')
-      ;(getDocs as any).mockResolvedValueOnce({ docs: [] })
-      ;(getDocs as any).mockRejectedValueOnce(new Error('Fetch error'))
+      const getDocsMock = getDocs as Mock
+      getDocsMock.mockResolvedValueOnce({ docs: [] })
+      getDocsMock.mockRejectedValueOnce(new Error('Fetch error'))
 
       const result = await getAvailableBalance('user123')
 

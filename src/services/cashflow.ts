@@ -47,14 +47,14 @@ export async function saveAccount(
     const isUpdate = !!data.id
     const colRef = collection(db, ACCOUNTS_COLLECTION(uid))
 
-    let accountId = data.id || ''
+    let accountId = data.id ?? ''
     let previousValue: Record<string, unknown> | undefined
 
     if (isUpdate) {
       const docRef = doc(db, ACCOUNTS_COLLECTION(uid), accountId)
       const snap = await getDoc(docRef)
       if (snap.exists()) {
-        previousValue = snap.data() as Record<string, unknown>
+        previousValue = snap.data()
       }
 
       await updateDoc(docRef, {
@@ -64,7 +64,7 @@ export async function saveAccount(
     } else {
       const docRef = await addDoc(colRef, {
         ...data,
-        currency: data.currency || 'EUR',
+        currency: data.currency ?? 'EUR',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
@@ -115,14 +115,14 @@ export async function saveRecurringExpense(
     const isUpdate = !!data.id
     const colRef = collection(db, EXPENSES_COLLECTION(uid))
 
-    let expenseId = data.id || ''
+    let expenseId = data.id ?? ''
     let previousValue: Record<string, unknown> | undefined
 
     if (isUpdate) {
       const docRef = doc(db, EXPENSES_COLLECTION(uid), expenseId)
       const snap = await getDoc(docRef)
       if (snap.exists()) {
-        previousValue = snap.data() as Record<string, unknown>
+        previousValue = snap.data()
       }
 
       await updateDoc(docRef, {
@@ -167,10 +167,10 @@ export async function getAvailableBalance(uid: string): Promise<ApiResult<{
 }>> {
   try {
     const accountsResult = await getAccounts(uid)
-    if (!accountsResult.success) return accountsResult as ApiResult<never>
+    if (!accountsResult.success) return accountsResult
 
     const expensesResult = await getRecurringExpenses(uid)
-    if (!expensesResult.success) return expensesResult as ApiResult<never>
+    if (!expensesResult.success) return expensesResult
 
     const totalBalance = accountsResult.data.reduce((sum, acc) => sum + acc.currentBalance, 0)
 

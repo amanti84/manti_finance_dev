@@ -67,7 +67,7 @@ export const CashFlowPage: FC<CashFlowPageProps> = ({ uid }) => {
 
   if (loading) return <div style={{ padding: '24px' }}>Caricamento Cash Flow...</div>
 
-  const isBelowBuffer = balanceInfo && balanceInfo.availableBalance < SAFETY_BUFFER
+  const isBelowBuffer = (balanceInfo?.availableBalance ?? 0) < SAFETY_BUFFER
 
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -194,7 +194,7 @@ export const CashFlowPage: FC<CashFlowPageProps> = ({ uid }) => {
                         </span>
                       </td>
                       <td style={{ padding: '12px' }}>{expense.frequency}</td>
-                      <td style={{ padding: '12px' }}>{expense.dayOfMonth || '-'}</td>
+                      <td style={{ padding: '12px' }}>{expense.dayOfMonth ?? '-'}</td>
                       <td style={{ padding: '12px', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(expense.amount)}</td>
                     </tr>
                   ))}
