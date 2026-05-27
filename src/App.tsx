@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { PayrollPage } from './modules/payroll'
 import { PacPage } from './modules/pac'
+import { CashFlowPage } from './modules/cashflow'
 
 function App(): React.ReactElement {
   const { user, loading } = useAuth()
@@ -21,8 +22,11 @@ function App(): React.ReactElement {
           <Link to="/payroll" style={{ marginRight: '16px', textDecoration: 'none', color: '#007bff' }}>
             Cedolini
           </Link>
-          <Link to="/investimenti/pac" style={{ textDecoration: 'none', color: '#007bff' }}>
+          <Link to="/investimenti/pac" style={{ marginRight: '16px', textDecoration: 'none', color: '#007bff' }}>
             PAC
+          </Link>
+          <Link to="/cashflow" style={{ textDecoration: 'none', color: '#007bff' }}>
+            Cash Flow
           </Link>
         </nav>
 
@@ -51,6 +55,16 @@ function App(): React.ReactElement {
                 <PacPage uid={user.uid} />
               ) : (
                 <div style={{ padding: '24px' }}>Effettua il login per accedere ai PAC</div>
+              )
+            }
+          />
+          <Route
+            path="/cashflow"
+            element={
+              user ? (
+                <CashFlowPage uid={user.uid} />
+              ) : (
+                <div style={{ padding: '24px' }}>Effettua il login per accedere al Cash Flow</div>
               )
             }
           />
