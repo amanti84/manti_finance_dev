@@ -133,8 +133,10 @@ export const PayslipForm: FC<Props> = ({ onSubmit, onSuccess, onError }) => {
     }
   }
 
+  const handleSubmitVoid = (e: FormEvent): void => { void handleSubmit(e) }
+
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '500px' }}>
+    <form onSubmit={handleSubmitVoid} style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '500px' }}>
       {toast && (
         <div
           style={{
