@@ -1,9 +1,9 @@
 import {
   initializeTestEnvironment,
-  RulesTestEnvironment,
   assertFails,
   assertSucceeds,
 } from '@firebase/rules-unit-testing'
+import type { RulesTestEnvironment } from '@firebase/rules-unit-testing'
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
