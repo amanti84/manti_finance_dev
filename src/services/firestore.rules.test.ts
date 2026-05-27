@@ -9,7 +9,7 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { describe, it, beforeAll, afterAll, beforeEach } from 'vitest'
 
-const PROJECT_ID = 'manti-finance-dev-rules-test'
+const PROJECT_ID = 'demo-manti-finance-dev'
 
 describe('Firestore Security Rules', () => {
   let testEnv: RulesTestEnvironment
