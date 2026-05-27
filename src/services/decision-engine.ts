@@ -168,7 +168,7 @@ export function runDecisionEngine(ctx: DecisionContext): ApiResult<DecisionResul
 
 export function getTopRecommendation(ctx: DecisionContext): ApiResult<DecisionResult | null> {
   const result = runDecisionEngine(ctx);
-  if (!result.success) return result as ApiResult<DecisionResult | null>;
+  if (!result.success) return result;
   const top = result.data && result.data.length > 0 ? result.data[0] : null;
   return { success: true, data: top };
 }
