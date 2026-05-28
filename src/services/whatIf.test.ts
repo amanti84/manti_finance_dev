@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { Mock } from 'vitest'
 import { simulateScenario, saveScenario } from './whatIf'
 import * as mutuoService from './mutuo'
 import * as snapshotService from './snapshot'
@@ -64,6 +65,8 @@ const makeMutuoConfig = () => ({
     dataFine: fakeTimestamp,
   },
 })
+
+const logAuditMock = logAudit as Mock
 
 describe('whatIf service', () => {
   beforeEach(() => {
@@ -185,7 +188,7 @@ describe('whatIf service', () => {
         saveScenario(uid, name, input, output, baselineId)
       ).resolves.toMatchObject({ success: true })
 
-      expect(logAudit).toHaveBeenCalledWith(expect.objectContaining({
+      expect(logAuditMock).toHaveBeenCalledWith(expect.objectContaining({
         action: 'create',
         entityType: 'scenario',
         newValue: expect.objectContaining({ name }),
