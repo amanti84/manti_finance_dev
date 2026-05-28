@@ -16,6 +16,7 @@ export const Navbar: FC = () => {
     { to: '/previdenza', label: 'Previdenza' },
     { to: '/kindergarten', label: 'Kindergarten' },
     { to: '/documenti', label: 'Documenti' },
+    { to: '/what-if', label: 'What-if' },
   ]
 
   const handleLogout = async () => {
