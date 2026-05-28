@@ -5,7 +5,7 @@ import * as snapshotService from './snapshot'
 import * as payrollService from './payroll'
 import { logAudit } from './audit'
 import * as firestore from 'firebase/firestore'
-import type { PatrimonioSnapshot, Payslip, ScenarioType } from '../types'
+import type { PatrimonioSnapshot, Payslip, ScenarioType, ApiResult, Scenario } from '../types'
 import type { Timestamp } from 'firebase/firestore'
 
 vi.mock('./audit', () => ({
@@ -181,7 +181,7 @@ describe('whatIf service', () => {
       const output = { patrimonioProiettato: 60000, surplusMensileProiettato: 0, costoOpportunita: 100, descrizione: 'Test' }
       const baselineId = '2026-05'
 
-      const result = await saveScenario(uid, name, input, output, baselineId)
+      const result: ApiResult<Scenario> = await saveScenario(uid, name, input, output, baselineId)
 
       expect(result.success).toBe(true)
       expect(logAudit).toHaveBeenCalledWith(expect.objectContaining({
