@@ -16,6 +16,30 @@ export interface BaseDocument {
   updatedAt: Timestamp
 }
 
+// --------------------------------------------------------
+// CASH FLOW (Issue #15 / #51)
+// --------------------------------------------------------
+
+export interface Account extends BaseDocument {
+  name: string
+  bank: string
+  iban?: string
+  currentBalance: number
+  currency: Currency
+}
+
+export type RecurringExpenseFrequency = 'monthly' | 'quarterly' | 'annual'
+export type RecurringExpenseCategory = 'affitto' | 'bollette' | 'abbonamenti' | 'mutuo' | 'altro'
+
+export interface RecurringExpense extends BaseDocument {
+  name: string
+  amount: number
+  frequency: RecurringExpenseFrequency
+  dayOfMonth?: number // giorno scadenza
+  category: RecurringExpenseCategory
+  accountId: string
+}
+
 export type Currency = 'EUR' | 'USD' | 'GBP' | 'CHF'
 
 export type Month = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12
