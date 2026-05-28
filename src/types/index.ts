@@ -191,9 +191,7 @@ export interface Payslip extends BaseDocument {
 
 export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'snapshot'
 
-feat/issue-27-what-if-engine-370912409506586420
 export type AuditEntityType = 'snapshot' | 'transaction' | 'investment' | 'payslip' | 'config' | 'account' | 'recurringExpense' | 'monthlyClose' | 'scenario'
-main
 
 export interface AuditLogEntry extends BaseDocument {
   entityType: AuditEntityType
