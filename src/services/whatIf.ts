@@ -1,9 +1,7 @@
 /**
  * whatIf.ts
  * What-if Engine — simulazioni scenari finanziari.
- * Calcola l'impatto di diverse decisioni (estinzione mutuo, investimenti, PAC, RAL)
- * senza modificare i dati reali.
- * Issue #27 — M2 Core Modules
+ * Issue #27
  */
 import {
   collection,
@@ -29,10 +27,6 @@ import { listSnapshots } from './snapshot'
 import { getPayslipsByYear } from './payroll'
 
 const COLLECTION = (uid: string) => `users/${uid}/scenarios`
-
-// ---------------------------------------------------------------------------
-// CRUD OPERATIONS
-// ---------------------------------------------------------------------------
 
 export async function saveScenario(
   uid: string,
@@ -62,12 +56,15 @@ export async function saveScenario(
       newValue: { name, type: input.type },
     })
 
-    const savedScenario = {
+    const savedScenario: Scenario = {
       id: docRef.id,
-      ...scenarioData,
+      name,
+      input,
+      output,
+      baselineSnapshotId,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
-    } as Scenario
+    }
 
     return { success: true, data: savedScenario }
   } catch (error) {
@@ -110,10 +107,6 @@ export async function deleteScenario(
   }
 }
 
-// ---------------------------------------------------------------------------
-// SIMULATION ENGINE
-// ---------------------------------------------------------------------------
-
 export async function simulateScenario(
   uid: string,
   input: ScenarioInput
@@ -143,10 +136,6 @@ export async function simulateScenario(
   }
 }
 
-// ---------------------------------------------------------------------------
-// SCENARIO LOGICS
-// ---------------------------------------------------------------------------
-
 async function simulateEstinzioneMutuo(
   uid: string,
   params: Record<string, number>,
@@ -173,12 +162,12 @@ async function simulateEstinzioneMutuo(
   if (isTotal) {
     risparmioInteressi = sim.interessiRisparmiati
     nuovoSurplus = config.rataMensile
-    descrizione = `Estinguendo totalmente il mutuo risparmieresti ${Math.round(risparmioInteressi)}\u20ac di interessi e libereresti ${Math.round(nuovoSurplus)}\u20ac di surplus mensile.`
+    descrizione = `Estinguendo totalmente il mutuo risparmieresti ${Math.round(risparmioInteressi)}€ di interessi e libereresti ${Math.round(nuovoSurplus)}€ di surplus mensile.`
   } else {
     const quotaEstinta = importoEstinzione / config.debitoResiduo
     risparmioInteressi = sim.interessiRisparmiati * quotaEstinta
     nuovoSurplus = config.rataMensile * quotaEstinta
-    descrizione = `Con un'estinzione parziale di ${importoEstinzione}\u20ac, risparmieresti circa ${Math.round(risparmioInteressi)}\u20ac di interessi e ridurresti la rata di ${Math.round(nuovoSurplus)}\u20ac.`
+    descrizione = `Con un'estinzione parziale di ${importoEstinzione}€, risparmieresti circa ${Math.round(risparmioInteressi)}€ di interessi e ridurresti la rata di ${Math.round(nuovoSurplus)}€.`
   }
 
   const patrimonioProiettato = patrimonioAttuale + risparmioInteressi + (nuovoSurplus * 12 * 5)
@@ -214,7 +203,7 @@ function simulateInvestimentoEtf(
       patrimonioProiettato: Math.round(patrimonioProiettato),
       surplusMensileProiettato: 0,
       costoOpportunita: Math.round(importoInvestimento * 0.01 * anni),
-      descrizione: `Investendo ${importoInvestimento}\u20ac per ${anni} anni con un rendimento del ${rendimentoAnnuo}%, il capitale diventerebbe ${Math.round(montante)}\u20ac.`,
+      descrizione: `Investendo ${importoInvestimento}€ per ${anni} anni con un rendimento del ${rendimentoAnnuo}%, il capitale diventerebbe ${Math.round(montante)}€.`,
     },
   }
 }
@@ -239,7 +228,7 @@ function simulateAumentoPac(
       patrimonioProiettato: Math.round(patrimonioProiettato),
       surplusMensileProiettato: -incrementoMensile,
       costoOpportunita: 0,
-      descrizione: `Aumentando il PAC di ${incrementoMensile}\u20ac al mese, tra ${anni} anni avresti accumulato circa ${Math.round(montante)}\u20ac extra.`,
+      descrizione: `Aumentando il PAC di ${incrementoMensile}€ al mese, tra ${anni} anni avresti accumulato circa ${Math.round(montante)}€ extra.`,
     },
   }
 }
@@ -273,7 +262,7 @@ async function simulateVariazioneRal(
       patrimonioProiettato: Math.round(patrimonioProiettato),
       surplusMensileProiettato: Math.round(deltaNetto),
       costoOpportunita: 0,
-      descrizione: `Con una RAL di ${nuovaRal}\u20ac, il tuo netto mensile stimato sarebbe di ${Math.round(nuovoNettoMensile)}\u20ac (+${Math.round(deltaNetto)}\u20ac rispetto ad ora).`,
+      descrizione: `Con una RAL di ${nuovaRal}€, il tuo netto mensile stimato sarebbe di ${Math.round(nuovoNettoMensile)}€ (+${Math.round(deltaNetto)}€ rispetto ad ora).`,
     },
   }
 }

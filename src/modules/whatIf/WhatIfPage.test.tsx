@@ -37,7 +37,7 @@ describe('WhatIfPage', () => {
     })
   })
 
-  it('renders the page heading', async () => {
+  it('renders the page heading', () => {
     render(
       <BrowserRouter>
         <WhatIfPage />

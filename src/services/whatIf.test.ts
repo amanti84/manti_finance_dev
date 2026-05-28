@@ -5,7 +5,8 @@ import * as snapshotService from './snapshot'
 import * as payrollService from './payroll'
 import { logAudit } from './audit'
 import * as firestore from 'firebase/firestore'
-import type { PatrimonioSnapshot } from '../types'
+import type { PatrimonioSnapshot, Payslip, ScenarioType } from '../types'
+import type { Timestamp } from 'firebase/firestore'
 
 vi.mock('./audit', () => ({
   logAudit: vi.fn(),
@@ -33,6 +34,8 @@ vi.mock('../firebase', () => ({
   db: {},
 }))
 
+const fakeTimestamp = { toDate: () => new Date() } as unknown as Timestamp
+
 const makeSnapshot = (patrimonioNetto: number): PatrimonioSnapshot => ({
   id: 'snap-1',
   patrimonioNetto,
@@ -45,11 +48,11 @@ const makeSnapshot = (patrimonioNetto: number): PatrimonioSnapshot => ({
   tfr: 0,
   mutuo: 0,
   altriDebiti: 0,
-  createdAt: firestore.Timestamp.now() as unknown as import('firebase/firestore').Timestamp,
-  updatedAt: firestore.Timestamp.now() as unknown as import('firebase/firestore').Timestamp,
+  createdAt: fakeTimestamp,
+  updatedAt: fakeTimestamp,
 })
 
-const makeMutuoConfig = (overrides = {}) => ({
+const makeMutuoConfig = () => ({
   success: true as const,
   data: {
     rataMensile: 500,
@@ -57,9 +60,8 @@ const makeMutuoConfig = (overrides = {}) => ({
     debitoResiduo: 80000,
     tasso: 2,
     isMutuoVariabile: false,
-    dataInizio: firestore.Timestamp.fromDate(new Date()),
-    dataFine: firestore.Timestamp.fromDate(new Date()),
-    ...overrides,
+    dataInizio: fakeTimestamp,
+    dataFine: fakeTimestamp,
   },
 })
 
@@ -132,7 +134,7 @@ describe('whatIf service', () => {
       vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
       vi.spyOn(payrollService, 'getPayslipsByYear').mockResolvedValue({
         success: true,
-        data: [{ netSalary: 2000 }] as import('../types').Payslip[],
+        data: [{ netSalary: 2000 }] as Payslip[],
       })
 
       const result = await simulateScenario(uid, input)
@@ -144,7 +146,7 @@ describe('whatIf service', () => {
     it('should return error for unsupported scenario type', async () => {
       const uid = 'user123'
       const input = {
-        type: 'INVALID' as unknown as import('../types').ScenarioType,
+        type: 'INVALID' as unknown as ScenarioType,
         params: {},
       }
 
