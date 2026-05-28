@@ -13,6 +13,7 @@ import { InvestimentiPage } from './pages/InvestimentiPage'
 import { PrevidenzaPage } from './pages/PrevidenzaPage'
 import { KindergartenPage } from './pages/KindergartenPage'
 import { DocumentiPage } from './pages/DocumentiPage'
+import { WhatIfPage } from './modules/whatIf'
 
 function App(): React.ReactElement {
   const { user } = useAuth()
@@ -44,6 +45,7 @@ function App(): React.ReactElement {
             <Route path="/previdenza" element={<PrevidenzaPage />} />
             <Route path="/kindergarten" element={<KindergartenPage />} />
             <Route path="/documenti" element={<DocumentiPage />} />
+            <Route path="/what-if" element={<WhatIfPage />} />
           </Route>
         </Route>
       </Routes>
