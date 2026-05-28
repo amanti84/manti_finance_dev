@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import type { User } from 'firebase/auth'
 import { useAuth } from './hooks/useAuth'
 
 vi.mock('./firebase', () => ({
@@ -70,7 +71,7 @@ describe('App', () => {
 
   it('renders dashboard when authenticated', () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { uid: '123', email: 'test@example.com' } as any,
+      user: { uid: '123', email: 'test@example.com' } as unknown as User,
       loading: false,
     })
     render(<App />)
