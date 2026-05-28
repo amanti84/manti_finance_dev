@@ -191,7 +191,9 @@ export interface Payslip extends BaseDocument {
 
 export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'snapshot'
 
-export type AuditEntityType = 'snapshot' | 'transaction' | 'investment' | 'payslip' | 'config' | 'account' | 'recurringExpense' | 'scenario'
+feat/issue-27-what-if-engine-370912409506586420
+export type AuditEntityType = 'snapshot' | 'transaction' | 'investment' | 'payslip' | 'config' | 'account' | 'recurringExpense' | 'monthlyClose' | 'scenario'
+main
 
 export interface AuditLogEntry extends BaseDocument {
   entityType: AuditEntityType
@@ -201,6 +203,20 @@ export interface AuditLogEntry extends BaseDocument {
   newValue?: Record<string, unknown>
   source: 'user' | 'system' | 'import'
   ipHash?: string
+}
+
+// --------------------------------------------------------
+// MONTHLY CLOSE (Issue #26)
+// --------------------------------------------------------
+
+export type MonthStatus = 'OPEN' | 'CLOSED' | 'LOCKED'
+
+export interface MonthlyCloseResult {
+  month: Month
+  year: number
+  status: MonthStatus
+  snapshotId: string
+  closedAt: Timestamp
 }
 
 // --------------------------------------------------------
