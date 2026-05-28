@@ -1,5 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import type { User } from 'firebase/auth'
+import { useAuth } from './hooks/useAuth'
 
 vi.mock('./firebase', () => ({
   db: {},
@@ -40,19 +42,47 @@ vi.mock('firebase/storage', () => ({
 }))
 
 vi.mock('./hooks/useAuth', () => ({
-  useAuth: () => ({ user: null, loading: false }),
+  useAuth: vi.fn(),
+}))
+
+// Mock components to avoid deep rendering issues in App tests
+vi.mock('./modules/payroll', () => ({
+  PayrollPage: () => <div>Payroll Page</div>,
+}))
+vi.mock('./modules/pac', () => ({
+  PacPage: () => <div>PAC Page</div>,
+}))
+vi.mock('./modules/cashflow', () => ({
+  CashFlowPage: () => <div>Cash Flow Page</div>,
 }))
 
 import App from './App'
 
 describe('App', () => {
-  it('renders without crashing', () => {
-    const { container } = render(<App />)
-    expect(container).toBeTruthy()
+  beforeEach(() => {
+    vi.clearAllMocks()
   })
 
-  it('shows login message when not authenticated', () => {
+  it('renders without crashing and shows login when not authenticated', () => {
+    vi.mocked(useAuth).mockReturnValue({ user: null, loading: false })
     render(<App />)
-    expect(screen.getByText('Effettua il login per accedere')).toBeTruthy()
+    expect(screen.getByText('Login')).toBeTruthy()
+  })
+
+  it('renders dashboard when authenticated', () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { uid: '123', email: 'test@example.com' } as unknown as User,
+      loading: false,
+    })
+    render(<App />)
+    // Check for "Dashboard" in heading or link
+    expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0)
+    expect(screen.getByText(/Benvenuto, test@example.com/)).toBeTruthy()
+  })
+
+  it('shows loading state', () => {
+    vi.mocked(useAuth).mockReturnValue({ user: null, loading: true })
+    render(<App />)
+    expect(screen.getByText('Caricamento...')).toBeTruthy()
   })
 })
