@@ -5,6 +5,7 @@ import { useAuth } from '../../hooks/useAuth'
 import * as whatIfService from '../../services/whatIf'
 import * as snapshotService from '../../services/snapshot'
 import { BrowserRouter } from 'react-router-dom'
+import type { Mock } from 'vitest'
 
 vi.mock('../../hooks/useAuth', () => ({
   useAuth: vi.fn(),
@@ -26,11 +27,11 @@ describe('WhatIfPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(useAuth as any).mockReturnValue({ user: mockUser })
-    ;(snapshotService.listSnapshots as any).mockResolvedValue([
+    ;(useAuth as Mock).mockReturnValue({ user: mockUser })
+    ;(snapshotService.listSnapshots as Mock).mockResolvedValue([
       { id: '2026-05', patrimonioNetto: 50000 },
     ])
-    ;(whatIfService.getSavedScenarios as any).mockResolvedValue({
+    ;(whatIfService.getSavedScenarios as Mock).mockResolvedValue({
       success: true,
       data: [],
     })
@@ -47,7 +48,7 @@ describe('WhatIfPage', () => {
   })
 
   it('shows simulation results after clicking Simula', async () => {
-    ;(whatIfService.simulateScenario as any).mockResolvedValue({
+    ;(whatIfService.simulateScenario as Mock).mockResolvedValue({
       success: true,
       data: {
         patrimonioProiettato: 60000,
@@ -67,7 +68,6 @@ describe('WhatIfPage', () => {
     fireEvent.click(simButton)
 
     expect(await screen.findByText('Simulated output')).toBeDefined()
-    // Use flexible matcher for formatted numbers
     expect(screen.getByText(/60.*000/)).toBeDefined()
   })
 })

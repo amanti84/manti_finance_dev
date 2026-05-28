@@ -5,6 +5,7 @@ import * as snapshotService from './snapshot'
 import * as payrollService from './payroll'
 import { logAudit } from './audit'
 import * as firestore from 'firebase/firestore'
+import type { PatrimonioSnapshot } from '../types'
 
 vi.mock('./audit', () => ({
   logAudit: vi.fn(),
@@ -32,6 +33,36 @@ vi.mock('../firebase', () => ({
   db: {},
 }))
 
+const makeSnapshot = (patrimonioNetto: number): PatrimonioSnapshot => ({
+  id: 'snap-1',
+  patrimonioNetto,
+  year: 2026,
+  month: 5,
+  contiCorrenti: 0,
+  investimenti: 0,
+  immobili: 0,
+  fondoPensione: 0,
+  tfr: 0,
+  mutuo: 0,
+  altriDebiti: 0,
+  createdAt: firestore.Timestamp.now() as unknown as import('firebase/firestore').Timestamp,
+  updatedAt: firestore.Timestamp.now() as unknown as import('firebase/firestore').Timestamp,
+})
+
+const makeMutuoConfig = (overrides = {}) => ({
+  success: true as const,
+  data: {
+    rataMensile: 500,
+    importoOriginale: 100000,
+    debitoResiduo: 80000,
+    tasso: 2,
+    isMutuoVariabile: false,
+    dataInizio: firestore.Timestamp.fromDate(new Date()),
+    dataFine: firestore.Timestamp.fromDate(new Date()),
+    ...overrides,
+  },
+})
+
 describe('whatIf service', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -45,27 +76,18 @@ describe('whatIf service', () => {
         params: { importoEstinzione: 10000 },
       }
 
-      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([
-        { patrimonioNetto: 50000 } as any,
-      ])
-      vi.spyOn(mutuoService, 'getMutuoConfig').mockResolvedValue({
-        success: true,
-        data: { rataMensile: 500, importoOriginale: 100000, debitoResiduo: 80000, tasso: 2, dataInizio: { toDate: () => new Date() }, dataFine: { toDate: () => new Date() } } as any,
-      })
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
+      vi.spyOn(mutuoService, 'getMutuoConfig').mockResolvedValue(makeMutuoConfig())
       vi.spyOn(mutuoService, 'simulateAnticipatedExtinction').mockReturnValue({
         success: true,
-        data: { interessiRisparmiati: 5000 } as any,
+        data: { interessiRisparmiati: 5000 } as ReturnType<typeof mutuoService.simulateAnticipatedExtinction>['data'] & object,
       })
 
       const result = await simulateScenario(uid, input)
 
       expect(result.success).toBe(true)
-      // quotaEstinta = 10000 / 80000 = 0.125
-      // risparmioInteressi = 5000 * 0.125 = 625
-      // nuovoSurplus = 500 * 0.125 = 62.5 -> Math.round -> 63
       expect(result.data?.risparmioInteressi).toBe(625)
       expect(result.data?.surplusMensileProiettato).toBe(63)
-      // patrimonioAttuale (50000) + risparmioInteressi (625) + (nuovoSurplus (62.5) * 12 * 5) = 50000 + 625 + 3750 = 54375
       expect(result.data?.patrimonioProiettato).toBe(54375)
     })
 
@@ -76,15 +98,11 @@ describe('whatIf service', () => {
         params: { importoInvestimento: 10000, anni: 10, rendimentoAnnuo: 7 },
       }
 
-      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([
-        { patrimonioNetto: 50000 } as any,
-      ])
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
 
       const result = await simulateScenario(uid, input)
 
       expect(result.success).toBe(true)
-      // montante = 10000 * (1.07^10) ≈ 19671.5
-      // patrimonioProiettato = 50000 - 10000 + 19672 = 59672
       expect(result.data?.patrimonioProiettato).toBeCloseTo(59672, -1)
     })
 
@@ -95,9 +113,7 @@ describe('whatIf service', () => {
         params: { incrementoMensile: 200, anni: 5 },
       }
 
-      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([
-        { patrimonioNetto: 50000 } as any,
-      ])
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
 
       const result = await simulateScenario(uid, input)
 
@@ -113,26 +129,22 @@ describe('whatIf service', () => {
         params: { nuovaRal: 40000 },
       }
 
-      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([
-        { patrimonioNetto: 50000 } as any,
-      ])
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
       vi.spyOn(payrollService, 'getPayslipsByYear').mockResolvedValue({
         success: true,
-        data: [{ netSalary: 2000 }] as any,
+        data: [{ netSalary: 2000 }] as import('../types').Payslip[],
       })
 
       const result = await simulateScenario(uid, input)
 
       expect(result.success).toBe(true)
-      // nuovoNettoMensile = (40000 * 0.65) / 12 = 2166.67
-      // deltaNetto = 2166.67 - 2000 = 166.67
       expect(result.data?.surplusMensileProiettato).toBe(167)
     })
 
     it('should return error for unsupported scenario type', async () => {
       const uid = 'user123'
       const input = {
-        type: 'INVALID' as any,
+        type: 'INVALID' as unknown as import('../types').ScenarioType,
         params: {},
       }
 
@@ -148,9 +160,7 @@ describe('whatIf service', () => {
         params: { importoInvestimento: 10000, anni: 10, rendimentoAnnuo: 7 },
       }
 
-      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([
-        { patrimonioNetto: 50000 } as any,
-      ])
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
 
       await simulateScenario(uid, input)
 

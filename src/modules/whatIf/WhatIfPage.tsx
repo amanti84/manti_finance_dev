@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { FC } from 'react'
-import {
+import type {
   ScenarioType,
   ScenarioOutput,
   Scenario,
@@ -33,22 +33,21 @@ export const WhatIfPage: FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [comparisonTarget, setComparisonTarget] = useState<Scenario | null>(null)
 
-  useEffect(() => {
-    if (user) {
-      void loadInitialData()
-    }
-  }, [user])
-
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     if (!user) return
     const [snaps, scenarios] = await Promise.all([
       listSnapshots(user.uid, 1),
       getSavedScenarios(user.uid),
     ])
-
     if (snaps.length > 0) setBaseline(snaps[0])
     if (scenarios.success) setSavedScenarios(scenarios.data)
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      void loadInitialData()
+    }
+  }, [user, loadInitialData])
 
   const handleSimulate = async () => {
     if (!user) return
@@ -95,7 +94,7 @@ export const WhatIfPage: FC = () => {
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium">Importo Estinzione (€)</label>
+              <label className="block text-sm font-medium">Importo Estinzione (\u20ac)</label>
               <input
                 type="number"
                 className="mt-1 block w-full border rounded p-2"
@@ -108,7 +107,7 @@ export const WhatIfPage: FC = () => {
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium">Importo Investimento (€)</label>
+              <label className="block text-sm font-medium">Importo Investimento (\u20ac)</label>
               <input
                 type="number"
                 className="mt-1 block w-full border rounded p-2"
@@ -120,7 +119,7 @@ export const WhatIfPage: FC = () => {
               <input
                 type="number"
                 className="mt-1 block w-full border rounded p-2"
-                value={params.anni || 10}
+                value={params.anni ?? 10}
                 onChange={(e) => setParams({ ...params, anni: Number(e.target.value) })}
               />
             </div>
@@ -129,7 +128,7 @@ export const WhatIfPage: FC = () => {
               <input
                 type="number"
                 className="mt-1 block w-full border rounded p-2"
-                value={params.rendimentoAnnuo || 7}
+                value={params.rendimentoAnnuo ?? 7}
                 onChange={(e) => setParams({ ...params, rendimentoAnnuo: Number(e.target.value) })}
               />
             </div>
@@ -139,7 +138,7 @@ export const WhatIfPage: FC = () => {
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium">Incremento Mensile (€)</label>
+              <label className="block text-sm font-medium">Incremento Mensile (\u20ac)</label>
               <input
                 type="number"
                 className="mt-1 block w-full border rounded p-2"
@@ -151,7 +150,7 @@ export const WhatIfPage: FC = () => {
               <input
                 type="number"
                 className="mt-1 block w-full border rounded p-2"
-                value={params.anni || 5}
+                value={params.anni ?? 5}
                 onChange={(e) => setParams({ ...params, anni: Number(e.target.value) })}
               />
             </div>
@@ -161,7 +160,7 @@ export const WhatIfPage: FC = () => {
         return (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium">Nuova RAL (€)</label>
+              <label className="block text-sm font-medium">Nuova RAL (\u20ac)</label>
               <input
                 type="number"
                 className="mt-1 block w-full border rounded p-2"
@@ -180,7 +179,6 @@ export const WhatIfPage: FC = () => {
       <h1 className="text-3xl font-bold mb-8">What-if Engine</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Configurazione Scenario */}
         <div className="bg-white p-6 rounded-lg shadow h-fit">
           <h2 className="text-xl font-semibold mb-4">Nuova Simulazione</h2>
           <div className="space-y-4">
@@ -221,7 +219,6 @@ export const WhatIfPage: FC = () => {
           </div>
         </div>
 
-        {/* Output e Confronto */}
         <div className="md:col-span-2 space-y-8">
           {error && <div className="bg-red-100 text-red-700 p-4 rounded">{error}</div>}
 
@@ -243,24 +240,24 @@ export const WhatIfPage: FC = () => {
                   <tbody>
                     <tr className="border-b">
                       <td className="py-2 font-medium">Patrimonio (5-10y)</td>
-                      <td className="py-2">{baseline?.patrimonioNetto.toLocaleString()}€</td>
-                      <td className="py-2">{output.patrimonioProiettato.toLocaleString()}€</td>
+                      <td className="py-2">{baseline?.patrimonioNetto.toLocaleString()}\u20ac</td>
+                      <td className="py-2">{output.patrimonioProiettato.toLocaleString()}\u20ac</td>
                       <td className={`py-2 ${output.patrimonioProiettato >= (baseline?.patrimonioNetto ?? 0) ? 'text-green-600' : 'text-red-600'}`}>
-                        {Math.round(output.patrimonioProiettato - (baseline?.patrimonioNetto ?? 0)).toLocaleString()}€
+                        {Math.round(output.patrimonioProiettato - (baseline?.patrimonioNetto ?? 0)).toLocaleString()}\u20ac
                       </td>
                     </tr>
                     <tr className="border-b">
                       <td className="py-2 font-medium">Surplus Mensile</td>
                       <td className="py-2">Baseline</td>
-                      <td className="py-2">{output.surplusMensileProiettato > 0 ? '+' : ''}{output.surplusMensileProiettato.toLocaleString()}€</td>
+                      <td className="py-2">{output.surplusMensileProiettato > 0 ? '+' : ''}{output.surplusMensileProiettato.toLocaleString()}\u20ac</td>
                       <td className={`py-2 ${output.surplusMensileProiettato >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {output.surplusMensileProiettato.toLocaleString()}€
+                        {output.surplusMensileProiettato.toLocaleString()}\u20ac
                       </td>
                     </tr>
                     <tr className="border-b">
-                      <td className="py-2 font-medium">Costo Opportunità</td>
+                      <td className="py-2 font-medium">Costo Opportunit\u00e0</td>
                       <td className="py-2">-</td>
-                      <td className="py-2 text-red-500">-{output.costoOpportunita.toLocaleString()}€</td>
+                      <td className="py-2 text-red-500">-{output.costoOpportunita.toLocaleString()}\u20ac</td>
                       <td className="py-2">-</td>
                     </tr>
                   </tbody>
@@ -285,7 +282,6 @@ export const WhatIfPage: FC = () => {
             </div>
           )}
 
-          {/* Scenari Salvati */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Scenari Salvati</h2>
             <div className="space-y-4">
@@ -295,7 +291,7 @@ export const WhatIfPage: FC = () => {
                   <div>
                     <h3 className="font-semibold">{s.name}</h3>
                     <p className="text-sm text-gray-500">
-                      {s.input.type} • Proiezione: {s.output.patrimonioProiettato.toLocaleString()}€
+                      {s.input.type} \u2022 Proiezione: {s.output.patrimonioProiettato.toLocaleString()}\u20ac
                     </p>
                   </div>
                   <div className="flex space-x-2">
@@ -317,7 +313,6 @@ export const WhatIfPage: FC = () => {
             </div>
           </div>
 
-          {/* Sezione Confronto 2 Scenari */}
           {comparisonTarget && (
             <div className="bg-blue-50 p-6 rounded-lg border-2 border-blue-200">
               <div className="flex justify-between items-center mb-4">
@@ -327,20 +322,20 @@ export const WhatIfPage: FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded shadow">
                   <h3 className="font-bold border-b mb-2 pb-1">Corrente</h3>
-                  <p className="text-2xl font-bold">{output?.patrimonioProiettato.toLocaleString()}€</p>
+                  <p className="text-2xl font-bold">{output?.patrimonioProiettato.toLocaleString()}\u20ac</p>
                   <p className="text-sm text-gray-500">Patrimonio Proiettato</p>
                 </div>
                 <div className="bg-white p-4 rounded shadow">
                   <h3 className="font-bold border-b mb-2 pb-1">{comparisonTarget.name}</h3>
-                  <p className="text-2xl font-bold">{comparisonTarget.output.patrimonioProiettato.toLocaleString()}€</p>
+                  <p className="text-2xl font-bold">{comparisonTarget.output.patrimonioProiettato.toLocaleString()}\u20ac</p>
                   <p className="text-sm text-gray-500">Patrimonio Proiettato</p>
                 </div>
               </div>
               <div className="mt-4 p-4 bg-white rounded shadow text-center">
                 <p className="font-medium">
-                  Differenza: {' '}
+                  Differenza:{' '}
                   <span className={(output?.patrimonioProiettato ?? 0) - comparisonTarget.output.patrimonioProiettato >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {Math.round((output?.patrimonioProiettato ?? 0) - comparisonTarget.output.patrimonioProiettato).toLocaleString()}€
+                    {Math.round((output?.patrimonioProiettato ?? 0) - comparisonTarget.output.patrimonioProiettato).toLocaleString()}\u20ac
                   </span>
                 </p>
               </div>
