@@ -182,3 +182,18 @@ export function calculateNetTrend(
       delta: calculateNetDelta(p),
     }))
 }
+
+/**
+ * Recupera tutti i cedolini per l'utente.
+ */
+export async function getPayslips(uid: string): Promise<ApiResult<Payslip[]>> {
+  try {
+    const colRef = collection(db, COLLECTION(uid))
+    const q = query(colRef, orderBy('year', 'desc'), orderBy('month', 'desc'))
+    const snap = await getDocs(q)
+    const payslips = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Payslip)
+    return { success: true, data: payslips }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
