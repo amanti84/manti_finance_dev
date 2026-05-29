@@ -4,6 +4,8 @@ import { AdminPage } from './AdminPage'
 import { useAuth } from '../hooks/useAuth'
 import { MemoryRouter } from 'react-router-dom'
 import { httpsCallable } from 'firebase/functions'
+import type { User } from 'firebase/auth'
+import type { HttpsCallable } from 'firebase/functions'
 
 // Mocks
 vi.mock('../hooks/useAuth', () => ({
@@ -15,7 +17,6 @@ vi.mock('firebase/functions', () => ({
   httpsCallable: vi.fn(),
 }))
 
-// Mock Navigate to avoid real redirects in tests
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
   return {
@@ -24,10 +25,19 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
+interface MockSeedResult {
+  data: {
+    success: boolean
+    data: { inserted: number; skipped: number }
+  }
+}
+
+function mockUser(email: string): User {
+  return { email } as unknown as User
+}
+
 describe('AdminPage', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  beforeEach(() => { vi.clearAllMocks() })
 
   it('renders loading state', () => {
     vi.mocked(useAuth).mockReturnValue({
@@ -36,71 +46,50 @@ describe('AdminPage', () => {
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
     })
-    render(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>
-    )
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
     expect(screen.getByText('Caricamento...')).toBeTruthy()
   })
 
   it('redirects to / if user is not authorized', () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'hacker@gmail.com' } as any,
+      user: mockUser('hacker@gmail.com'),
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
     })
-    render(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>
-    )
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
     expect(screen.getByTestId('navigate')).toBeTruthy()
     expect(screen.getByTestId('navigate').getAttribute('data-to')).toBe('/')
   })
 
   it('renders correctly for authorized admin', () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as any,
+      user: mockUser('amanti84@gmail.com'),
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
     })
-    render(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>
-    )
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
     expect(screen.getByText('Pannello Amministrazione')).toBeTruthy()
     expect(screen.getByText('Carica dati seed')).toBeTruthy()
   })
 
   it('calls seedUserData function and shows success message', async () => {
     const mockCallable = vi.fn().mockResolvedValue({
-      data: {
-        success: true,
-        data: { inserted: 5, skipped: 0 },
-      },
-    })
-    vi.mocked(httpsCallable).mockReturnValue(mockCallable as any)
+      data: { success: true, data: { inserted: 5, skipped: 0 } },
+    } satisfies MockSeedResult)
+    vi.mocked(httpsCallable).mockReturnValue(mockCallable as unknown as HttpsCallable<Record<string, never>, { success: boolean; data: { inserted: number; skipped: number } }>)
 
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as any,
+      user: mockUser('amanti84@gmail.com'),
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
     })
 
-    render(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>
-    )
-
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
     const button = screen.getByText('Carica dati seed')
     fireEvent.click(button)
-
     expect(button.textContent).toBe('Caricamento in corso...')
 
     await waitFor(() => {
@@ -111,21 +100,17 @@ describe('AdminPage', () => {
   })
 
   it('shows error message on failure', async () => {
-    vi.mocked(httpsCallable).mockReturnValue(vi.fn().mockRejectedValue(new Error('API Error')) as any)
+    const mockCallable = vi.fn().mockRejectedValue(new Error('API Error'))
+    vi.mocked(httpsCallable).mockReturnValue(mockCallable as unknown as HttpsCallable<Record<string, never>, { success: boolean; data: { inserted: number; skipped: number } }>)
 
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as any,
+      user: mockUser('amanti84@gmail.com'),
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
     })
 
-    render(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>
-    )
-
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
     fireEvent.click(screen.getByText('Carica dati seed'))
 
     await waitFor(() => {

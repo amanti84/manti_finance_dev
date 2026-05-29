@@ -27,10 +27,9 @@ export const AdminPage: FC = () => {
 
     try {
       const functions = getFunctions()
-      const seedUserData = httpsCallable<{ inserted: number; skipped: number }>(functions, 'seedUserData')
-      const response = await seedUserData()
-
-      const data = response.data as unknown as { success: boolean; data: { inserted: number; skipped: number } }
+      const seedUserData = httpsCallable<Record<string, never>, { success: boolean; data: { inserted: number; skipped: number } }>(functions, 'seedUserData')
+      const response = await seedUserData({})
+      const data = response.data
 
       if (data.success) {
         setResult(data.data)
@@ -52,7 +51,7 @@ export const AdminPage: FC = () => {
         <h2 className="text-xl font-semibold mb-4">Seed Data</h2>
         <p className="text-gray-600 mb-6">
           Carica i dati reali di PAC e Investimenti per test e sviluppo.
-          L'operazione è idempotente (non crea duplicati).
+          L&apos;operazione è idempotente (non crea duplicati).
         </p>
 
         {error && (

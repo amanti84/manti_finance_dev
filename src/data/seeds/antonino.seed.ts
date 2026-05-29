@@ -1,4 +1,4 @@
-import { PacConfig } from '../../types'
+import type { PacConfig } from '../../types'
 
 // Schema PAC (collezione pacs)
 export const pacsSeed: Partial<PacConfig>[] = [
@@ -26,19 +26,6 @@ export const pacsSeed: Partial<PacConfig>[] = [
   }
 ]
 
-// Schema Investment (collezione investments)
-// {
-//   name: string             // nome strumento
-//   isin?: string
-//   ticker?: string
-//   type: string             // 'ETF' | 'Stock' | 'Bond' | 'Crypto' | 'Other'
-//   amountInvested: number   // capitale investito €
-//   currentValue: number     // valore attuale €
-//   quantity?: number        // numero quote/azioni
-//   purchaseDate: string     // ISO date
-//   platform?: string
-//   notes?: string
-// }
 export const investmentsSeed = [
   {
     name: 'iShares Core MSCI World',
