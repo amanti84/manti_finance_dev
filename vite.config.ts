@@ -35,7 +35,15 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
-    exclude: ['**/node_modules/**', '**/dist/**', '**/functions/**', '**/.{idea,git,cache,output,temp}/**'],
+    // Exclude Cloud Functions directory: functions/ uses firebase-functions
+    // and firebase-admin (Node-only) -- incompatible with Vitest jsdom context.
+    // Cloud Function tests are run separately via functions/package.json.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'functions/**',
+      '**/.{idea,git,cache,output,temp}/**',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
