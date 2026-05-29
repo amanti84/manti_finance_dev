@@ -1,1 +1,5 @@
 export { DocumentiPage } from './DocumentiPage'
+export { DocumentUploader } from './DocumentUploader'
+export { DocumentList } from './DocumentList'
+export { DocumentCard } from './DocumentCard'
+export { DocumentLinkModal } from './DocumentLinkModal'

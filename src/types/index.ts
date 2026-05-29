@@ -254,6 +254,7 @@ export type AuditEntityType =
   | 'monthlyClose'
   | 'scenario'
   | 'alert'
+  | 'document'
 
 export interface AuditLogEntry extends BaseDocument {
   entityType: AuditEntityType
@@ -382,6 +383,36 @@ export interface PensionFund {
   saldoAttuale: number
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+// --------------------------------------------------------
+// DOCUMENT INTAKE (Issue #18)
+// /users/{uid}/documents/{documentId}
+// --------------------------------------------------------
+
+export type DocumentType =
+  | 'cedolino'
+  | 'estratto_conto'
+  | 'conferma_investimento'
+  | 'altro'
+
+export type DocumentStatus =
+  | 'uploaded'       // caricato, non ancora classificato
+  | 'classified'     // classificato manualmente
+  | 'linked'         // classificato + collegato a un'entità
+
+export interface FinancialDocument extends BaseDocument {
+  type: DocumentType
+  status: DocumentStatus
+  fileName: string              // nome originale del file
+  storagePath: string           // path in Firebase Storage: users/{uid}/documents/{ts}_{fileName}
+  downloadUrl: string           // URL pubblico firmato (ottenuto da getDownloadURL)
+  fileSize: number              // bytes
+  mimeType: 'application/pdf' | 'image/jpeg' | 'image/png'
+  documentDate?: Timestamp      // data del documento (es. mese cedolino)
+  note?: string
+  linkedEntityType?: 'payslip' | 'investment' | 'snapshot'
+  linkedEntityId?: string       // id del documento Firestore collegato
 }
 
 export interface PensionContribution {
