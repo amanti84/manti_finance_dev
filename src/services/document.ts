@@ -1,5 +1,6 @@
 import { storage, db } from '../firebase'
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage'
+import { getFunctions, httpsCallable } from 'firebase/functions'
 import {
   collection,
   addDoc,
@@ -87,12 +88,25 @@ export async function uploadDocument(
               })
 
               // Creazione InboxItem per workflow post-upload (Issue #31)
-              await createInboxItem(uid, {
+              const inboxItemResult = await createInboxItem(uid, {
                 documentId: docRef.id,
                 fileName: file.name,
                 source: 'upload',
                 confidenceFields: [],
               })
+
+              if (inboxItemResult.success && file.type === 'application/pdf') {
+                const functions = getFunctions()
+                const parseDocumentFn = httpsCallable(functions, 'parseDocument')
+                // Fire-and-forget: non bloccare il completamento dell'upload
+                void parseDocumentFn({
+                  uid,
+                  storagePath,
+                  inboxItemId: inboxItemResult.data.id,
+                }).catch((err) => {
+                  console.error('parseDocument failed:', err)
+                })
+              }
 
               resolve({ success: true, data: document })
             } catch (e) {

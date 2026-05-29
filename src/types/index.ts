@@ -254,6 +254,7 @@ export type AuditEntityType =
   | 'document'
   | 'goal'
   | 'inboxItem'
+  | 'parseDocument'
 
 export interface AuditLogEntry extends BaseDocument {
   entityType: AuditEntityType
@@ -479,6 +480,26 @@ export interface InboxItem extends BaseDocument {
 export interface InboxBadgeCount {
   total: number
   requiresReview: number
+}
+
+// --------------------------------------------------------
+// PDF PARSER (Issue #29)
+// --------------------------------------------------------
+
+export type ParsedDocumentType = 'cedolino' | 'estratto_conto' | 'conferma_investimento' | 'altro'
+
+export interface ParsedField {
+  fieldName: string // es. 'netSalary', 'grossSalary', 'irpef', 'inps', 'tfr'
+  extractedValue: string // valore grezzo estratto dal testo
+  confidence: number // 0-100
+}
+
+export interface ParseDocumentResult {
+  documentType: ParsedDocumentType
+  month?: number // 1-12, se rilevato
+  year?: number // es. 2026, se rilevato
+  fields: ParsedField[] // campi estratti con confidenza
+  rawText: string // testo grezzo per debug
 }
 
 // --------------------------------------------------------
