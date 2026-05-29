@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Mock } from 'vitest'
 import { simulateScenario, saveScenario } from './whatIf'
 import * as mutuoService from './mutuo'
+import type { SimulazioneEstinzione } from './mutuo'
 import * as snapshotService from './snapshot'
 import * as payrollService from './payroll'
 import { logAudit } from './audit'
@@ -66,6 +67,16 @@ const makeMutuoConfig = () => ({
   },
 })
 
+const makeFakeEstinzione = (): SimulazioneEstinzione => ({
+  dataEstinzione: new Date('2026-06-01'),
+  debitoResiduoAttuale: 70000,
+  interessiRisparmiati: 5000,
+  rateRisparmiate: 12,
+  risparmioTotale: 5000,
+  costoEstinzioneAnticipata: 0,
+  convenienza: true,
+})
+
 const logAuditMock = logAudit as Mock
 
 describe('whatIf service', () => {
@@ -85,11 +96,10 @@ describe('whatIf service', () => {
       vi.spyOn(mutuoService, 'getMutuoConfig').mockResolvedValue(makeMutuoConfig())
       vi.spyOn(mutuoService, 'simulateAnticipatedExtinction').mockReturnValue({
         success: true,
-        data: { interessiRisparmiati: 5000 } as ReturnType<typeof mutuoService.simulateAnticipatedExtinction>['data'] & object,
+        data: makeFakeEstinzione(),
       })
 
       const result = await simulateScenario(uid, input)
-
       expect(result.success).toBe(true)
       expect(result.data?.risparmioInteressi).toBe(625)
       expect(result.data?.surplusMensileProiettato).toBe(63)
@@ -106,7 +116,6 @@ describe('whatIf service', () => {
       vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
 
       const result = await simulateScenario(uid, input)
-
       expect(result.success).toBe(true)
       expect(result.data?.patrimonioProiettato).toBeCloseTo(59672, -1)
     })
@@ -121,7 +130,6 @@ describe('whatIf service', () => {
       vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
 
       const result = await simulateScenario(uid, input)
-
       expect(result.success).toBe(true)
       expect(result.data?.surplusMensileProiettato).toBe(-200)
       expect(result.data?.patrimonioProiettato).toBeGreaterThan(50000)
@@ -141,7 +149,6 @@ describe('whatIf service', () => {
       })
 
       const result = await simulateScenario(uid, input)
-
       expect(result.success).toBe(true)
       expect(result.data?.surplusMensileProiettato).toBe(167)
     })
@@ -166,7 +173,6 @@ describe('whatIf service', () => {
       }
 
       vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
-
       await simulateScenario(uid, input)
 
       expect(firestore.addDoc).not.toHaveBeenCalled()
@@ -181,18 +187,25 @@ describe('whatIf service', () => {
       const uid = 'user123'
       const name = 'Test Scenario'
       const input = { type: 'INVESTIMENTO_ETF' as const, params: { importoInvestimento: 1000 } }
-      const output = { patrimonioProiettato: 60000, surplusMensileProiettato: 0, costoOpportunita: 100, descrizione: 'Test' }
+      const output = {
+        patrimonioProiettato: 60000,
+        surplusMensileProiettato: 0,
+        costoOpportunita: 100,
+        descrizione: 'Test'
+      }
       const baselineId = '2026-05'
 
       await expect(
         saveScenario(uid, name, input, output, baselineId)
       ).resolves.toMatchObject({ success: true })
 
-      expect(logAuditMock).toHaveBeenCalledWith(expect.objectContaining({
-        action: 'create',
-        entityType: 'scenario',
-        newValue: expect.objectContaining({ name }),
-      }))
+      expect(logAuditMock).toHaveBeenCalledWith(
+        expect.objectContaining<Record<string, unknown>>({
+          action: 'create',
+          entityType: 'scenario',
+          newValue: expect.objectContaining<Record<string, unknown>>({ name }) as unknown,
+        })
+      )
     })
   })
 })
