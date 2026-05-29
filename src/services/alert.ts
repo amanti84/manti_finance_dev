@@ -38,8 +38,9 @@ export async function evaluateAlerts(uid: string): Promise<ApiResult<FinancialAl
     const alertsToCreate: Omit<FinancialAlert, 'id' | 'createdAt' | 'updatedAt'>[] = []
 
     // 1. Saldo disponibile < 3.000€ (soglia default) -> SALDO_SOTTO_SOGLIA critical
+    // FIX [Blocker 1]: explicit null check before accessing .availableBalance
     const balanceResult = await getAvailableBalance(uid)
-    if (balanceResult.success && balanceResult.data.availableBalance < 3000) {
+    if (balanceResult.success && balanceResult.data !== null && balanceResult.data.availableBalance < 3000) {
       alertsToCreate.push({
         type: 'SALDO_SOTTO_SOGLIA',
         severity: 'critical',
@@ -61,21 +62,22 @@ export async function evaluateAlerts(uid: string): Promise<ApiResult<FinancialAl
       }
     }
 
-    // 3. Mese non chiuso entro fine mese -> MESE_NON_CHIUSO info
-    const lastDayOfMonth = new Date(currentYear, currentMonth, 0).getDate()
-    if (dayOfMonth > lastDayOfMonth - 3) {
-      const snapshots = await listSnapshots(uid, 1)
-      const latest = snapshots[0]
-      const isCurrentMonthClosed = latest?.year === currentYear && latest?.month === currentMonth
-
-      if (!isCurrentMonthClosed) {
-        alertsToCreate.push({
-          type: 'MESE_NON_CHIUSO',
-          severity: 'info',
-          message: `Il mese di ${currentMonth}/${currentYear} non è ancora stato chiuso`,
-          read: false,
-        })
-      }
+    // 3. Mese precedente non chiuso -> MESE_NON_CHIUSO info
+    // FIX [Blocker 2]: check previous month closure, not current month.
+    // Current month can never be "closed" while still in progress — that was a false positive.
+    const prevMonth = (currentMonth === 1 ? 12 : currentMonth - 1) as Month
+    const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear
+    const snapshotsForClose = await listSnapshots(uid, 1)
+    const latestSnapshot = snapshotsForClose[0]
+    const isPrevMonthClosed =
+      latestSnapshot?.year === prevYear && latestSnapshot?.month === prevMonth
+    if (!isPrevMonthClosed) {
+      alertsToCreate.push({
+        type: 'MESE_NON_CHIUSO',
+        severity: 'info',
+        message: `Il mese di ${prevMonth}/${prevYear} non è ancora stato chiuso`,
+        read: false,
+      })
     }
 
     // Recuperiamo gli ultimi snapshot per le regole 4 e 5
@@ -132,7 +134,7 @@ export async function evaluateAlerts(uid: string): Promise<ApiResult<FinancialAl
       }
     }
 
-    // Persistenza
+    // Persistenza: evita duplicati per alert non letti dello stesso tipo
     const currentAlertsResult = await getActiveAlerts(uid)
     const existingAlerts = currentAlertsResult.success ? currentAlertsResult.data : []
 
