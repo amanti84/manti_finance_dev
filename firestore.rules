@@ -49,6 +49,13 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      match /pacs/{pacId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
       match /pac_payments/{paymentId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();

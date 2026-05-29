@@ -1,9 +1,13 @@
 /**
  * Cloud Functions for manti_finance_dev
- * Issue #22 - Security & Input Validation
  */
+import { initializeApp } from "firebase-admin/app";
+initializeApp();
+
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { z } from "zod";
+
+export { seedUserData } from "./seedUserData";
 
 // Schema di validazione per una transazione generica
 const TransactionSchema = z.object({
@@ -16,7 +20,6 @@ const TransactionSchema = z.object({
 
 /**
  * Funzione di esempio che valida l'input di una transazione
- * (In uno scenario reale, questa potrebbe salvare su Firestore dopo la validazione)
  */
 export const validateAndProcessTransaction = onCall((request) => {
   // 1. Verifica autenticazione
