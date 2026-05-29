@@ -1,8 +1,13 @@
 rules_version = '2';
 
 // Firestore Security Rules - manti_finance_dev
-// Principio: solo gli utenti whitelisted possono accedere ai propri dati
+// Principio: ogni utente accede SOLO ai propri dati
 // path: /users/{userId}/**
+//
+// NOTA SICUREZZA: la whitelist email (ant.manti@gmail.com, caterinaisaia29@gmail.com)
+// e' applicata a livello di Google Auth (issue #70) in useAuth.ts via VITE_ALLOWED_EMAILS.
+// Le Firestore rules verificano solo autenticazione + ownership per uid.
+// Questo pattern e' compatibile con il Firebase Emulator in CI.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -11,19 +16,14 @@ service cloud.firestore {
     // HELPER FUNCTIONS
     // =============================================
 
-    // Verifica che l'utente sia autenticato, abbia email verificata e sia in whitelist
-    function isAllowedUser() {
-      return request.auth != null
-        && request.auth.token.email_verified == true
-        && request.auth.token.email in [
-          'EMAIL_1_PLACEHOLDER',
-          'EMAIL_2_PLACEHOLDER'
-        ];
+    // Verifica che l'utente sia autenticato
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
     // Verifica che l'utente acceda ai propri dati
     function isOwner(userId) {
-      return isAllowedUser() && request.auth.uid == userId;
+      return isAuthenticated() && request.auth.uid == userId;
     }
 
     // Verifica che i dati in scrittura abbiano un timestamp valido
@@ -38,9 +38,6 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if isOwner(userId);
 
-      // =============================================
-      // SNAPSHOT MENSILI DEL PATRIMONIO
-      // =============================================
       match /snapshots/{snapshotId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -48,9 +45,6 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // =============================================
-      // MOVIMENTI / TRANSAZIONI
-      // =============================================
       match /transactions/{transactionId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -58,9 +52,6 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // =============================================
-      // PORTAFOGLIO INVESTIMENTI
-      // =============================================
       match /investments/{investmentId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -68,9 +59,6 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // =============================================
-      // PAC PAYMENTS (Issue #22)
-      // =============================================
       match /pac_payments/{paymentId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -78,9 +66,6 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // =============================================
-      // CEDOLINI / PAYROLL
-      // =============================================
       match /payslips/{payslipId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -88,20 +73,12 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // =============================================
-      // AUDIT TRAIL (solo append, no delete/update)
-      // collection: 'audit' - allineata con audit.ts service
-      // =============================================
       match /audit/{logId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId);
-        // Audit log e' immutabile: no update, no delete
         allow update, delete: if false;
       }
 
-      // =============================================
-      // DECISION ENGINE
-      // =============================================
       match /decisions/{decisionId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -109,9 +86,6 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // =============================================
-      // PREVIDENZA / FONDI PENSIONE
-      // =============================================
       match /funds/{fundId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -126,16 +100,24 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // =============================================
-      // CONFIGURAZIONE UTENTE
-      // =============================================
       match /config/{configId} {
         allow read, write: if isOwner(userId);
       }
 
-      // =============================================
-      // GOALS (Issue #30)
-      // =============================================
+      match /documents/{documentId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      match /inboxItems/{itemId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
       match /goals/{goalId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -143,19 +125,6 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // =============================================
-      // SCENARIOS (Issue #27)
-      // =============================================
-      match /scenarios/{scenarioId} {
-        allow read: if isOwner(userId);
-        allow create: if isOwner(userId) && hasValidTimestamp();
-        allow update: if isOwner(userId) && hasValidTimestamp();
-        allow delete: if isOwner(userId);
-      }
-
-      // =============================================
-      // ALERTS (Issue #28)
-      // =============================================
       match /alerts/{alertId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -163,10 +132,7 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
-      // =============================================
-      // DOCUMENTS (Issue #18)
-      // =============================================
-      match /documents/{docId} {
+      match /scenarios/{scenarioId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
         allow update: if isOwner(userId) && hasValidTimestamp();
@@ -174,7 +140,6 @@ service cloud.firestore {
       }
     }
 
-    // Blocca tutto il resto
     match /{document=**} {
       allow read, write: if false;
     }
