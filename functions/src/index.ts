@@ -47,3 +47,5 @@ export const validateAndProcessTransaction = onCall((request) => {
     throw new HttpsError("internal", "Errore interno durante la validazione");
   }
 });
+
+export { parseDocument } from "./parseDocument";

@@ -32,3 +32,6 @@ logs/
 
 # Test
 coverage/
+
+# Firebase Functions
+functions/lib/

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateAndProcessTransaction = void 0;
+exports.parseDocument = exports.validateAndProcessTransaction = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const zod_1 = require("zod");
 const TransactionSchema = zod_1.z.object({
@@ -32,4 +32,6 @@ exports.validateAndProcessTransaction = (0, https_1.onCall)((request) => {
         throw new https_1.HttpsError("internal", "Errore interno durante la validazione");
     }
 });
+var parseDocument_1 = require("./parseDocument");
+Object.defineProperty(exports, "parseDocument", { enumerable: true, get: function () { return parseDocument_1.parseDocument; } });
 //# sourceMappingURL=index.js.map
