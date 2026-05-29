@@ -5,36 +5,26 @@ rules_version = '2';
 // path: /users/{userId}/**
 //
 // NOTA SICUREZZA: la whitelist email (ant.manti@gmail.com, caterinaisaia29@gmail.com)
-// e' applicata a livello di Google Auth (issue #70) - non nelle Firestore rules.
-// Le rules Firestore verificano solo autenticazione + ownership per uid.
+// e' applicata a livello di Google Auth (issue #70) in useAuth.ts via VITE_ALLOWED_EMAILS.
+// Le Firestore rules verificano solo autenticazione + ownership per uid.
 // Questo pattern e' compatibile con il Firebase Emulator in CI.
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // =============================================
-    // HELPER FUNCTIONS
-    // =============================================
-
-    // Verifica che l'utente sia autenticato
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Verifica che l'utente acceda ai propri dati
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Verifica che i dati in scrittura abbiano un timestamp valido
     function hasValidTimestamp() {
       return request.resource.data.keys().hasAll(['updatedAt'])
           && request.resource.data.updatedAt is timestamp;
     }
 
-    // =============================================
-    // DATI UTENTE (root document)
-    // =============================================
     match /users/{userId} {
       allow read, write: if isOwner(userId);
 
@@ -104,6 +94,7 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      // DOCUMENTS (Issue #18)
       match /documents/{documentId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -111,6 +102,7 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      // INBOX ITEMS (Issue #31)
       match /inboxItems/{itemId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -118,6 +110,7 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      // GOALS (Issue #30)
       match /goals/{goalId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -125,6 +118,7 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      // ALERTS (Issue #28)
       match /alerts/{alertId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();
@@ -132,6 +126,7 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      // SCENARIOS / WHAT-IF (Issue #27)
       match /scenarios/{scenarioId} {
         allow read: if isOwner(userId);
         allow create: if isOwner(userId) && hasValidTimestamp();

@@ -25,22 +25,15 @@ const STORAGE_PATH = (uid: string, fileName: string) =>
 const ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
-/**
- * Carica un file su Storage e crea il documento su Firestore
- * onProgress: callback opzionale con percentuale 0–100
- */
 export async function uploadDocument(
   uid: string,
   file: File,
   onProgress?: (percent: number) => void
 ): Promise<ApiResult<FinancialDocument>> {
   try {
-    // Validazione mimeType
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return { success: false, error: 'Formato file non supportato. Caricare PDF, JPG o PNG.' }
     }
-
-    // Validazione fileSize
     if (file.size > MAX_FILE_SIZE) {
       return { success: false, error: 'Il file supera la dimensione massima di 10MB.' }
     }
@@ -114,9 +107,6 @@ export async function uploadDocument(
   }
 }
 
-/**
- * Restituisce tutti i documenti dell'utente
- */
 export async function listDocuments(
   uid: string,
   filters?: { type?: DocumentType; status?: DocumentStatus }
@@ -132,7 +122,6 @@ export async function listDocuments(
       constraints.push(where('status', '==', filters.status))
     }
 
-    // orderBy solo se nessun filtro where per evitare indice composito obbligatorio
     if (constraints.length === 0) {
       constraints.push(orderBy('createdAt', 'desc'))
     }
@@ -149,9 +138,6 @@ export async function listDocuments(
   }
 }
 
-/**
- * Classifica un documento (aggiorna type e status → 'classified')
- */
 export async function classifyDocument(
   uid: string,
   documentId: string,
@@ -192,9 +178,6 @@ export async function classifyDocument(
   }
 }
 
-/**
- * Collega un documento a un'entità Firestore (payslip, investment, snapshot)
- */
 export async function linkDocument(
   uid: string,
   documentId: string,
@@ -234,9 +217,6 @@ export async function linkDocument(
   }
 }
 
-/**
- * Aggiorna note di un documento
- */
 export async function updateDocumentNote(
   uid: string,
   documentId: string,
@@ -273,9 +253,6 @@ export async function updateDocumentNote(
   }
 }
 
-/**
- * Elimina documento da Storage e da Firestore
- */
 export async function deleteDocument(uid: string, documentId: string): Promise<ApiResult<void>> {
   try {
     const docRef = doc(db, COLLECTION(uid), documentId)
@@ -284,12 +261,10 @@ export async function deleteDocument(uid: string, documentId: string): Promise<A
 
     const data = snap.data() as FinancialDocument
 
-    // 1. Delete from Storage
     try {
       const storageRef = ref(storage, data.storagePath)
       await deleteObject(storageRef)
     } catch (error: unknown) {
-      // Se Storage delete fallisce con codice storage/object-not-found, proseguiamo
       if (
         error !== null &&
         typeof error === 'object' &&
@@ -302,7 +277,6 @@ export async function deleteDocument(uid: string, documentId: string): Promise<A
       }
     }
 
-    // 2. Delete from Firestore
     await deleteDoc(docRef)
 
     await logAudit({

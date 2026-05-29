@@ -28,7 +28,7 @@ export type ScenarioType =
 
 export interface ScenarioInput {
   type: ScenarioType
-  params: Record<string, number> // es. { importoEstinzione: 10000 }
+  params: Record<string, number>
 }
 
 export interface ScenarioOutput {
@@ -43,7 +43,7 @@ export interface Scenario extends BaseDocument {
   name: string
   input: ScenarioInput
   output: ScenarioOutput
-  baselineSnapshotId: string // snapshotId di riferimento (es. 2026-05)
+  baselineSnapshotId: string
 }
 
 // --------------------------------------------------------
@@ -65,7 +65,7 @@ export interface RecurringExpense extends BaseDocument {
   name: string
   amount: number
   frequency: RecurringExpenseFrequency
-  dayOfMonth?: number // giorno scadenza
+  dayOfMonth?: number
   category: RecurringExpenseCategory
   accountId: string
 }
@@ -83,7 +83,7 @@ export interface UserProfile extends BaseDocument {
   email: string
   displayName: string
   currency: Currency
-  taxCode?: string // codice fiscale
+  taxCode?: string
   onboardingComplete: boolean
 }
 
@@ -95,22 +95,19 @@ export interface UserProfile extends BaseDocument {
 export interface PatrimonioSnapshot extends BaseDocument {
   year: number
   month: Month
-  // Attivi
-  contiCorrenti: number          // liquidita' totale
-  investimenti: number           // portafoglio totale
-  immobili: number               // valore immobili
-  fondoPensione: number          // Fon.Te + altri fondi
-  tfr: number                    // TFR maturato
-  // Passivi
-  mutuo: number                  // debito residuo mutuo
+  contiCorrenti: number
+  investimenti: number
+  immobili: number
+  fondoPensione: number
+  tfr: number
+  mutuo: number
   altriDebiti: number
-  // Calcolati
-  patrimonioNetto: number        // attivi - passivi
+  patrimonioNetto: number
   note?: string
 }
 
 export interface SnapshotWithDelta extends PatrimonioSnapshot {
-  delta: number | null // differenza rispetto al mese precedente
+  delta: number | null
 }
 
 // --------------------------------------------------------
@@ -134,8 +131,8 @@ export interface Transaction extends BaseDocument {
   description: string
   accountId?: string
   tags?: string[]
-  isKindergarten?: boolean    // spesa figlio (issue #19)
-  confidence: number          // 0-1, per Confidence Review (issue #31)
+  isKindergarten?: boolean
+  confidence: number
   source: 'manual' | 'import' | 'email'
 }
 
@@ -157,11 +154,11 @@ export interface Investment extends BaseDocument {
   assetClass: AssetClass
   broker: Broker
   quantity: number
-  avgCost: number               // prezzo medio di carico
+  avgCost: number
   currentPrice: number
-  currentValue: number          // quantity * currentPrice
+  currentValue: number
   currency: Currency
-  isPac: boolean                // e' un PAC (issue #11)
+  isPac: boolean
   pacMonthlyAmount?: number
   lastPriceUpdate: Timestamp
 }
@@ -174,18 +171,18 @@ export interface Investment extends BaseDocument {
 export interface Payslip extends BaseDocument {
   year: number
   month: Month
-  grossSalary: number           // RAL mensile lordo
-  netSalary: number             // netto in busta
+  grossSalary: number
+  netSalary: number
   irpef: number
   inps: number
-  tfr: number                   // quota TFR del mese
-  fondoPensione: number         // versamento mensile Fon.Te
+  tfr: number
+  fondoPensione: number
   bonus?: number
   rimborsiSpese?: number
-  surplus?: number              // calcolato: net - spese fisse
-  documentUrl?: string          // Storage path del PDF
-  parsed: boolean               // cedolino parsato automaticamente
-  rawText?: string              // testo grezzo per debugging
+  surplus?: number
+  documentUrl?: string
+  parsed: boolean
+  rawText?: string
 }
 
 export interface SurplusBreakdown {
@@ -320,24 +317,23 @@ export type GoalStatus = 'active' | 'completed' | 'paused'
 
 export interface Goal extends BaseDocument {
   type: GoalType
-  name: string // label libera (es. "Estingui mutuo entro 2030")
-  targetAmount: number // importo obiettivo in EUR
-  targetDate: Timestamp // data target — MAI Date JS
-  baselineAmount: number // valore al momento della creazione del goal
-  currentAmount: number // valore attuale (aggiornato ogni monthly close)
+  name: string
+  targetAmount: number
+  targetDate: Timestamp
+  baselineAmount: number
+  currentAmount: number
   status: GoalStatus
   note?: string
 }
 
-// Tipo UI-only — NON salvato su Firestore
 export interface GoalProgress {
   goalId: string
   currentAmount: number
   targetAmount: number
-  progressPercent: number // 0-100
-  projectedCompletionDate: Date | null // null se tasso di avanzamento <= 0
+  progressPercent: number
+  projectedCompletionDate: Date | null
   isOnTrack: boolean
-  milestoneReached: 0 | 25 | 50 | 75 | 100 | null // ultima milestone raggiunta
+  milestoneReached: 0 | 25 | 50 | 75 | 100 | null
 }
 
 // --------------------------------------------------------
@@ -374,11 +370,6 @@ export interface UserConfig extends BaseDocument {
 // UI / UTILITY TYPES
 // --------------------------------------------------------
 
-/**
- * Pattern canonico per tutti i metodi di servizio.
- * Usare sempre { success, data, error } — MAI { data, loading, error }.
- * Riferimento: src/services/payroll.ts
- */
 export type ApiResult<T> =
   | { success: true; data: T; error?: never }
   | { success: false; data?: never; error: string }
@@ -435,22 +426,22 @@ export type DocumentType =
   | 'altro'
 
 export type DocumentStatus =
-  | 'uploaded'       // caricato, non ancora classificato
-  | 'classified'     // classificato manualmente
-  | 'linked'         // classificato + collegato a un'entità
+  | 'uploaded'
+  | 'classified'
+  | 'linked'
 
 export interface FinancialDocument extends BaseDocument {
   type: DocumentType
   status: DocumentStatus
-  fileName: string              // nome originale del file
-  storagePath: string           // path in Firebase Storage: users/{uid}/documents/{ts}_{fileName}
-  downloadUrl: string           // URL pubblico firmato (ottenuto da getDownloadURL)
-  fileSize: number              // bytes
+  fileName: string
+  storagePath: string
+  downloadUrl: string
+  fileSize: number
   mimeType: 'application/pdf' | 'image/jpeg' | 'image/png'
-  documentDate?: Timestamp      // data del documento (es. mese cedolino)
+  documentDate?: Timestamp
   note?: string
   linkedEntityType?: 'payslip' | 'investment' | 'snapshot'
-  linkedEntityId?: string       // id del documento Firestore collegato
+  linkedEntityId?: string
 }
 
 // --------------------------------------------------------
@@ -467,16 +458,16 @@ export type InboxItemStatus =
   | 'ERRORE'
 
 export interface ConfidenceField {
-  fieldName: string          // es. 'grossSalary', 'netSalary', 'irpef'
-  extractedValue: unknown    // valore estratto automaticamente
-  confidence: number         // 0-100
-  confirmedValue?: unknown   // valore confermato dall'utente
+  fieldName: string
+  extractedValue: unknown
+  confidence: number
+  confirmedValue?: unknown
   confirmedAt?: Timestamp
 }
 
 export interface InboxItem extends BaseDocument {
-  documentId: string         // FK → FinancialDocument.id (da #18)
-  fileName: string           // denormalizzato per UX senza join aggiuntivi
+  documentId: string
+  fileName: string
   status: InboxItemStatus
   source: 'upload' | 'email'
   confidenceFields: ConfidenceField[]
@@ -485,11 +476,14 @@ export interface InboxItem extends BaseDocument {
   errorMessage?: string
 }
 
-// Tipo UI-only — NON salvato su Firestore
 export interface InboxBadgeCount {
-  total: number              // item con status != 'CONFERMATO' && != 'ERRORE'
-  requiresReview: number     // item con almeno un campo confidence < 80
+  total: number
+  requiresReview: number
 }
+
+// --------------------------------------------------------
+// PREVIDENZA CONTRIBUTIONS
+// --------------------------------------------------------
 
 export interface PensionContribution {
   id: string
