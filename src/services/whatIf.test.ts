@@ -85,11 +85,10 @@ describe('whatIf service', () => {
       vi.spyOn(mutuoService, 'getMutuoConfig').mockResolvedValue(makeMutuoConfig())
       vi.spyOn(mutuoService, 'simulateAnticipatedExtinction').mockReturnValue({
         success: true,
-        data: { interessiRisparmiati: 5000 } as ReturnType<typeof mutuoService.simulateAnticipatedExtinction>['data'] & object,
+        data: { interessiRisparmiati: 5000 } as { interessiRisparmiati: number },
       })
 
       const result = await simulateScenario(uid, input)
-
       expect(result.success).toBe(true)
       expect(result.data?.risparmioInteressi).toBe(625)
       expect(result.data?.surplusMensileProiettato).toBe(63)
@@ -106,7 +105,6 @@ describe('whatIf service', () => {
       vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
 
       const result = await simulateScenario(uid, input)
-
       expect(result.success).toBe(true)
       expect(result.data?.patrimonioProiettato).toBeCloseTo(59672, -1)
     })
@@ -121,7 +119,6 @@ describe('whatIf service', () => {
       vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
 
       const result = await simulateScenario(uid, input)
-
       expect(result.success).toBe(true)
       expect(result.data?.surplusMensileProiettato).toBe(-200)
       expect(result.data?.patrimonioProiettato).toBeGreaterThan(50000)
@@ -141,7 +138,6 @@ describe('whatIf service', () => {
       })
 
       const result = await simulateScenario(uid, input)
-
       expect(result.success).toBe(true)
       expect(result.data?.surplusMensileProiettato).toBe(167)
     })
@@ -166,7 +162,6 @@ describe('whatIf service', () => {
       }
 
       vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
-
       await simulateScenario(uid, input)
 
       expect(firestore.addDoc).not.toHaveBeenCalled()
@@ -181,7 +176,12 @@ describe('whatIf service', () => {
       const uid = 'user123'
       const name = 'Test Scenario'
       const input = { type: 'INVESTIMENTO_ETF' as const, params: { importoInvestimento: 1000 } }
-      const output = { patrimonioProiettato: 60000, surplusMensileProiettato: 0, costoOpportunita: 100, descrizione: 'Test' }
+      const output = {
+        patrimonioProiettato: 60000,
+        surplusMensileProiettato: 0,
+        costoOpportunita: 100,
+        descrizione: 'Test'
+      }
       const baselineId = '2026-05'
 
       await expect(
