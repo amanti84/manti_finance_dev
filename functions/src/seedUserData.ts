@@ -18,14 +18,93 @@ export const seedUserData = onCall(async (request) => {
 
   // ============================================================
   // DATI REALI — Estratti da manti_finance (29/05/2026)
-  // Source: screenshot investimenti attivi del vecchio sistema
   // ============================================================
 
-  // PAC seed — mantenuto vuoto: i PAC reali verranno importati
-  // tramite la Cloud Function importLegacyData (issue #76)
-  const pacsSeed: Array<Record<string, unknown>> = [];
+  // PAC REALI — 3 PAC attivi con badge Auto-PAC
+  const pacsSeed = [
+    {
+      id: "real_pac_001",
+      name: "Eurofundlux - ClearBridge US Equity A",
+      isin: "LU2635193969",
+      ticker: "LU2635193969",
+      type: "Fund",
+      platform: "Credem",
+      priceSource: "FT",
+      active: true,
+      autoUpdate: true,
+      // PAC config
+      monthlyAmount: 500,
+      startDate: "2025-11-10",
+      monthlyDays: [20],
+      // Snapshot valori al 29/05/2026
+      shares: 1620.7481,
+      avgCost: 11.62,
+      lastPrice: 13.39,
+      amountInvested: 18832.45,
+    },
+    {
+      id: "real_pac_002",
+      name: "Bitcoin EUR",
+      isin: null,
+      ticker: "BTC-EUR",
+      type: "Crypto",
+      platform: "Exchange",
+      priceSource: "YAHOO",
+      active: true,
+      autoUpdate: true,
+      // PAC config
+      monthlyAmount: 2,
+      startDate: "2025-11-14",
+      monthlyDays: [29],
+      // Snapshot valori al 29/05/2026
+      shares: 0.0108,
+      avgCost: 82667.40,
+      lastPrice: 63367.20,
+      amountInvested: 892.35,
+    },
+    {
+      id: "real_pac_003",
+      name: "iShares Core MSCI World UCITS ETF USD (Acc)",
+      isin: "IE00B4L5Y983",
+      ticker: "IWDA",
+      type: "ETF",
+      platform: "Directa",
+      priceSource: "YAHOO",
+      active: true,
+      autoUpdate: true,
+      // PAC config
+      monthlyAmount: 400,
+      startDate: "2025-11-13",
+      monthlyDays: [1],
+      // Snapshot valori al 29/05/2026
+      shares: 95.0,
+      avgCost: 110.92,
+      lastPrice: 123.43,
+      amountInvested: 10537.76,
+    },
+    {
+      id: "real_pac_004",
+      name: "iShares MSCI World SRI UCITS ETF EUR (Acc)",
+      isin: "IE00BYX2JD69",
+      ticker: "IE00BYX2JD69",
+      type: "ETF",
+      platform: "Directa",
+      priceSource: "YAHOO",
+      active: true,
+      autoUpdate: true,
+      // PAC config
+      monthlyAmount: 100,
+      startDate: "2025-11-13",
+      monthlyDays: [1],
+      // Snapshot valori al 29/05/2026
+      shares: 154.0,
+      avgCost: 12.05,
+      lastPrice: 13.32,
+      amountInvested: 1855.88,
+    },
+  ];
 
-  // Investimenti reali (9 posizioni attive al 29/05/2026)
+  // INVESTIMENTI REALI — 11 posizioni attive al 29/05/2026
   const investmentsSeed = [
     // ---- FONDI EUROMOBILIARE (fonte: FT.com) ----
     {
@@ -204,10 +283,9 @@ export const seedUserData = onCall(async (request) => {
   try {
     const now = Timestamp.now();
 
-    // Batch PACs (vuoto per ora — vedi issue #76 per importLegacyData)
+    // Batch PAC reali
     for (const pac of pacsSeed) {
-      const pacId = pac.id as string;
-      const docRef = db.doc(`users/${uid}/pacs/${pacId}`);
+      const docRef = db.doc(`users/${uid}/pacs/${pac.id}`);
       const docSnap = await docRef.get();
       if (!docSnap.exists) {
         await docRef.set({ ...pac, createdAt: now, updatedAt: now });
