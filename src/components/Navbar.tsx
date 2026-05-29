@@ -5,10 +5,14 @@ import { auth } from '../firebase'
 import { signOut } from 'firebase/auth'
 import { getActiveAlerts } from '../services/alert'
 import { useAuth } from '../hooks/useAuth'
+import { InboxBadge } from '../modules/inbox'
+import { listInboxItems, calculateBadgeCount } from '../services/inbox'
+import type { InboxBadgeCount } from '../types'
 
 export const Navbar: FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [alertCount, setAlertCount] = useState(0)
+  const [inboxCount, setInboxCount] = useState<InboxBadgeCount>({ total: 0, requiresReview: 0 })
   const { user } = useAuth()
 
   useEffect(() => {
@@ -19,7 +23,14 @@ export const Navbar: FC = () => {
           setAlertCount(result.data.length)
         }
       }
+      const fetchInbox = async () => {
+        const result = await listInboxItems(user.uid)
+        if (result.success && result.data) {
+          setInboxCount(calculateBadgeCount(result.data))
+        }
+      }
       void fetchAlerts()
+      void fetchInbox()
       // Optional: set up real-time listener if Firestore rules allow it,
       // but for now polling or refresh is enough as per requirements.
     }
@@ -36,7 +47,9 @@ export const Navbar: FC = () => {
     { to: '/kindergarten', label: 'Kindergarten' },
     { to: '/documenti', label: 'Documenti' },
     { to: '/what-if', label: 'What-if' },
+    { to: '/goals', label: 'Obiettivi' },
     { to: '/alerts', label: 'Alerts' },
+    { to: '/inbox', label: 'Inbox' },
   ]
 
   const handleLogout = async () => {
@@ -83,6 +96,9 @@ export const Navbar: FC = () => {
               {alertCount}
             </NavLink>
           )}
+          <NavLink to="/inbox" style={{ textDecoration: 'none' }}>
+            <InboxBadge count={inboxCount} />
+          </NavLink>
         </div>
 
         {/* Desktop Menu */}

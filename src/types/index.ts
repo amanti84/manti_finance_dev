@@ -254,6 +254,9 @@ export type AuditEntityType =
   | 'monthlyClose'
   | 'scenario'
   | 'alert'
+  | 'document'
+  | 'goal'
+  | 'inboxItem'
 
 export interface AuditLogEntry extends BaseDocument {
   entityType: AuditEntityType
@@ -299,6 +302,42 @@ export interface FinancialAlert extends BaseDocument {
   message: string
   read: boolean
   snoozedUntil?: Timestamp
+}
+
+// --------------------------------------------------------
+// GOAL TRACKER (Issue #30)
+// /users/{uid}/goals/{goalId}
+// --------------------------------------------------------
+
+export type GoalType =
+  | 'ESTINZIONE_MUTUO'
+  | 'PATRIMONIO_TARGET'
+  | 'FONDO_PENSIONE'
+  | 'RISERVA_LIQUIDITA'
+  | 'OBIETTIVO_KINDERGARTEN'
+
+export type GoalStatus = 'active' | 'completed' | 'paused'
+
+export interface Goal extends BaseDocument {
+  type: GoalType
+  name: string // label libera (es. "Estingui mutuo entro 2030")
+  targetAmount: number // importo obiettivo in EUR
+  targetDate: Timestamp // data target — MAI Date JS
+  baselineAmount: number // valore al momento della creazione del goal
+  currentAmount: number // valore attuale (aggiornato ogni monthly close)
+  status: GoalStatus
+  note?: string
+}
+
+// Tipo UI-only — NON salvato su Firestore
+export interface GoalProgress {
+  goalId: string
+  currentAmount: number
+  targetAmount: number
+  progressPercent: number // 0-100
+  projectedCompletionDate: Date | null // null se tasso di avanzamento <= 0
+  isOnTrack: boolean
+  milestoneReached: 0 | 25 | 50 | 75 | 100 | null // ultima milestone raggiunta
 }
 
 // --------------------------------------------------------
@@ -382,6 +421,74 @@ export interface PensionFund {
   saldoAttuale: number
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+// --------------------------------------------------------
+// DOCUMENT INTAKE (Issue #18)
+// /users/{uid}/documents/{documentId}
+// --------------------------------------------------------
+
+export type DocumentType =
+  | 'cedolino'
+  | 'estratto_conto'
+  | 'conferma_investimento'
+  | 'altro'
+
+export type DocumentStatus =
+  | 'uploaded'       // caricato, non ancora classificato
+  | 'classified'     // classificato manualmente
+  | 'linked'         // classificato + collegato a un'entità
+
+export interface FinancialDocument extends BaseDocument {
+  type: DocumentType
+  status: DocumentStatus
+  fileName: string              // nome originale del file
+  storagePath: string           // path in Firebase Storage: users/{uid}/documents/{ts}_{fileName}
+  downloadUrl: string           // URL pubblico firmato (ottenuto da getDownloadURL)
+  fileSize: number              // bytes
+  mimeType: 'application/pdf' | 'image/jpeg' | 'image/png'
+  documentDate?: Timestamp      // data del documento (es. mese cedolino)
+  note?: string
+  linkedEntityType?: 'payslip' | 'investment' | 'snapshot'
+  linkedEntityId?: string       // id del documento Firestore collegato
+}
+
+// --------------------------------------------------------
+// FINANCIAL INBOX + CONFIDENCE REVIEW (Issue #31)
+// /users/{uid}/inboxItems/{itemId}
+// --------------------------------------------------------
+
+export type InboxItemStatus =
+  | 'RICEVUTO'
+  | 'IN_ELABORAZIONE'
+  | 'ESTRATTO'
+  | 'IN_REVIEW'
+  | 'CONFERMATO'
+  | 'ERRORE'
+
+export interface ConfidenceField {
+  fieldName: string          // es. 'grossSalary', 'netSalary', 'irpef'
+  extractedValue: unknown    // valore estratto automaticamente
+  confidence: number         // 0-100
+  confirmedValue?: unknown   // valore confermato dall'utente
+  confirmedAt?: Timestamp
+}
+
+export interface InboxItem extends BaseDocument {
+  documentId: string         // FK → FinancialDocument.id (da #18)
+  fileName: string           // denormalizzato per UX senza join aggiuntivi
+  status: InboxItemStatus
+  source: 'upload' | 'email'
+  confidenceFields: ConfidenceField[]
+  reviewedAt?: Timestamp
+  confirmedAt?: Timestamp
+  errorMessage?: string
+}
+
+// Tipo UI-only — NON salvato su Firestore
+export interface InboxBadgeCount {
+  total: number              // item con status != 'CONFERMATO' && != 'ERRORE'
+  requiresReview: number     // item con almeno un campo confidence < 80
 }
 
 export interface PensionContribution {
