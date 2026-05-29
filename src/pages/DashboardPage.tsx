@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { evaluateAlerts, getActiveAlerts, markAlertRead, snoozeAlert } from '../services/alert';
-import { FinancialAlert } from '../types';
+import type { FinancialAlert } from '../types';
 import AlertBanner from '../components/AlertBanner';
 
 const DashboardPage: React.FC = () => {
@@ -9,7 +9,7 @@ const DashboardPage: React.FC = () => {
   const [alerts, setAlerts] = useState<FinancialAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     // Evaluate alerts first to ensure fresh data
@@ -19,11 +19,11 @@ const DashboardPage: React.FC = () => {
       setAlerts(result.data);
     }
     setLoading(false);
-  };
+  }, [user]);
 
   useEffect(() => {
     void fetchAlerts();
-  }, [user]);
+  }, [fetchAlerts]);
 
   const handleRead = async (id: string) => {
     if (!user) return;
@@ -46,68 +46,65 @@ const DashboardPage: React.FC = () => {
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
       <p>Benvenuto, {user?.email}</p>
 
-      <AlertBanner alerts={alerts} onRead={handleRead} onSnooze={handleSnooze} />
+      <AlertBanner
+        alerts={alerts}
+        onRead={(id) => { void handleRead(id); }}
+        onSnooze={(id) => { void handleSnooze(id); }}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Patrimonio Card */}
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h2 className="text-gray-500 text-sm font-medium uppercase">Patrimonio Netto</h2>
-          <p className="text-2xl font-bold mt-2">€ --.---</p>
+          <p className="text-2xl font-bold mt-2">&euro; --.---</p>
           <p className="text-green-500 text-sm mt-1">--% rispetto al mese precedente</p>
         </div>
 
         {/* Raccomandazione Card */}
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h2 className="text-gray-500 text-sm font-medium uppercase">Raccomandazione</h2>
-          <p className="mt-2 text-gray-700 italic">"Calcolo in corso..."</p>
+          <p className="mt-2 text-gray-700 italic">&quot;Calcolo in corso...&quot;</p>
         </div>
 
         {/* Cedolino Card */}
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h2 className="text-gray-500 text-sm font-medium uppercase">Ultimo Cedolino</h2>
-          <p className="text-xl font-bold mt-2">€ --.--- netti</p>
-          <p className="text-gray-500 text-sm">Mese: --/----</p>
+          <p className="text-2xl font-bold mt-2">&euro; --.--- netti</p>
+          <p className="text-gray-500 text-sm mt-1">Mese: --/----</p>
         </div>
 
         {/* PAC Card */}
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h2 className="text-gray-500 text-sm font-medium uppercase">Investimenti PAC</h2>
-          <p className="text-xl font-bold mt-2">€ --.--- investiti</p>
-          <p className="text-gray-500 text-sm">-- versamenti totali</p>
+          <p className="text-2xl font-bold mt-2">&euro; --.--- investiti</p>
+          <p className="text-gray-500 text-sm mt-1">-- versamenti totali</p>
         </div>
 
         {/* Saldo Card */}
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h2 className="text-gray-500 text-sm font-medium uppercase">Saldo Disponibile</h2>
-          <p className="text-xl font-bold mt-2">€ --.---</p>
-          <p className="text-gray-500 text-sm">Al netto delle spese ricorrenti</p>
+          <p className="text-2xl font-bold mt-2">&euro; --.---</p>
+          <p className="text-gray-500 text-sm mt-1">Al netto delle spese ricorrenti</p>
         </div>
 
         {/* Alert Card (Card 6) */}
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h2 className="text-gray-500 text-sm font-medium uppercase">Alert Recenti</h2>
-          <div className="mt-4 space-y-3">
-            {loading ? (
-              <p className="text-gray-400 text-sm italic">Caricamento...</p>
-            ) : alerts.length === 0 ? (
-              <p className="text-gray-400 text-sm italic">Nessun alert attivo</p>
-            ) : (
-              alerts.slice(0, 3).map(alert => (
-                <div key={alert.id} className="flex flex-col border-b border-gray-100 pb-2">
-                  <span className={`text-xs font-bold uppercase ${
-                    alert.severity === 'critical' ? 'text-red-500' :
-                    alert.severity === 'warning' ? 'text-yellow-600' : 'text-blue-500'
-                  }`}>
-                    {alert.type}
-                  </span>
-                  <span className="text-sm text-gray-700 truncate">{alert.message}</span>
-                </div>
-              ))
-            )}
-            {alerts.length > 3 && (
-              <p className="text-xs text-blue-600 cursor-pointer">Vedi tutti ({alerts.length})</p>
-            )}
-          </div>
+          {loading ? (
+            <p className="mt-2 text-gray-500">Caricamento...</p>
+          ) : alerts.length === 0 ? (
+            <p className="mt-2 text-gray-500">Nessun alert attivo</p>
+          ) : (
+            alerts.slice(0, 3).map(alert => (
+              <div key={alert.id} className="mt-2">
+                <span className="font-medium">{alert.type}</span>&nbsp;&nbsp;
+                <span className="text-gray-600">{alert.message}</span>
+              </div>
+            ))
+          )}
+          {alerts.length > 3 && (
+            <p className="mt-2 text-blue-500 text-sm">Vedi tutti ({alerts.length})</p>
+          )}
         </div>
       </div>
     </div>
