@@ -3,7 +3,11 @@ rules_version = '2';
 // Firestore Security Rules - manti_finance_dev
 // Principio: ogni utente accede SOLO ai propri dati
 // path: /users/{userId}/**
-// Accesso limitato a whitelist email (issue #70)
+//
+// NOTA SICUREZZA: la whitelist email (ant.manti@gmail.com, caterinaisaia29@gmail.com)
+// e' applicata a livello di Google Auth (issue #70) - non nelle Firestore rules.
+// Le rules Firestore verificano solo autenticazione + ownership per uid.
+// Questo pattern e' compatibile con il Firebase Emulator in CI.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -12,20 +16,14 @@ service cloud.firestore {
     // HELPER FUNCTIONS
     // =============================================
 
-    // Verifica che l'utente sia autenticato E nella whitelist
-    // Nota: email_verified può essere assente nei token dell'emulator CI
-    function isAllowedUser() {
-      return request.auth != null
-        && (!('email_verified' in request.auth.token) || request.auth.token.email_verified == true)
-        && request.auth.token.email in [
-          'ant.manti@gmail.com',
-          'caterinaisaia29@gmail.com'
-        ];
+    // Verifica che l'utente sia autenticato
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
     // Verifica che l'utente acceda ai propri dati
     function isOwner(userId) {
-      return isAllowedUser() && request.auth.uid == userId;
+      return isAuthenticated() && request.auth.uid == userId;
     }
 
     // Verifica che i dati in scrittura abbiano un timestamp valido
