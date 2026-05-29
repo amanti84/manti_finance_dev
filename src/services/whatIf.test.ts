@@ -83,10 +83,10 @@ describe('whatIf service', () => {
 
       vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
       vi.spyOn(mutuoService, 'getMutuoConfig').mockResolvedValue(makeMutuoConfig())
-      vi.spyOn(mutuoService, 'simulateAnticipatedExtinction').mockReturnValue({
-        success: true,
-        data: { interessiRisparmiati: 5000 } as { interessiRisparmiati: number },
-      })
+      vi.spyOn(mutuoService, 'simulateAnticipatedExtinction').mockReturnValue(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { success: true, data: { interessiRisparmiati: 5000 } } as any
+      )
 
       const result = await simulateScenario(uid, input)
       expect(result.success).toBe(true)
