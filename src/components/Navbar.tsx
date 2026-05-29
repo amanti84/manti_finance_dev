@@ -36,6 +36,7 @@ export const Navbar: FC = () => {
     { to: '/kindergarten', label: 'Kindergarten' },
     { to: '/documenti', label: 'Documenti' },
     { to: '/what-if', label: 'What-if' },
+    { to: '/goals', label: 'Obiettivi' },
     { to: '/alerts', label: 'Alerts' },
   ]
 
