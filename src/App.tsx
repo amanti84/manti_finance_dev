@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
 import { LoginPage } from './pages/LoginPage'
+import { UnauthorizedPage } from './pages/UnauthorizedPage'
 import { PayrollPage } from './modules/payroll'
 import { PacPage } from './modules/pac'
 import { CashFlowPage } from './modules/cashflow'
@@ -24,8 +25,9 @@ function App(): React.ReactElement {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Route */}
+        {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
