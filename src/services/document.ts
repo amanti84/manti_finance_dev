@@ -114,7 +114,7 @@ export async function listDocuments(
 ): Promise<ApiResult<FinancialDocument[]>> {
   try {
     const colRef = collection(db, COLLECTION(uid))
-    const constraints: QueryConstraint[] = [orderBy('createdAt', 'desc')]
+    const constraints: QueryConstraint[] = []
 
     if (filters?.type) {
       constraints.push(where('type', '==', filters.type))
@@ -123,9 +123,16 @@ export async function listDocuments(
       constraints.push(where('status', '==', filters.status))
     }
 
+    // orderBy solo se nessun filtro where per evitare indice composito obbligatorio
+    if (constraints.length === 0) {
+      constraints.push(orderBy('createdAt', 'desc'))
+    }
+
     const q = query(colRef, ...constraints)
     const snap = await getDocs(q)
-    const documents = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as FinancialDocument)
+    const documents = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }) as FinancialDocument)
+      .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis())
 
     return { success: true, data: documents }
   } catch (error) {

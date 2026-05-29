@@ -55,6 +55,7 @@ vi.mock('firebase/firestore', () => ({
     fromDate: vi.fn((date: Date) => ({
       seconds: Math.floor(date.getTime() / 1000),
       nanoseconds: 0,
+      toMillis: () => date.getTime(),
     })),
   },
 }))
@@ -146,8 +147,22 @@ describe('document service', () => {
     it('should return all documents for uid', async () => {
       const { getDocs } = await import('firebase/firestore')
       const mockDocs = [
-        { id: 'doc1', data: () => ({ fileName: 'file1.pdf', type: 'cedolino' }) },
-        { id: 'doc2', data: () => ({ fileName: 'file2.jpg', type: 'altro' }) },
+        {
+          id: 'doc1',
+          data: () => ({
+            fileName: 'file1.pdf',
+            type: 'cedolino',
+            createdAt: { toMillis: () => 2000 }
+          })
+        },
+        {
+          id: 'doc2',
+          data: () => ({
+            fileName: 'file2.jpg',
+            type: 'altro',
+            createdAt: { toMillis: () => 1000 }
+          })
+        },
       ]
       vi.mocked(getDocs).mockResolvedValue({
         docs: mockDocs,
@@ -157,7 +172,7 @@ describe('document service', () => {
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data).toHaveLength(2)
-        expect(result.data[0].id).toBe('doc1')
+        expect(result.data[0].id).toBe('doc1') // Most recent first
       }
     })
 
