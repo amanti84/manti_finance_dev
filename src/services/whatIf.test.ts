@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Mock } from 'vitest'
 import { simulateScenario, saveScenario } from './whatIf'
 import * as mutuoService from './mutuo'
+import type { SimulazioneEstinzione } from './mutuo'
 import * as snapshotService from './snapshot'
 import * as payrollService from './payroll'
 import { logAudit } from './audit'
@@ -66,6 +67,16 @@ const makeMutuoConfig = () => ({
   },
 })
 
+const makeFakeEstinzione = (): SimulazioneEstinzione => ({
+  dataEstinzione: new Date('2026-06-01'),
+  debitoResiduoAttuale: 70000,
+  interessiRisparmiati: 5000,
+  rateRisparmiate: 12,
+  risparmioTotale: 5000,
+  costoEstinzioneAnticipata: 0,
+  convenienza: true,
+})
+
 const logAuditMock = logAudit as Mock
 
 describe('whatIf service', () => {
@@ -83,10 +94,10 @@ describe('whatIf service', () => {
 
       vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
       vi.spyOn(mutuoService, 'getMutuoConfig').mockResolvedValue(makeMutuoConfig())
-      vi.spyOn(mutuoService, 'simulateAnticipatedExtinction').mockReturnValue(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        { success: true, data: { interessiRisparmiati: 5000 } } as any
-      )
+      vi.spyOn(mutuoService, 'simulateAnticipatedExtinction').mockReturnValue({
+        success: true,
+        data: makeFakeEstinzione(),
+      })
 
       const result = await simulateScenario(uid, input)
       expect(result.success).toBe(true)
