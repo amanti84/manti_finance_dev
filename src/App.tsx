@@ -12,6 +12,7 @@ import { InvestimentiPage } from './pages/InvestimentiPage'
 import { PrevidenzaPage } from './pages/PrevidenzaPage'
 import { KindergartenPage } from './pages/KindergartenPage'
 import { DocumentiPage } from './pages/DocumentiPage'
+import DashboardPage from './pages/DashboardPage'
 
 function App(): React.ReactElement {
   const { user } = useAuth()
@@ -25,15 +26,7 @@ function App(): React.ReactElement {
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
-            <Route
-              path="/"
-              element={
-                <div>
-                  <h1>Dashboard</h1>
-                  <p>Benvenuto, {user?.email}</p>
-                </div>
-              }
-            />
+            <Route path="/" element={<DashboardPage />} />
             <Route path="/payroll" element={<PayrollPage />} />
             <Route path="/investimenti" element={<InvestimentiPage />} />
             <Route path="/investimenti/pac" element={user ? <PacPage uid={user.uid} /> : null} />

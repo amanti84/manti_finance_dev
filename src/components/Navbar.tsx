@@ -1,11 +1,29 @@
 import type { FC } from 'react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { auth } from '../firebase'
 import { signOut } from 'firebase/auth'
+import { getActiveAlerts } from '../services/alert'
+import { useAuth } from '../hooks/useAuth'
 
 export const Navbar: FC = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const [alertCount, setAlertCount] = useState(0)
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user) {
+      const fetchAlerts = async () => {
+        const result = await getActiveAlerts(user.uid)
+        if (result.success && result.data) {
+          setAlertCount(result.data.length)
+        }
+      }
+      void fetchAlerts()
+      // Optional: set up real-time listener if Firestore rules allow it,
+      // but for now polling or refresh is enough as per requirements.
+    }
+  }, [user])
 
   const navLinks = [
     { to: '/', label: 'Dashboard' },
@@ -42,7 +60,23 @@ export const Navbar: FC = () => {
   return (
     <nav style={{ backgroundColor: '#fff', borderBottom: '1px solid #ddd', padding: '0 16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '60px' }}>
-        <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Manti Finance</div>
+        <div style={{ fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>
+          Manti Finance
+          {alertCount > 0 && (
+            <span style={{
+              backgroundColor: '#dc3545',
+              color: 'white',
+              borderRadius: '50%',
+              padding: '2px 6px',
+              fontSize: '0.7rem',
+              marginLeft: '8px',
+              minWidth: '18px',
+              textAlign: 'center'
+            }}>
+              {alertCount}
+            </span>
+          )}
+        </div>
 
         {/* Desktop Menu */}
         <div className="desktop-menu" style={{ display: 'none', gap: '8px' }}>

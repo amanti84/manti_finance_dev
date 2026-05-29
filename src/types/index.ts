@@ -79,6 +79,10 @@ export interface PatrimonioSnapshot extends BaseDocument {
   note?: string
 }
 
+export interface SnapshotWithDelta extends PatrimonioSnapshot {
+  delta: number | null // differenza rispetto al mese precedente
+}
+
 // --------------------------------------------------------
 // TRANSAZIONI
 // /users/{uid}/transactions/{transactionId}
@@ -161,7 +165,7 @@ export interface Payslip extends BaseDocument {
 
 export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'snapshot'
 
-export type AuditEntityType = 'snapshot' | 'transaction' | 'investment' | 'payslip' | 'config' | 'account' | 'recurringExpense'
+export type AuditEntityType = 'snapshot' | 'transaction' | 'investment' | 'payslip' | 'config' | 'account' | 'recurringExpense' | 'alert'
 
 export interface AuditLogEntry extends BaseDocument {
   entityType: AuditEntityType
@@ -171,6 +175,28 @@ export interface AuditLogEntry extends BaseDocument {
   newValue?: Record<string, unknown>
   source: 'user' | 'system' | 'import'
   ipHash?: string
+}
+
+// --------------------------------------------------------
+// ALERTS (Issue #28)
+// /users/{uid}/alerts/{alertId}
+// --------------------------------------------------------
+
+export type AlertType =
+  | 'SALDO_SOTTO_SOGLIA'
+  | 'CEDOLINO_MANCANTE'
+  | 'MESE_NON_CHIUSO'
+  | 'SURPLUS_ANOMALO'
+  | 'PATRIMONIO_VARIAZIONE'
+
+export type AlertSeverity = 'info' | 'warning' | 'critical'
+
+export interface FinancialAlert extends BaseDocument {
+  type: AlertType
+  severity: AlertSeverity
+  message: string
+  read: boolean
+  snoozedUntil?: Timestamp
 }
 
 // --------------------------------------------------------
