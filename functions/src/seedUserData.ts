@@ -17,72 +17,9 @@ export const seedUserData = onCall(async (request) => {
   const uid = request.auth.uid;
   const db = getFirestore();
 
-  // Dati seed (allineati allo schema richiesto nell'issue)
-
-  const pacsSeed = [
-    {
-      id: "seed_pac_001",
-      name: "iShares Core MSCI World",
-      isin: "IE00B4L5Y983",
-      ticker: "IWDA",
-      monthlyAmount: 500,
-      startDate: "2023-01-01",
-      active: true,
-      autoUpdate: true,
-      platform: "Directa",
-      monthlyDays: [5]
-    },
-    {
-      id: "seed_pac_002",
-      name: "Vanguard FTSE All-World",
-      isin: "IE00BK5BQT80",
-      ticker: "VWCE",
-      monthlyAmount: 300,
-      startDate: "2023-06-01",
-      active: true,
-      autoUpdate: true,
-      platform: "Fineco",
-      monthlyDays: [5, 20]
-    }
-  ];
-
-  const investmentsSeed = [
-    {
-      id: "seed_inv_001",
-      name: "iShares Core MSCI World",
-      isin: "IE00B4L5Y983",
-      ticker: "IWDA",
-      type: "ETF",
-      amountInvested: 3500,
-      currentValue: 4115,
-      quantity: 50,
-      purchaseDate: "2023-01-15",
-      platform: "Directa"
-    },
-    {
-      id: "seed_inv_002",
-      name: "Vanguard FTSE All-World",
-      isin: "IE00BK5BQT80",
-      ticker: "VWCE",
-      type: "ETF",
-      amountInvested: 3200,
-      currentValue: 3063,
-      quantity: 30,
-      purchaseDate: "2023-06-10",
-      platform: "Fineco"
-    },
-    {
-      id: "seed_inv_003",
-      name: "Apple Inc.",
-      ticker: "AAPL",
-      type: "Stock",
-      amountInvested: 1500,
-      currentValue: 1905,
-      quantity: 10,
-      purchaseDate: "2024-01-05",
-      platform: "Fineco"
-    }
-  ];
+  // Dati seed minimi (il grosso ora passa per importLegacyData)
+  const pacsSeed: any[] = [];
+  const investmentsSeed: any[] = [];
 
   let inserted = 0;
   let skipped = 0;

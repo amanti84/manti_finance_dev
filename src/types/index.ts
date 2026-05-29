@@ -253,7 +253,7 @@ export interface MonthlyVariableComponents {
 // /users/{uid}/audit/{logId}
 // --------------------------------------------------------
 
-export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'snapshot' | 'SEED_DATA'
+export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'snapshot' | 'SEED_DATA' | 'LEGACY_IMPORT'
 
 export type AuditEntityType =
   | 'snapshot'
@@ -270,6 +270,8 @@ export type AuditEntityType =
   | 'goal'
   | 'inboxItem'
   | 'pacs'
+  | 'kindergarten_pacs'
+  | 'kindergarten_investments'
   | 'seed'
   | 'parseDocument'
 
