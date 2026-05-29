@@ -66,6 +66,7 @@ describe('Firestore Security Rules', () => {
       'investments',
       'pac_payments',
       'payslips',
+      'pacs',
       'config',
       'decisions',
       'funds',

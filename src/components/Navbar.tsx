@@ -50,6 +50,7 @@ export const Navbar: FC = () => {
     { to: '/goals', label: 'Obiettivi' },
     { to: '/alerts', label: 'Alerts' },
     { to: '/inbox', label: 'Inbox' },
+    ...(user?.email === 'amanti84@gmail.com' ? [{ to: '/admin', label: 'Admin' }] : []),
   ]
 
   const handleLogout = async () => {

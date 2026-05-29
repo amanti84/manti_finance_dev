@@ -163,6 +163,21 @@ export interface Investment extends BaseDocument {
   lastPriceUpdate: Timestamp
 }
 
+export interface PacConfig extends BaseDocument {
+  name: string
+  isin: string
+  ticker?: string
+  monthlyAmount: number
+  dayOfMonth?: number
+  monthlyDays?: number[]
+  startDate: string
+  endDate?: string
+  active: boolean
+  autoUpdate: boolean
+  platform?: string
+  notes?: string
+}
+
 // --------------------------------------------------------
 // PAYROLL / CEDOLINI
 // /users/{uid}/payslips/{payslipId}
@@ -238,7 +253,7 @@ export interface MonthlyVariableComponents {
 // /users/{uid}/audit/{logId}
 // --------------------------------------------------------
 
-export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'snapshot'
+export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'snapshot' | 'SEED_DATA'
 
 export type AuditEntityType =
   | 'snapshot'
@@ -254,7 +269,10 @@ export type AuditEntityType =
   | 'document'
   | 'goal'
   | 'inboxItem'
+  | 'pacs'
+  | 'seed'
   | 'parseDocument'
+
 
 export interface AuditLogEntry extends BaseDocument {
   entityType: AuditEntityType
