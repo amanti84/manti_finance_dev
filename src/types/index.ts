@@ -17,6 +17,36 @@ export interface BaseDocument {
 }
 
 // --------------------------------------------------------
+// WHAT-IF ENGINE (Issue #27)
+// --------------------------------------------------------
+
+export type ScenarioType =
+  | 'ESTINZIONE_MUTUO'
+  | 'INVESTIMENTO_ETF'
+  | 'AUMENTO_PAC'
+  | 'VARIAZIONE_RAL'
+
+export interface ScenarioInput {
+  type: ScenarioType
+  params: Record<string, number> // es. { importoEstinzione: 10000 }
+}
+
+export interface ScenarioOutput {
+  patrimonioProiettato: number
+  surplusMensileProiettato: number
+  costoOpportunita: number
+  risparmioInteressi?: number
+  descrizione: string
+}
+
+export interface Scenario extends BaseDocument {
+  name: string
+  input: ScenarioInput
+  output: ScenarioOutput
+  baselineSnapshotId: string // snapshotId di riferimento (es. 2026-05)
+}
+
+// --------------------------------------------------------
 // CASH FLOW (Issue #15 / #51)
 // --------------------------------------------------------
 
@@ -165,7 +195,17 @@ export interface Payslip extends BaseDocument {
 
 export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'snapshot'
 
-export type AuditEntityType = 'snapshot' | 'transaction' | 'investment' | 'payslip' | 'config' | 'account' | 'recurringExpense' | 'alert'
+export type AuditEntityType =
+  | 'snapshot'
+  | 'transaction'
+  | 'investment'
+  | 'payslip'
+  | 'config'
+  | 'account'
+  | 'recurringExpense'
+  | 'monthlyClose'
+  | 'scenario'
+  | 'alert'
 
 export interface AuditLogEntry extends BaseDocument {
   entityType: AuditEntityType
@@ -175,6 +215,20 @@ export interface AuditLogEntry extends BaseDocument {
   newValue?: Record<string, unknown>
   source: 'user' | 'system' | 'import'
   ipHash?: string
+}
+
+// --------------------------------------------------------
+// MONTHLY CLOSE (Issue #26)
+// --------------------------------------------------------
+
+export type MonthStatus = 'OPEN' | 'CLOSED' | 'LOCKED'
+
+export interface MonthlyCloseResult {
+  month: Month
+  year: number
+  status: MonthStatus
+  snapshotId: string
+  closedAt: Timestamp
 }
 
 // --------------------------------------------------------
