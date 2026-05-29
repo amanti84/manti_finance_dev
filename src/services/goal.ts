@@ -112,7 +112,14 @@ export async function updateGoalProgress(
       updatedAt: Timestamp.now(),
     }
 
-    // Note: Alert integration could happen here in the future
+    await logAudit({
+      uid,
+      action: 'update',
+      entityType: 'goal',
+      entityId: goalId,
+      previousValue: { currentAmount: previousValue.currentAmount },
+      newValue: { currentAmount },
+    })
 
     return { success: true, data: updatedGoal }
   } catch (error) {
@@ -145,6 +152,15 @@ export async function updateGoalStatus(
       status,
       updatedAt: Timestamp.now(),
     }
+
+    await logAudit({
+      uid,
+      action: 'update',
+      entityType: 'goal',
+      entityId: goalId,
+      previousValue: { status: previousValue.status },
+      newValue: { status },
+    })
 
     return { success: true, data: updatedGoal }
   } catch (error) {
