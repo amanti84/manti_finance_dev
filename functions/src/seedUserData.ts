@@ -4,7 +4,6 @@ import { getFirestore, Timestamp } from "firebase-admin/firestore";
 const ADMIN_EMAIL = "amanti84@gmail.com";
 
 export const seedUserData = onCall(async (request) => {
-  // 1. Verifiche di sicurezza
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "L'utente deve essere autenticato");
   }
@@ -17,71 +16,186 @@ export const seedUserData = onCall(async (request) => {
   const uid = request.auth.uid;
   const db = getFirestore();
 
-  // Dati seed (allineati allo schema richiesto nell'issue)
+  // ============================================================
+  // DATI REALI — Estratti da manti_finance (29/05/2026)
+  // Source: screenshot investimenti attivi del vecchio sistema
+  // ============================================================
 
-  const pacsSeed = [
-    {
-      id: "seed_pac_001",
-      name: "iShares Core MSCI World",
-      isin: "IE00B4L5Y983",
-      ticker: "IWDA",
-      monthlyAmount: 500,
-      startDate: "2023-01-01",
-      active: true,
-      autoUpdate: true,
-      platform: "Directa",
-      monthlyDays: [5]
-    },
-    {
-      id: "seed_pac_002",
-      name: "Vanguard FTSE All-World",
-      isin: "IE00BK5BQT80",
-      ticker: "VWCE",
-      monthlyAmount: 300,
-      startDate: "2023-06-01",
-      active: true,
-      autoUpdate: true,
-      platform: "Fineco",
-      monthlyDays: [5, 20]
-    }
-  ];
+  // PAC seed — mantenuto vuoto: i PAC reali verranno importati
+  // tramite la Cloud Function importLegacyData (issue #76)
+  const pacsSeed: Array<Record<string, unknown>> = [];
 
+  // Investimenti reali (9 posizioni attive al 29/05/2026)
   const investmentsSeed = [
+    // ---- FONDI EUROMOBILIARE (fonte: FT.com) ----
     {
-      id: "seed_inv_001",
-      name: "iShares Core MSCI World",
+      id: "real_inv_001",
+      name: "Euromobiliare Corporate Euro High Yield A",
+      isin: "IT0005204000",
+      ticker: "IT0005204000",
+      type: "Fund",
+      platform: "Credem",
+      priceSource: "FT",
+      shares: 2005.0,
+      avgCost: 5.98,
+      lastPrice: 6.27,
+      amountInvested: 11986.49,
+      currentValue: 12571.35,
+      autoUpdate: true,
+    },
+    {
+      id: "real_inv_002",
+      name: "Euromobiliare Corporate Investment Grade A",
+      isin: "IT0005008898",
+      ticker: "IT0005008898",
+      type: "Fund",
+      platform: "Credem",
+      priceSource: "FT",
+      shares: 2073.0,
+      avgCost: 4.82,
+      lastPrice: 4.98,
+      amountInvested: 9993.93,
+      currentValue: 10323.54,
+      autoUpdate: true,
+    },
+    {
+      id: "real_inv_003",
+      name: "EuroFundLux - European Equity ESG A",
+      isin: "LU1972719659",
+      ticker: "LU1972719659",
+      type: "Fund",
+      platform: "Credem",
+      priceSource: "FT",
+      shares: 1028.03,
+      avgCost: 12.37,
+      lastPrice: 14.34,
+      amountInvested: 12721.15,
+      currentValue: 14741.95,
+      autoUpdate: true,
+    },
+    {
+      id: "real_inv_004",
+      name: "Euromobiliare Pictet Global Trends ESG A",
+      isin: "IT0005217432",
+      ticker: "IT0005217432",
+      type: "Fund",
+      platform: "Credem",
+      priceSource: "FT",
+      shares: 5125.0,
+      avgCost: 4.58,
+      lastPrice: 6.92,
+      amountInvested: 23477.63,
+      currentValue: 35465.00,
+      autoUpdate: true,
+    },
+    {
+      id: "real_inv_005",
+      name: "Euromobiliare Flessibile 60 A",
+      isin: "IT0000380664",
+      ticker: "IT0000380664",
+      type: "Fund",
+      platform: "Credem",
+      priceSource: "FT",
+      shares: 141.0,
+      avgCost: 42.27,
+      lastPrice: 47.49,
+      amountInvested: 5960.06,
+      currentValue: 6696.09,
+      autoUpdate: true,
+    },
+    // ---- ETF ----
+    {
+      id: "real_inv_006",
+      name: "iShares Core MSCI World UCITS ETF USD (Acc)",
       isin: "IE00B4L5Y983",
       ticker: "IWDA",
       type: "ETF",
-      amountInvested: 3500,
-      currentValue: 4115,
-      quantity: 50,
-      purchaseDate: "2023-01-15",
-      platform: "Directa"
+      platform: "Directa",
+      priceSource: "YAHOO",
+      shares: 308.0,
+      avgCost: 116.71,
+      lastPrice: 123.35,
+      amountInvested: 35945.51,
+      currentValue: 37991.80,
+      autoUpdate: true,
+    },
+    // ---- CRYPTO ----
+    {
+      id: "real_inv_007",
+      name: "Ethereum EUR",
+      isin: null,
+      ticker: "ETH-EUR",
+      type: "Crypto",
+      platform: "Exchange",
+      priceSource: "YAHOO",
+      shares: 0.1685,
+      avgCost: 1669.47,
+      lastPrice: 1712.06,
+      amountInvested: 281.26,
+      currentValue: 288.43,
+      autoUpdate: true,
     },
     {
-      id: "seed_inv_002",
-      name: "Vanguard FTSE All-World",
-      isin: "IE00BK5BQT80",
-      ticker: "VWCE",
-      type: "ETF",
-      amountInvested: 3200,
-      currentValue: 3063,
-      quantity: 30,
-      purchaseDate: "2023-06-10",
-      platform: "Fineco"
+      id: "real_inv_008",
+      name: "Bitcoin EUR",
+      isin: null,
+      ticker: "BTC-EUR",
+      type: "Crypto",
+      platform: "Exchange",
+      priceSource: "YAHOO",
+      shares: 0.03,
+      avgCost: 43097.96,
+      lastPrice: 62499.98,
+      amountInvested: 1292.94,
+      currentValue: 1875.00,
+      autoUpdate: true,
     },
     {
-      id: "seed_inv_003",
-      name: "Apple Inc.",
-      ticker: "AAPL",
+      id: "real_inv_009",
+      name: "XRP EUR",
+      isin: null,
+      ticker: "XRP-EUR",
+      type: "Crypto",
+      platform: "Exchange",
+      priceSource: "YAHOO",
+      shares: 14.1336,
+      avgCost: 3.17,
+      lastPrice: 1.12,
+      amountInvested: 44.78,
+      currentValue: 15.80,
+      autoUpdate: true,
+    },
+    {
+      id: "real_inv_010",
+      name: "Solana EUR",
+      isin: null,
+      ticker: "SOL-EUR",
+      type: "Crypto",
+      platform: "Exchange",
+      priceSource: "YAHOO",
+      shares: 2.4663,
+      avgCost: 94.97,
+      lastPrice: 69.55,
+      amountInvested: 234.23,
+      currentValue: 171.53,
+      autoUpdate: true,
+    },
+    // ---- AZIONI ----
+    {
+      id: "real_inv_011",
+      name: "NVIDIA Corporation",
+      isin: null,
+      ticker: "NVD.DE",
       type: "Stock",
-      amountInvested: 1500,
-      currentValue: 1905,
-      quantity: 10,
-      purchaseDate: "2024-01-05",
-      platform: "Fineco"
-    }
+      platform: "Directa",
+      priceSource: "YAHOO",
+      shares: 3.8413,
+      avgCost: 100.92,
+      lastPrice: 184.26,
+      amountInvested: 387.66,
+      currentValue: 707.79,
+      autoUpdate: true,
+    },
   ];
 
   let inserted = 0;
@@ -90,41 +204,32 @@ export const seedUserData = onCall(async (request) => {
   try {
     const now = Timestamp.now();
 
-    // Batch per PACs
+    // Batch PACs (vuoto per ora — vedi issue #76 per importLegacyData)
     for (const pac of pacsSeed) {
-      const docRef = db.doc(`users/${uid}/pacs/${pac.id}`);
+      const pacId = pac.id as string;
+      const docRef = db.doc(`users/${uid}/pacs/${pacId}`);
       const docSnap = await docRef.get();
-
       if (!docSnap.exists) {
-        await docRef.set({
-          ...pac,
-          createdAt: now,
-          updatedAt: now,
-        });
+        await docRef.set({ ...pac, createdAt: now, updatedAt: now });
         inserted++;
       } else {
         skipped++;
       }
     }
 
-    // Batch per Investimenti
+    // Batch Investimenti reali
     for (const inv of investmentsSeed) {
       const docRef = db.doc(`users/${uid}/investments/${inv.id}`);
       const docSnap = await docRef.get();
-
       if (!docSnap.exists) {
-        await docRef.set({
-          ...inv,
-          createdAt: now,
-          updatedAt: now,
-        });
+        await docRef.set({ ...inv, createdAt: now, updatedAt: now });
         inserted++;
       } else {
         skipped++;
       }
     }
 
-    // Log Audit
+    // Audit log
     if (inserted > 0) {
       await db.collection(`users/${uid}/audit`).add({
         action: "SEED_DATA",
@@ -137,10 +242,7 @@ export const seedUserData = onCall(async (request) => {
       });
     }
 
-    return {
-      success: true,
-      data: { inserted, skipped }
-    };
+    return { success: true, data: { inserted, skipped } };
 
   } catch (error) {
     console.error("Errore durante il seeding:", error);
