@@ -199,11 +199,13 @@ describe('whatIf service', () => {
         saveScenario(uid, name, input, output, baselineId)
       ).resolves.toMatchObject({ success: true })
 
-      expect(logAuditMock).toHaveBeenCalledWith(expect.objectContaining({
-        action: 'create',
-        entityType: 'scenario',
-        newValue: expect.objectContaining({ name }),
-      }))
+      expect(logAuditMock).toHaveBeenCalledWith(
+        expect.objectContaining<Record<string, unknown>>({
+          action: 'create',
+          entityType: 'scenario',
+          newValue: expect.objectContaining<Record<string, unknown>>({ name }) as unknown,
+        })
+      )
     })
   })
 })
