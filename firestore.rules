@@ -3,6 +3,7 @@ rules_version = '2';
 // Firestore Security Rules - manti_finance_dev
 // Principio: ogni utente accede SOLO ai propri dati
 // path: /users/{userId}/**
+// Accesso limitato a whitelist email (issue #70)
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -11,14 +12,19 @@ service cloud.firestore {
     // HELPER FUNCTIONS
     // =============================================
 
-    // Verifica che l'utente sia autenticato
-    function isAuthenticated() {
-      return request.auth != null;
+    // Verifica che l'utente sia autenticato E nella whitelist
+    function isAllowedUser() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'ant.manti@gmail.com',
+          'caterinaisaia29@gmail.com'
+        ];
     }
 
     // Verifica che l'utente acceda ai propri dati
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return isAllowedUser() && request.auth.uid == userId;
     }
 
     // Verifica che i dati in scrittura abbiano un timestamp valido
@@ -126,6 +132,56 @@ service cloud.firestore {
       // =============================================
       match /config/{configId} {
         allow read, write: if isOwner(userId);
+      }
+
+      // =============================================
+      // DOCUMENTS (Issue #18)
+      // =============================================
+      match /documents/{documentId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      // =============================================
+      // INBOX ITEMS (Issue #31)
+      // =============================================
+      match /inboxItems/{itemId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      // =============================================
+      // GOALS (Issue #30)
+      // =============================================
+      match /goals/{goalId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      // =============================================
+      // ALERTS (Issue #28)
+      // =============================================
+      match /alerts/{alertId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
+
+      // =============================================
+      // SCENARIOS / WHAT-IF (Issue #27)
+      // =============================================
+      match /scenarios/{scenarioId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
       }
     }
 
