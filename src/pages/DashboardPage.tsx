@@ -5,6 +5,7 @@ import { evaluateAlerts, getActiveAlerts, markAlertRead, snoozeAlert } from '../
 import type { FinancialAlert } from '../types';
 import AlertBanner from '../components/AlertBanner';
 import { DecisionWidget } from '../modules/decisionEngine';
+import { GoalWidget } from '../modules/goals';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -89,7 +90,13 @@ const DashboardPage: React.FC = () => {
           <p className="text-gray-500 text-sm mt-1">Al netto delle spese ricorrenti</p>
         </div>
 
-        {/* Alert Card (Card 6) */}
+        {/* Obiettivi Card */}
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <h2 className="text-gray-500 text-sm font-medium uppercase">Obiettivi</h2>
+          {user && <GoalWidget uid={user.uid} />}
+        </div>
+
+        {/* Alert Card */}
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h2 className="text-gray-500 text-sm font-medium uppercase">Alert Recenti</h2>
           {loading ? (
