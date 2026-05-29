@@ -254,6 +254,7 @@ export type AuditEntityType =
   | 'monthlyClose'
   | 'scenario'
   | 'alert'
+  | 'goal'
 
 export interface AuditLogEntry extends BaseDocument {
   entityType: AuditEntityType
@@ -299,6 +300,42 @@ export interface FinancialAlert extends BaseDocument {
   message: string
   read: boolean
   snoozedUntil?: Timestamp
+}
+
+// --------------------------------------------------------
+// GOAL TRACKER (Issue #30)
+// /users/{uid}/goals/{goalId}
+// --------------------------------------------------------
+
+export type GoalType =
+  | 'ESTINZIONE_MUTUO'
+  | 'PATRIMONIO_TARGET'
+  | 'FONDO_PENSIONE'
+  | 'RISERVA_LIQUIDITA'
+  | 'OBIETTIVO_KINDERGARTEN'
+
+export type GoalStatus = 'active' | 'completed' | 'paused'
+
+export interface Goal extends BaseDocument {
+  type: GoalType
+  name: string // label libera (es. "Estingui mutuo entro 2030")
+  targetAmount: number // importo obiettivo in EUR
+  targetDate: Timestamp // data target — MAI Date JS
+  baselineAmount: number // valore al momento della creazione del goal
+  currentAmount: number // valore attuale (aggiornato ogni monthly close)
+  status: GoalStatus
+  note?: string
+}
+
+// Tipo UI-only — NON salvato su Firestore
+export interface GoalProgress {
+  goalId: string
+  currentAmount: number
+  targetAmount: number
+  progressPercent: number // 0-100
+  projectedCompletionDate: Date | null // null se tasso di avanzamento <= 0
+  isOnTrack: boolean
+  milestoneReached: 0 | 25 | 50 | 75 | 100 | null // ultima milestone raggiunta
 }
 
 // --------------------------------------------------------

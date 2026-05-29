@@ -15,6 +15,7 @@ import { KindergartenPage } from './modules/kindergarten'
 import { DocumentiPage } from './modules/documenti'
 import { WhatIfPage } from './modules/whatIf'
 import { AlertsPage } from './modules/alerts'
+import { GoalsPage } from './modules/goals'
 import DashboardPage from './pages/DashboardPage'
 
 function App(): React.ReactElement {
@@ -41,6 +42,7 @@ function App(): React.ReactElement {
             <Route path="/documenti" element={<DocumentiPage />} />
             <Route path="/what-if" element={<WhatIfPage />} />
             <Route path="/alerts" element={<AlertsPage />} />
+            <Route path="/goals" element={<GoalsPage />} />
           </Route>
         </Route>
       </Routes>
