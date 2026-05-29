@@ -16,9 +16,9 @@ vi.mock('./firebase', () => ({
 vi.mock('firebase/auth', () => ({
   getAuth: vi.fn(),
   onAuthStateChanged: vi.fn(() => vi.fn()),
-  signInWithEmailAndPassword: vi.fn(),
   signOut: vi.fn(),
-  createUserWithEmailAndPassword: vi.fn(),
+  signInWithPopup: vi.fn(),
+  GoogleAuthProvider: vi.fn(),
 }))
 
 vi.mock('firebase/firestore', () => ({
@@ -65,15 +65,22 @@ describe('App', () => {
   })
 
   it('renders without crashing and shows login when not authenticated', () => {
-    vi.mocked(useAuth).mockReturnValue({ user: null, loading: false })
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      loading: false,
+      signInWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    })
     render(<App />)
-    expect(screen.getByText('Login')).toBeTruthy()
+    expect(screen.getAllByText('Accedi').length).toBeGreaterThan(0)
   })
 
   it('renders dashboard when authenticated', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { uid: '123', email: 'test@example.com' } as unknown as User,
       loading: false,
+      signInWithGoogle: vi.fn(),
+      logout: vi.fn(),
     })
     render(<App />)
     // Check for "Dashboard" in heading or link
@@ -82,7 +89,12 @@ describe('App', () => {
   })
 
   it('shows loading state', () => {
-    vi.mocked(useAuth).mockReturnValue({ user: null, loading: true })
+    vi.mocked(useAuth).mockReturnValue({
+      user: null,
+      loading: true,
+      signInWithGoogle: vi.fn(),
+      logout: vi.fn(),
+    })
     render(<App />)
     expect(screen.getByText('Caricamento...')).toBeTruthy()
   })
