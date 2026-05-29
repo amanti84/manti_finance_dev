@@ -1,0 +1,1 @@
+export { KindergartenPage } from './KindergartenPage'

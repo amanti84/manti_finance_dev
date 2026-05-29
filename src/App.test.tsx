@@ -26,7 +26,7 @@ vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
   doc: vi.fn(),
   getDoc: vi.fn(),
-  getDocs: vi.fn(),
+  getDocs: vi.fn(() => Promise.resolve({ docs: [], empty: true })),
   setDoc: vi.fn(),
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
@@ -34,6 +34,7 @@ vi.mock('firebase/firestore', () => ({
   query: vi.fn(),
   where: vi.fn(),
   orderBy: vi.fn(),
+  limit: vi.fn(),
   Timestamp: { now: vi.fn(() => ({ seconds: 0, nanoseconds: 0 })), fromDate: vi.fn() },
 }))
 

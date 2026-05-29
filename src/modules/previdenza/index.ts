@@ -1,0 +1,1 @@
+export { PrevidenzaPage } from './PrevidenzaPage'

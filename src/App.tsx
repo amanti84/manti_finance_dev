@@ -8,12 +8,13 @@ import { PayrollPage } from './modules/payroll'
 import { PacPage } from './modules/pac'
 import { CashFlowPage } from './modules/cashflow'
 import { MonthlyClosePage } from './modules/monthlyClose'
-import { MutuoPage } from './pages/MutuoPage'
-import { InvestimentiPage } from './pages/InvestimentiPage'
-import { PrevidenzaPage } from './pages/PrevidenzaPage'
-import { KindergartenPage } from './pages/KindergartenPage'
-import { DocumentiPage } from './pages/DocumentiPage'
+import { MutuoPage } from './modules/mutuo'
+import { InvestimentiPage } from './modules/investimenti'
+import { PrevidenzaPage } from './modules/previdenza'
+import { KindergartenPage } from './modules/kindergarten'
+import { DocumentiPage } from './modules/documenti'
 import { WhatIfPage } from './modules/whatIf'
+import { AlertsPage } from './modules/alerts'
 import DashboardPage from './pages/DashboardPage'
 
 function App(): React.ReactElement {
@@ -39,6 +40,7 @@ function App(): React.ReactElement {
             <Route path="/kindergarten" element={<KindergartenPage />} />
             <Route path="/documenti" element={<DocumentiPage />} />
             <Route path="/what-if" element={<WhatIfPage />} />
+            <Route path="/alerts" element={<AlertsPage />} />
           </Route>
         </Route>
       </Routes>
