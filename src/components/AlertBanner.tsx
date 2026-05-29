@@ -1,5 +1,5 @@
 import React from 'react';
-import { FinancialAlert } from '../types';
+import type { FinancialAlert } from '../types';
 
 interface AlertBannerProps {
   alerts: FinancialAlert[];
@@ -30,13 +30,13 @@ const AlertBanner: React.FC<AlertBannerProps> = ({ alerts, onRead, onSnooze }) =
                 <span className="text-sm font-medium text-red-800">{alert.message}</span>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => onRead(alert.id!)}
+                    onClick={() => onRead(alert.id)}
                     className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200"
                   >
                     Letto
                   </button>
                   <button
-                    onClick={() => onSnooze(alert.id!)}
+                    onClick={() => onSnooze(alert.id)}
                     className="text-xs bg-white text-red-800 px-2 py-1 rounded border border-red-200 hover:bg-gray-50"
                   >
                     Snooze 7gg
