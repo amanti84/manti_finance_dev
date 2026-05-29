@@ -30,10 +30,12 @@ export const Navbar: FC = () => {
     { to: '/payroll', label: 'Cedolini' },
     { to: '/investimenti/pac', label: 'PAC' },
     { to: '/cashflow', label: 'Cash Flow' },
+    { to: '/monthly-close', label: 'Chiusura Mensile' },
     { to: '/mutuo', label: 'Mutuo' },
     { to: '/previdenza', label: 'Previdenza' },
     { to: '/kindergarten', label: 'Kindergarten' },
     { to: '/documenti', label: 'Documenti' },
+    { to: '/what-if', label: 'What-if' },
   ]
 
   const handleLogout = async () => {
