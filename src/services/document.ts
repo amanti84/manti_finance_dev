@@ -89,7 +89,7 @@ export async function uploadDocument(
                 action: 'create',
                 entityType: 'document',
                 entityId: docRef.id,
-                newValue: docData,
+                newValue: docData as unknown as Record<string, unknown>,
               })
 
               resolve({ success: true, data: document })
@@ -174,7 +174,7 @@ export async function classifyDocument(
       entityType: 'document',
       entityId: documentId,
       previousValue: currentData as unknown as Record<string, unknown>,
-      newValue: updatedDocument,
+      newValue: updatedDocument as unknown as Record<string, unknown>,
     })
 
     return { success: true, data: updatedDocument }
@@ -216,7 +216,7 @@ export async function linkDocument(
       entityType: 'document',
       entityId: documentId,
       previousValue: currentData as unknown as Record<string, unknown>,
-      newValue: updatedDocument,
+      newValue: updatedDocument as unknown as Record<string, unknown>,
     })
 
     return { success: true, data: updatedDocument }
@@ -255,7 +255,7 @@ export async function updateDocumentNote(
       entityType: 'document',
       entityId: documentId,
       previousValue: currentData as unknown as Record<string, unknown>,
-      newValue: updatedDocument,
+      newValue: updatedDocument as unknown as Record<string, unknown>,
     })
 
     return { success: true, data: updatedDocument }
