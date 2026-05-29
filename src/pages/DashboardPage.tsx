@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { evaluateAlerts, getActiveAlerts, markAlertRead, snoozeAlert } from '../services/alert';
 import type { FinancialAlert } from '../types';
 import AlertBanner from '../components/AlertBanner';
+import { DecisionWidget } from '../modules/decisionEngine';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -63,7 +65,7 @@ const DashboardPage: React.FC = () => {
         {/* Raccomandazione Card */}
         <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
           <h2 className="text-gray-500 text-sm font-medium uppercase">Raccomandazione</h2>
-          <p className="mt-2 text-gray-700 italic">&quot;Calcolo in corso...&quot;</p>
+          {user && <DecisionWidget uid={user.uid} />}
         </div>
 
         {/* Cedolino Card */}
@@ -103,7 +105,9 @@ const DashboardPage: React.FC = () => {
             ))
           )}
           {alerts.length > 3 && (
-            <p className="mt-2 text-blue-500 text-sm">Vedi tutti ({alerts.length})</p>
+            <Link to="/alerts" className="mt-2 block text-blue-500 text-sm hover:underline">
+              Vedi tutti ({alerts.length})
+            </Link>
           )}
         </div>
       </div>

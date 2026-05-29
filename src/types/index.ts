@@ -188,6 +188,54 @@ export interface Payslip extends BaseDocument {
   rawText?: string              // testo grezzo per debugging
 }
 
+export interface SurplusBreakdown {
+  month: Month
+  year: number
+  netSalary: number
+  fixedExpenses: number
+  surplusGross: number
+  stableComponent: number
+  variableComponent: number
+  bonusAmount: number
+  rimborsiAmount: number
+}
+
+export interface AnnualProjection {
+  year: number
+  monthsElapsed: number
+  cumulativeNet: number
+  cumulativeSurplus: number
+  projectedAnnualNet: number
+  projectedAnnualSurplus: number
+  averageMonthlyNet: number
+  averageMonthlySurplus: number
+}
+
+export interface YoYComparison {
+  year: number
+  previousYear: number
+  avgNetCurrent: number
+  avgNetPrevious: number
+  netDeltaAbsolute: number
+  netDeltaPercent: number
+  avgSurplusCurrent: number
+  avgSurplusPrevious: number
+  surplusDeltaAbsolute: number
+  surplusDeltaPercent: number
+  totalBonusCurrent: number
+  totalBonusPrevious: number
+}
+
+export interface MonthlyVariableComponents {
+  month: Month
+  year: number
+  bonus: number
+  rimborsiSpese: number
+  totalVariable: number
+  totalStable: number
+  variableRatio: number
+}
+
 // --------------------------------------------------------
 // AUDIT LOG
 // /users/{uid}/audit/{logId}

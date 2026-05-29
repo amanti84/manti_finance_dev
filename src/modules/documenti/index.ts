@@ -1,0 +1,1 @@
+export { DocumentiPage } from './DocumentiPage'

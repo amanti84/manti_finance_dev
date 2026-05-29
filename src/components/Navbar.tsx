@@ -36,6 +36,7 @@ export const Navbar: FC = () => {
     { to: '/kindergarten', label: 'Kindergarten' },
     { to: '/documenti', label: 'Documenti' },
     { to: '/what-if', label: 'What-if' },
+    { to: '/alerts', label: 'Alerts' },
   ]
 
   const handleLogout = async () => {
@@ -65,18 +66,22 @@ export const Navbar: FC = () => {
         <div style={{ fontWeight: 'bold', fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>
           Manti Finance
           {alertCount > 0 && (
-            <span style={{
-              backgroundColor: '#dc3545',
-              color: 'white',
-              borderRadius: '50%',
-              padding: '2px 6px',
-              fontSize: '0.7rem',
-              marginLeft: '8px',
-              minWidth: '18px',
-              textAlign: 'center'
-            }}>
+            <NavLink
+              to="/alerts"
+              style={{
+                backgroundColor: '#dc3545',
+                color: 'white',
+                borderRadius: '50%',
+                padding: '2px 6px',
+                fontSize: '0.7rem',
+                marginLeft: '8px',
+                minWidth: '18px',
+                textAlign: 'center',
+                textDecoration: 'none',
+              }}
+            >
               {alertCount}
-            </span>
+            </NavLink>
           )}
         </div>
 
