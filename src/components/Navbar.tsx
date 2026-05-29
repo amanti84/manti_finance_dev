@@ -120,7 +120,7 @@ export const Navbar: FC = () => {
           </button>
         </div>
 
-        {/* Hamburger */}
+        {/* Hamburger (Simple implementation for now) */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           style={{ display: 'block', background: 'none', border: '1px solid #ddd', padding: '8px', cursor: 'pointer' }}
@@ -154,6 +154,7 @@ export const Navbar: FC = () => {
         </div>
       )}
 
+      {/* Basic styles to handle desktop/mobile toggle without external CSS file if possible */}
       <style>{`
         .desktop-menu { display: none !important; }
         @media (min-width: 1024px) {
