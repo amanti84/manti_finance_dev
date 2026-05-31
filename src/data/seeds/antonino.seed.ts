@@ -1,4 +1,4 @@
-import { PacConfig } from '../../types'
+import type { PacConfig } from '../../types'
 
 // Schema PAC (collezione pacs)
 export const pacsSeed: Partial<PacConfig>[] = [

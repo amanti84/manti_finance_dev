@@ -140,6 +140,14 @@ service cloud.firestore {
         allow update: if isOwner(userId) && hasValidTimestamp();
         allow delete: if isOwner(userId);
       }
+
+      // KINDERGARTEN (Issue #19)
+      match /kindergartenExpenses/{expenseId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidTimestamp();
+        allow update: if isOwner(userId) && hasValidTimestamp();
+        allow delete: if isOwner(userId);
+      }
     }
 
     match /{document=**} {

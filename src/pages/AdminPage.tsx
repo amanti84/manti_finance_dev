@@ -16,7 +16,7 @@ export const AdminPage: FC = () => {
     return <div className="p-8 text-center">Caricamento...</div>
   }
 
-  if (!user || user.email !== ADMIN_EMAIL) {
+  if (user?.email !== ADMIN_EMAIL) {
     return <Navigate to="/" replace />
   }
 
@@ -30,7 +30,7 @@ export const AdminPage: FC = () => {
       const seedUserData = httpsCallable<{ inserted: number; skipped: number }>(functions, 'seedUserData')
       const response = await seedUserData()
 
-      const data = response.data as unknown as { success: boolean; data: { inserted: number; skipped: number } }
+      const data = response.data as { success: boolean; data: { inserted: number; skipped: number } }
 
       if (data.success) {
         setResult(data.data)
