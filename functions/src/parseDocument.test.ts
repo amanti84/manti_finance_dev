@@ -36,17 +36,17 @@ describe('parseDocument helpers', () => {
   describe('extractMonth', () => {
     it('should extract month and year from "maggio 2026"', () => {
       const text = 'Competenza del mese di maggio 2026'
-      expect(extractMonth(text)).toEqual({ month: 5, year: 2026 })
+      expect(extractMonth(text)).toEqual({ month: 5, year: 2026, confidence: 90 })
     })
 
     it('should extract month and year from pattern "05/2026"', () => {
       const text = 'Periodo 05/2026'
-      expect(extractMonth(text)).toEqual({ month: 5, year: 2026 })
+      expect(extractMonth(text)).toEqual({ month: 5, year: 2026, confidence: 90 })
     })
 
-    it('should return empty object for text without date', () => {
+    it('should return confidence 0 for text without date', () => {
       const text = 'Nessuna data qui'
-      expect(extractMonth(text)).toEqual({})
+      expect(extractMonth(text)).toEqual({ confidence: 0 })
     })
   })
 

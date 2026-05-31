@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions'
+import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
 import pdfParse from 'pdf-parse'
 import type { ParseDocumentResult, ParsedDocumentType, ParsedField, Month } from '../../src/types'
@@ -44,7 +44,7 @@ export function classifyDocumentType(text: string): ParsedDocumentType {
 /**
  * Estrae mese e anno dal testo
  */
-export function extractMonth(text: string): { month?: number; year?: number } {
+export function extractMonth(text: string): { month?: number; year?: number; confidence: number } {
   const months = [
     'gennaio',
     'febbraio',
@@ -67,7 +67,7 @@ export function extractMonth(text: string): { month?: number; year?: number } {
     const monthRegex = new RegExp(`(${months[i]})\\s+(\\d{4})`, 'i')
     const match = lowerText.match(monthRegex)
     if (match) {
-      return { month: i + 1, year: parseInt(match[2], 10) }
+      return { month: i + 1, year: parseInt(match[2], 10), confidence: 90 }
     }
   }
 
@@ -77,11 +77,11 @@ export function extractMonth(text: string): { month?: number; year?: number } {
   if (numMatch) {
     const m = parseInt(numMatch[1], 10)
     if (m >= 1 && m <= 12) {
-      return { month: m, year: parseInt(numMatch[2], 10) }
+      return { month: m, year: parseInt(numMatch[2], 10), confidence: 90 }
     }
   }
 
-  return {}
+  return { confidence: 0 }
 }
 
 /**
@@ -108,23 +108,22 @@ export function extractFields(text: string, type: ParsedDocumentType): ParsedFie
   })
 }
 
-export const parseDocument = functions.https.onCall(
-  async (data: { uid: string; storagePath: string; inboxItemId: string }, context: functions.https.CallableContext) => {
-    const { uid, storagePath, inboxItemId } = data
+export const parseDocument = onCall(async (request) => {
+  const { uid, storagePath, inboxItemId } = request.data as { uid: string; storagePath: string; inboxItemId: string }
 
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated')
-    }
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'User must be authenticated')
+  }
 
-    // Security Check: ensure uid belongs to the authenticated user
-    if (uid !== context.auth.uid) {
-      throw new functions.https.HttpsError('permission-denied', 'Unauthorized access to user data')
-    }
+  // Security Check: ensure uid belongs to the authenticated user
+  if (uid !== request.auth.uid) {
+    throw new HttpsError('permission-denied', 'Unauthorized access to user data')
+  }
 
-    // Security Check: ensure storagePath belongs to the user
-    if (!storagePath.startsWith(`users/${uid}/`)) {
-      throw new functions.https.HttpsError('permission-denied', 'Unauthorized access to storage path')
-    }
+  // Security Check: ensure storagePath belongs to the user
+  if (!storagePath.startsWith(`users/${uid}/`)) {
+    throw new HttpsError('permission-denied', 'Unauthorized access to storage path')
+  }
 
     try {
       // 1. Scarica il file da Storage
@@ -140,17 +139,37 @@ export const parseDocument = functions.https.onCall(
       const documentType = classifyDocumentType(rawText)
 
       // 4. Estrai i campi
-      const { month, year } = extractMonth(rawText)
+      const extractMonthResult = extractMonth(rawText)
+      const { month, year } = extractMonthResult
       const fields = extractFields(rawText, documentType)
 
       // 5. Aggiorna InboxItem su Firestore
-      await db.doc(`users/${uid}/inboxItems/${inboxItemId}`).update({
-        status: 'ESTRATTO',
-        confidenceFields: fields.map((f) => ({
+      const confidenceFields = [
+        ...fields.map((f) => ({
           fieldName: f.fieldName,
           extractedValue: f.extractedValue,
           confidence: f.confidence,
         })),
+      ]
+
+      if (month) {
+        confidenceFields.push({
+          fieldName: 'month',
+          extractedValue: String(month),
+          confidence: extractMonthResult.confidence,
+        })
+      }
+      if (year) {
+        confidenceFields.push({
+          fieldName: 'year',
+          extractedValue: String(year),
+          confidence: extractMonthResult.confidence,
+        })
+      }
+
+      await db.doc(`users/${uid}/inboxItems/${inboxItemId}`).update({
+        status: 'ESTRATTO',
+        confidenceFields,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       })
 
@@ -175,14 +194,13 @@ export const parseDocument = functions.https.onCall(
       }
 
       return result
-    } catch (error) {
-      console.error('parseDocument failed:', error)
-      await db.doc(`users/${uid}/inboxItems/${inboxItemId}`).update({
-        status: 'ERRORE',
-        errorMessage: error instanceof Error ? error.message : String(error),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      })
-      throw new functions.https.HttpsError('internal', 'Document parsing failed')
-    }
+  } catch (error) {
+    console.error('parseDocument failed:', error)
+    await db.doc(`users/${uid}/inboxItems/${inboxItemId}`).update({
+      status: 'ERRORE',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+    throw new HttpsError('internal', 'Document parsing failed')
   }
-)
+})
