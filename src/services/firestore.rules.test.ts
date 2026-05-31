@@ -71,6 +71,7 @@ describe('Firestore Security Rules', () => {
       'decisions',
       'funds',
       'contributions',
+      'kindergartenExpenses',
     ]
 
     collections.forEach((col) => {
