@@ -51,7 +51,7 @@ describe('importLegacyData', () => {
 
   it('should throw unauthenticated if no auth context', async () => {
     const request = { auth: null, data: {} };
-    await expect(importLegacyData(request as any)).rejects.toThrow(
+    await expect((importLegacyData as any)(request as any)).rejects.toThrow(
       expect.objectContaining({ code: 'unauthenticated' })
     );
   });
@@ -61,7 +61,7 @@ describe('importLegacyData', () => {
       auth: { token: { email: 'user@test.com' }, uid: 'user123' },
       data: {},
     };
-    await expect(importLegacyData(request as any)).rejects.toThrow(
+    await expect((importLegacyData as any)(request as any)).rejects.toThrow(
       expect.objectContaining({ code: 'permission-denied' })
     );
   });
@@ -77,7 +77,7 @@ describe('importLegacyData', () => {
 
     mockDoc.get.mockResolvedValue({ exists: false });
 
-    const result = await importLegacyData(request as any);
+    const result = (await (importLegacyData as any)(request as any)) as any;
 
     expect(result.data.inserted).toBe(2);
     expect(mockDoc.set).toHaveBeenCalledTimes(2);
@@ -96,7 +96,7 @@ describe('importLegacyData', () => {
 
     mockDoc.get.mockResolvedValue({ exists: true });
 
-    const result = await importLegacyData(request as any);
+    const result = (await (importLegacyData as any)(request as any)) as any;
 
     expect(result.data.inserted).toBe(0);
     expect(result.data.skipped).toBe(1);
@@ -114,7 +114,7 @@ describe('importLegacyData', () => {
 
     mockDoc.get.mockResolvedValue({ exists: false });
 
-    const result = await importLegacyData(request as any);
+    const result = (await (importLegacyData as any)(request as any)) as any;
 
     expect(result.data.inserted).toBe(1);
     expect(mockDoc.set).not.toHaveBeenCalled();
