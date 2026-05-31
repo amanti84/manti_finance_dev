@@ -53,7 +53,7 @@ describe('AdminPage', () => {
 
   it('redirects to / if user is not authorized', () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'hacker@gmail.com' } as Partial<User> as User,
+      user: { email: 'hacker@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
@@ -69,7 +69,7 @@ describe('AdminPage', () => {
 
   it('renders correctly for authorized admin', () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as Partial<User> as User,
+      user: { email: 'amanti84@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
@@ -93,7 +93,7 @@ describe('AdminPage', () => {
     vi.mocked(httpsCallable).mockReturnValue(mockCallable as unknown as HttpsCallable<unknown, SeedResponse>)
 
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as Partial<User> as User,
+      user: { email: 'amanti84@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
@@ -123,7 +123,7 @@ describe('AdminPage', () => {
     )
 
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as Partial<User> as User,
+      user: { email: 'amanti84@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),

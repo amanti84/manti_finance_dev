@@ -8,6 +8,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { z } from "zod";
 
 export { seedUserData } from "./seedUserData";
+export { importLegacyData } from "./importLegacyData";
 
 // Schema di validazione per una transazione generica
 const TransactionSchema = z.object({
