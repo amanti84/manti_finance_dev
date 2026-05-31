@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@plugin "@tailwindcss/forms";
+
+:root {
+  --color-bg: #f7f6f2;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+  --color-primary: #0f766e;      /* teal-700 — positivo/azione */
+  --color-success: #15803d;      /* green-700 */
+  --color-warning: #b45309;      /* amber-700 */
+  --color-error: #b91c1c;        /* red-700 */
+  --color-info: #1d4ed8;         /* blue-700 */
+  --font-body: 'Inter', system-ui, sans-serif;
+  --radius-md: 0.5rem;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.08);
+}
+
+[data-theme='dark'] {
+  --color-bg: #111827;
+  --color-surface: #1f2937;
+  --color-border: #374151;
+  --color-text: #f9fafb;
+  --color-text-muted: #9ca3af;
+  --color-primary: #14b8a6;      /* teal-500 */
+  --color-success: #22c55e;      /* green-500 */
+  --color-warning: #f59e0b;      /* amber-500 */
+  --color-error: #ef4444;        /* red-500 */
+  --color-info: #3b82f6;         /* blue-500 */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px rgb(0 0 0 / 0.4);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@theme {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-primary: var(--color-primary);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-error: var(--color-error);
+  --color-info: var(--color-info);
+
+  --font-sans: var(--font-body);
+
+  --radius-md: var(--radius-md);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+
+  /* Legacy/Compatibility colors to ensure existing Tailwind classes work */
+  --color-gray-50: #f9fafb;
+  --color-blue-600: #2563eb;
+}
