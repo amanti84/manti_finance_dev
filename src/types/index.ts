@@ -272,6 +272,8 @@ export type AuditEntityType =
   | 'pacs'
   | 'seed'
   | 'parseDocument'
+  | 'kindergartenExpense'
+  | 'kindergartenConfig'
 
 
 export interface AuditLogEntry extends BaseDocument {
@@ -431,6 +433,45 @@ export interface PensionFund {
   saldoAttuale: number
   createdAt: Timestamp
   updatedAt: Timestamp
+}
+
+// --------------------------------------------------------
+// KINDERGARTEN (Issue #19)
+// /users/{uid}/kindergartenExpenses/{expenseId}
+// --------------------------------------------------------
+
+export type KindergartenCategory =
+  | 'retta'
+  | 'mensa'
+  | 'attivita_extra'
+  | 'materiale'
+  | 'altro'
+
+export type KindergartenFrequency = 'monthly' | 'annual' | 'once'
+
+export interface KindergartenExpense extends BaseDocument {
+  category: KindergartenCategory
+  description: string
+  amount: number
+  frequency: KindergartenFrequency
+  month?: Month | null // se frequency === 'monthly' o 'once'
+  year: number
+  note?: string
+}
+
+export interface KindergartenConfig extends BaseDocument {
+  monthlyBudget: number // budget mensile configurabile
+  alertOnOverBudget: boolean // attiva alert sforamento
+}
+
+export interface KindergartenSummary {
+  year: number
+  totalAnnual: number
+  totalMonthly: number // media mensile
+  byCategory: Record<KindergartenCategory, number>
+  budgetMonthly: number
+  isOverBudget: boolean
+  currentMonthTotal: number
 }
 
 // --------------------------------------------------------
