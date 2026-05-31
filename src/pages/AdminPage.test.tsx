@@ -26,11 +26,6 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-interface SeedResponse {
-  success: boolean
-  data: { inserted: number; skipped: number }
-}
-
 describe('AdminPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -53,7 +48,7 @@ describe('AdminPage', () => {
 
   it('redirects to / if user is not authorized', () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'hacker@gmail.com' } as Partial<User> as User,
+      user: { email: 'hacker@gmail.com', uid: 'hacker-123' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
@@ -69,7 +64,7 @@ describe('AdminPage', () => {
 
   it('renders correctly for authorized admin', () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as Partial<User> as User,
+      user: { email: 'amanti84@gmail.com', uid: 'admin-123' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
@@ -90,10 +85,10 @@ describe('AdminPage', () => {
         data: { inserted: 5, skipped: 0 },
       },
     })
-    vi.mocked(httpsCallable).mockReturnValue(mockCallable as unknown as HttpsCallable<unknown, SeedResponse>)
+    vi.mocked(httpsCallable).mockReturnValue(mockCallable as unknown as HttpsCallable<unknown, unknown>)
 
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as Partial<User> as User,
+      user: { email: 'amanti84@gmail.com', uid: 'admin-123' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
@@ -118,12 +113,10 @@ describe('AdminPage', () => {
   })
 
   it('shows error message on failure', async () => {
-    vi.mocked(httpsCallable).mockReturnValue(
-      vi.fn().mockRejectedValue(new Error('API Error')) as unknown as HttpsCallable<unknown, SeedResponse>
-    )
+    vi.mocked(httpsCallable).mockReturnValue(vi.fn().mockRejectedValue(new Error('API Error')) as unknown as HttpsCallable<unknown, unknown>)
 
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as Partial<User> as User,
+      user: { email: 'amanti84@gmail.com', uid: 'admin-123' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
