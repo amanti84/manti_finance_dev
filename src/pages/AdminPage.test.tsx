@@ -4,6 +4,7 @@ import { AdminPage } from './AdminPage'
 import { useAuth } from '../hooks/useAuth'
 import { MemoryRouter } from 'react-router-dom'
 import { httpsCallable } from 'firebase/functions'
+import type { User } from 'firebase/auth'
 
 // Mocks
 vi.mock('../hooks/useAuth', () => ({
@@ -46,7 +47,7 @@ describe('AdminPage', () => {
 
   it('redirects to / if user is not authorized', () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'hacker@gmail.com' } as any,
+      user: { email: 'hacker@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
@@ -62,7 +63,7 @@ describe('AdminPage', () => {
 
   it('renders correctly for authorized admin', () => {
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as any,
+      user: { email: 'amanti84@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
@@ -83,10 +84,10 @@ describe('AdminPage', () => {
         data: { inserted: 5, skipped: 0 },
       },
     })
-    vi.mocked(httpsCallable).mockReturnValue(mockCallable as any)
+    vi.mocked(httpsCallable).mockReturnValue(mockCallable as never)
 
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as any,
+      user: { email: 'amanti84@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
@@ -111,10 +112,10 @@ describe('AdminPage', () => {
   })
 
   it('shows error message on failure', async () => {
-    vi.mocked(httpsCallable).mockReturnValue(vi.fn().mockRejectedValue(new Error('API Error')) as any)
+    vi.mocked(httpsCallable).mockReturnValue(vi.fn().mockRejectedValue(new Error('API Error')) as never)
 
     vi.mocked(useAuth).mockReturnValue({
-      user: { email: 'amanti84@gmail.com' } as any,
+      user: { email: 'amanti84@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
