@@ -82,7 +82,8 @@ export const importLegacyData = onCall(async (request) => {
           for (const key in docData) {
             if (typeof docData[key] === "string" && (key.toLowerCase().endsWith("date") || key.toLowerCase().endsWith("at") || key.toLowerCase().endsWith("update"))) {
               // Eccezione: startDate e endDate per PAC spesso restano stringhe YYYY-MM-DD
-              if (key === "startDate" || key === "endDate") continue;
+              // createdAt e updatedAt vengono sovrascritti con Timestamp.now()
+              if (key === "startDate" || key === "endDate" || key === "createdAt" || key === "updatedAt") continue;
 
               const ts = toTimestamp(docData[key]);
               if (ts) {

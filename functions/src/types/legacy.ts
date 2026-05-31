@@ -11,13 +11,12 @@ export interface LegacyPAC {
   platform?: string;
   monthlyDays?: number[];
   dayOfMonth?: number;
+  shares?: number;
+  avgCost?: number;
+  lastPrice?: number;
 }
 
-export interface LegacyKindergartenPAC extends LegacyPAC {
-  shares: number;
-  avgCost: number;
-  lastPrice: number;
-}
+export interface LegacyKindergartenPAC extends LegacyPAC {}
 
 export interface LegacyInvestment {
   id: string;
