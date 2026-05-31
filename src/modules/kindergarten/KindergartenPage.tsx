@@ -49,6 +49,10 @@ export const KindergartenPage: FC = () => {
     setEditingExpense(null)
   }
 
+  const handleDeleteExpense = (id: string) => {
+    void deleteExpense(id)
+  }
+
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i)
 
   return (
@@ -108,7 +112,7 @@ export const KindergartenPage: FC = () => {
             <KindergartenExpenseList
               expenses={expenses}
               onEdit={handleEditExpense}
-              onDelete={deleteExpense}
+              onDelete={handleDeleteExpense}
             />
           </div>
         </div>
