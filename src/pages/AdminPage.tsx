@@ -1,5 +1,4 @@
-import { FC } from 'react'
-import { useState } from 'react'
+import { useState, type FC } from 'react'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { useAuth } from '../hooks/useAuth'
 import { Navigate } from 'react-router-dom'
@@ -50,7 +49,7 @@ export const AdminPage: FC = () => {
         <h2 className="text-xl font-semibold mb-4">Seed Data</h2>
         <p className="text-gray-600 mb-6">
           Carica i dati reali di PAC e Investimenti per test e sviluppo.
-          L'operazione è idempotente (non crea duplicati).
+          L&apos;operazione è idempotente (non crea duplicati).
         </p>
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded mb-6">
@@ -65,7 +64,7 @@ export const AdminPage: FC = () => {
           </div>
         )}
         <button
-          onClick={handleSeedData}
+          onClick={() => { void handleSeedData() }}
           disabled={loading}
           className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
         >
