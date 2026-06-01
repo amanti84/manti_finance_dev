@@ -23,7 +23,7 @@
     "exactOptionalPropertyTypes": true,
 
     /* Vitest globals (vi, beforeEach, describe, expect, ...) */
-    "types": ["vitest/globals"],
+    "types": ["vitest/globals", "node"],
 
     /* Path aliases */
     "baseUrl": ".",
