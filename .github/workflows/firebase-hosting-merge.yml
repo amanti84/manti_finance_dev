@@ -1,11 +1,18 @@
 # Deploy to Firebase Hosting on merge
-# Triggered when a PR is merged into main
+# Triggered when a PR is merged into main OR manually via workflow_dispatch
 
 name: Deploy to Firebase Hosting on Merge
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Motivo del deploy manuale'
+        required: false
+        default: 'Deploy manuale'
+
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
