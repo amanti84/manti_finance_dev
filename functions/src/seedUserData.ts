@@ -14,7 +14,6 @@ const cors = corsLib({
 
 export const seedUserData = onRequest((req, res) => {
   return cors(req, res, async () => {
-    // Gestione preflight manuale se necessario (anche se cors() dovrebbe gestirlo)
     if (req.method === "OPTIONS") {
       res.status(204).send("");
       return;
@@ -26,7 +25,6 @@ export const seedUserData = onRequest((req, res) => {
     }
 
     try {
-      // 1. Verifica Autenticazione manuale
       const authHeader = req.headers.authorization;
       if (!authHeader?.startsWith("Bearer ")) {
         res.status(401).send({ success: false, error: "L'utente deve essere autenticato" });
@@ -38,7 +36,6 @@ export const seedUserData = onRequest((req, res) => {
       const email = decodedToken.email;
       const uid = decodedToken.uid;
 
-      // 2. Verifica Permessi Admin
       if (email !== ADMIN_EMAIL) {
         res.status(403).send({ success: false, error: "Accesso limitato all'amministratore" });
         return;
@@ -46,11 +43,6 @@ export const seedUserData = onRequest((req, res) => {
 
       const db = getFirestore();
 
-      // ============================================================
-      // DATI REALI — Estratti da manti_finance (29/05/2026)
-      // ============================================================
-
-      // PAC REALI — 4 PAC attivi
       const pacsSeed = [
         {
           id: "real_pac_001",
@@ -126,7 +118,6 @@ export const seedUserData = onRequest((req, res) => {
         },
       ];
 
-      // INVESTIMENTI REALI — 11 posizioni attive al 29/05/2026
       const investmentsSeed = [
         {
           id: "real_inv_001",
@@ -300,7 +291,6 @@ export const seedUserData = onRequest((req, res) => {
 
       const now = Timestamp.now();
 
-      // Batch PAC reali
       for (const pac of pacsSeed) {
         const docRef = db.doc(`users/${uid}/pacs/${pac.id}`);
         const docSnap = await docRef.get();
@@ -312,7 +302,6 @@ export const seedUserData = onRequest((req, res) => {
         }
       }
 
-      // Batch Investimenti reali
       for (const inv of investmentsSeed) {
         const docRef = db.doc(`users/${uid}/investments/${inv.id}`);
         const docSnap = await docRef.get();
@@ -324,7 +313,6 @@ export const seedUserData = onRequest((req, res) => {
         }
       }
 
-      // Audit log
       if (inserted > 0) {
         await db.collection(`users/${uid}/audit`).add({
           action: "SEED_DATA",

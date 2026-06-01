@@ -2,6 +2,10 @@ import { useState, type FC } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Navigate } from 'react-router-dom'
 
+const ALLOWED_EMAILS = (import.meta.env.VITE_ALLOWED_EMAILS as string || '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+
 const SEED_FUNCTION_URL = 'https://us-central1-mantifinance.cloudfunctions.net/seedUserData'
 
 export const AdminPage: FC = () => {
@@ -9,10 +13,6 @@ export const AdminPage: FC = () => {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ inserted: number; skipped: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
-
-  const ALLOWED_EMAILS = (import.meta.env.VITE_ALLOWED_EMAILS as string || '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
 
   if (authLoading) {
     return <div className="p-8 text-center">Caricamento...</div>
