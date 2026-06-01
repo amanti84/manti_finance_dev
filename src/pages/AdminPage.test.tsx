@@ -4,6 +4,7 @@ import { AdminPage } from './AdminPage'
 import { useAuth } from '../hooks/useAuth'
 import { MemoryRouter } from 'react-router-dom'
 import type { User } from 'firebase/auth'
+import type * as ReactRouterDom from 'react-router-dom'
 
 // Mocks
 vi.mock('../hooks/useAuth', () => ({
@@ -15,7 +16,7 @@ const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom')
+  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom')
   return {
     ...actual,
     Navigate: vi.fn(({ to }: { to: string }) => <div data-testid="navigate" data-to={to} />)
