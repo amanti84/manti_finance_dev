@@ -26,10 +26,6 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-interface SeedResponse {
-  success: boolean
-  data: { inserted: number; skipped: number }
-}
 
 // Imposta VITE_ALLOWED_EMAILS per i test, in modo che il guard
 // di AdminPage funzioni correttamente in CI senza dipendere da secrets
