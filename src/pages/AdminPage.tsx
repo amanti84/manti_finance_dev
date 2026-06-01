@@ -1,17 +1,18 @@
 import { useState, type FC } from 'react'
-import { getFunctions, httpsCallable } from 'firebase/functions'
 import { useAuth } from '../hooks/useAuth'
 import { Navigate } from 'react-router-dom'
 
-const ALLOWED_EMAILS = (import.meta.env.VITE_ALLOWED_EMAILS as string || '')
-  .split(',')
-  .map((e) => e.trim().toLowerCase())
+const SEED_FUNCTION_URL = 'https://us-central1-mantifinance.cloudfunctions.net/seedUserData'
 
 export const AdminPage: FC = () => {
   const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{ inserted: number; skipped: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  const ALLOWED_EMAILS = (import.meta.env.VITE_ALLOWED_EMAILS as string || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
 
   if (authLoading) {
     return <div className="p-8 text-center">Caricamento...</div>
@@ -22,14 +23,28 @@ export const AdminPage: FC = () => {
   }
 
   const handleSeedData = async () => {
+    if (!user) return
+
     setLoading(true)
     setError(null)
     setResult(null)
     try {
-      const functions = getFunctions()
-      const seedUserData = httpsCallable<{ inserted: number; skipped: number }>(functions, 'seedUserData')
-      const response = await seedUserData()
-      const data = response.data as { success: boolean; data: { inserted: number; skipped: number } }
+      const idToken = await user.getIdToken()
+
+      const response = await fetch(SEED_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json() as { success: boolean; error: string }
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json() as { success: boolean; data: { inserted: number; skipped: number } }
       if (data.success) {
         setResult(data.data)
       } else {
