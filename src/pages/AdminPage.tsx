@@ -1,10 +1,12 @@
-import type { FC } from 'react'
+import { FC } from 'react'
 import { useState } from 'react'
 import { getFunctions, httpsCallable } from 'firebase/functions'
 import { useAuth } from '../hooks/useAuth'
 import { Navigate } from 'react-router-dom'
 
-const ADMIN_EMAIL = 'amanti84@gmail.com'
+const ALLOWED_EMAILS = (import.meta.env.VITE_ALLOWED_EMAILS as string || '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
 
 export const AdminPage: FC = () => {
   const { user, loading: authLoading } = useAuth()
@@ -16,7 +18,7 @@ export const AdminPage: FC = () => {
     return <div className="p-8 text-center">Caricamento...</div>
   }
 
-  if (user?.email !== ADMIN_EMAIL) {
+  if (!user?.email || !ALLOWED_EMAILS.includes(user.email.toLowerCase())) {
     return <Navigate to="/" replace />
   }
 
@@ -24,14 +26,11 @@ export const AdminPage: FC = () => {
     setLoading(true)
     setError(null)
     setResult(null)
-
     try {
       const functions = getFunctions()
       const seedUserData = httpsCallable<{ inserted: number; skipped: number }>(functions, 'seedUserData')
       const response = await seedUserData()
-
       const data = response.data as { success: boolean; data: { inserted: number; skipped: number } }
-
       if (data.success) {
         setResult(data.data)
       } else {
@@ -47,36 +46,28 @@ export const AdminPage: FC = () => {
   return (
     <div className="p-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Pannello Amministrazione</h1>
-
       <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
         <h2 className="text-xl font-semibold mb-4">Seed Data</h2>
         <p className="text-gray-600 mb-6">
           Carica i dati reali di PAC e Investimenti per test e sviluppo.
           L'operazione è idempotente (non crea duplicati).
         </p>
-
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded mb-6">
             {error}
           </div>
         )}
-
         {result && (
           <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded mb-6">
-            Dati caricati correttamente:
-            <ul className="list-disc ml-6 mt-2">
-              <li>Inseriti: {result.inserted}</li>
-              <li>Saltati: {result.skipped}</li>
-            </ul>
+            <p className="font-semibold">Dati caricati correttamente:</p>
+            <p>Inseriti: {result.inserted}</p>
+            <p>Saltati (duplicati): {result.skipped}</p>
           </div>
         )}
-
         <button
-          onClick={() => { void handleSeedData() }}
+          onClick={handleSeedData}
           disabled={loading}
-          className={`px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors ${
-            loading ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
         >
           {loading ? 'Caricamento in corso...' : 'Carica dati seed'}
         </button>
@@ -84,3 +75,5 @@ export const AdminPage: FC = () => {
     </div>
   )
 }
+
+export default AdminPage
