@@ -1,6 +1,7 @@
 /**
  * src/utils/config.ts
  * Utility per la gestione e validazione delle variabili d'ambiente Firebase.
+ * Progetto target: mantifinance
  */
 
 export interface FirebaseConfig {
