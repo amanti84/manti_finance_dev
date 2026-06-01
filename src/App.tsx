@@ -20,6 +20,7 @@ import { InboxPage } from './modules/inbox'
 import { GoalsPage } from './modules/goals'
 import { AdminPage } from './pages/AdminPage'
 import DashboardPage from './pages/DashboardPage'
+import { ComponentGallery } from './ComponentGallery'
 
 function App(): React.ReactElement {
   const { user } = useAuth()
@@ -30,6 +31,9 @@ function App(): React.ReactElement {
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+        {/* Public Gallery */}
+        <Route path="/ui-gallery" element={<ComponentGallery />} />
 
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
