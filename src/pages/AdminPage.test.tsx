@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { AdminPage } from './AdminPage'
 import { useAuth } from '../hooks/useAuth'
@@ -31,6 +31,12 @@ interface SeedResponse {
   data: { inserted: number; skipped: number }
 }
 
+// Imposta VITE_ALLOWED_EMAILS per i test, in modo che il guard
+// di AdminPage funzioni correttamente in CI senza dipendere da secrets
+beforeAll(() => {
+  import.meta.env.VITE_ALLOWED_EMAILS = 'amanti84@gmail.com'
+})
+
 describe('AdminPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -43,11 +49,7 @@ describe('AdminPage', () => {
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
     })
-    render(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>
-    )
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
     expect(screen.getByText('Caricamento...')).toBeTruthy()
   })
 
@@ -58,11 +60,7 @@ describe('AdminPage', () => {
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
     })
-    render(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>
-    )
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
     expect(screen.getByTestId('navigate')).toBeTruthy()
     expect(screen.getByTestId('navigate').getAttribute('data-to')).toBe('/')
   })
@@ -74,69 +72,45 @@ describe('AdminPage', () => {
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
     })
-    render(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>
-    )
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
     expect(screen.getByText('Pannello Amministrazione')).toBeTruthy()
     expect(screen.getByText('Carica dati seed')).toBeTruthy()
   })
 
   it('calls seedUserData function and shows success message', async () => {
     const mockCallable = vi.fn().mockResolvedValue({
-      data: {
-        success: true,
-        data: { inserted: 5, skipped: 0 },
-      },
+      data: { success: true, data: { inserted: 5, skipped: 0 } },
     })
-    vi.mocked(httpsCallable).mockReturnValue(mockCallable as unknown as HttpsCallable<unknown, SeedResponse>)
-
+    vi.mocked(httpsCallable).mockReturnValue(mockCallable as unknown as HttpsCallable)
     vi.mocked(useAuth).mockReturnValue({
       user: { email: 'amanti84@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
     })
-
-    render(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>
-    )
-
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
     const button = screen.getByText('Carica dati seed')
     fireEvent.click(button)
-
     expect(button.textContent).toBe('Caricamento in corso...')
-
     await waitFor(() => {
       expect(screen.getByText('Dati caricati correttamente:')).toBeTruthy()
       expect(screen.getByText('Inseriti: 5')).toBeTruthy()
-      expect(screen.getByText('Saltati: 0')).toBeTruthy()
+      expect(screen.getByText('Saltati (duplicati): 0')).toBeTruthy()
     })
   })
 
   it('shows error message on failure', async () => {
     vi.mocked(httpsCallable).mockReturnValue(
-      vi.fn().mockRejectedValue(new Error('API Error')) as unknown as HttpsCallable<unknown, SeedResponse>
+      vi.fn().mockRejectedValue(new Error('API Error')) as unknown as HttpsCallable
     )
-
     vi.mocked(useAuth).mockReturnValue({
       user: { email: 'amanti84@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
     })
-
-    render(
-      <MemoryRouter>
-        <AdminPage />
-      </MemoryRouter>
-    )
-
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
     fireEvent.click(screen.getByText('Carica dati seed'))
-
     await waitFor(() => {
       expect(screen.getByText('API Error')).toBeTruthy()
     })
