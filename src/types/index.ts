@@ -1,6 +1,7 @@
 // ============================================================
 // CORE TYPES - manti_finance_dev
-// Modello dati v2 - tutti i tipi del progetto
+// Modello dati v3 - allineato alle implementazioni reali
+// Aggiornato 03/06/2026 — fix tsc --noEmit (post-mortem #46)
 // ============================================================
 
 import type { Timestamp } from 'firebase/firestore'
@@ -19,9 +20,11 @@ export interface BaseDocument {
 // API RESULT
 // --------------------------------------------------------
 
+// Permissive union: .error is accessible after narrowing (!result.success)
+// Never access .error without checking success first (see §4 of issue #46)
 export type ApiResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; data?: undefined }
+  | { success: true; data: T; error?: never }
+  | { success: false; data?: never; error: string }
 
 // --------------------------------------------------------
 // WHAT-IF ENGINE (Issue #27)
@@ -96,7 +99,6 @@ export interface UserProfile extends BaseDocument {
 
 // --------------------------------------------------------
 // PATRIMONIO SNAPSHOT (mensile)
-// /users/{uid}/snapshots/{snapshotId}
 // --------------------------------------------------------
 
 export interface PatrimonioSnapshot extends BaseDocument {
@@ -119,7 +121,6 @@ export interface SnapshotWithDelta extends PatrimonioSnapshot {
 
 // --------------------------------------------------------
 // TRANSAZIONI
-// /users/{uid}/transactions/{transactionId}
 // --------------------------------------------------------
 
 export type TransactionType = 'income' | 'expense' | 'transfer' | 'investment'
@@ -145,7 +146,6 @@ export interface Transaction extends BaseDocument {
 
 // --------------------------------------------------------
 // INVESTIMENTI
-// /users/{uid}/investments/{investmentId}
 // --------------------------------------------------------
 
 export type AssetClass =
@@ -168,6 +168,12 @@ export interface Investment extends BaseDocument {
   isPac: boolean
   pacMonthlyAmount?: number
   lastPriceUpdate: Timestamp
+  tickerOnly?: boolean
+  autoUpdate?: boolean
+  lastUpdateError?: string | null
+  lastUpdateAttempt?: Timestamp | null
+  yahooSymbol?: string
+  priceSource?: string
 }
 
 export interface PacConfig extends BaseDocument {
@@ -187,7 +193,6 @@ export interface PacConfig extends BaseDocument {
 
 // --------------------------------------------------------
 // PAYROLL / CEDOLINI
-// /users/{uid}/payslips/{payslipId}
 // --------------------------------------------------------
 
 export interface Payslip extends BaseDocument {
@@ -212,7 +217,7 @@ export interface SurplusBreakdown {
   year: number
   netSalary: number
   fixedExpenses: number
-  surplus: number
+  surplus?: number          // calcolato downstream, non sempre presente
   surplusGross: number
   bonusAmount: number
   variableComponent: number
@@ -231,6 +236,7 @@ export interface AnnualProjection {
   monthsRemaining: number
   monthsElapsed?: number
   cumulativeNet?: number
+  cumulativeSurplus?: number  // aggiunto da payroll.ts
   confidence: 'high' | 'medium' | 'low'
 }
 
@@ -244,6 +250,7 @@ export interface YoYComparison {
   bonusDelta: number
   avgNetCurrent?: number
   avgNetPrevious?: number
+  avgSurplusPrevious?: number  // aggiunto da payroll.ts
   netDeltaAbsolute?: number
   netDeltaPercent?: number
   avgSurplusCurrent?: number
@@ -253,9 +260,9 @@ export interface MonthlyVariableComponents {
   month: Month
   year: number
   bonus: number
-  rimborsi: number
-  rimborsiSpese?: number
-  total: number
+  rimborsi: number           // campo primario (non rimborsiSpese)
+  rimborsiSpese?: number     // alias legacy opzionale
+  total: number              // campo primario
   totalVariable?: number
   totalStable?: number
   variableRatio?: number
@@ -264,34 +271,37 @@ export interface MonthlyVariableComponents {
 // --------------------------------------------------------
 // MUTUO
 // /users/{uid}/config/mutuo
+// NOTA: non estende BaseDocument — il documento Firestore
+// è un config singleton senza id/createdAt/updatedAt espliciti
 // --------------------------------------------------------
 
-export interface MutuoConfig extends BaseDocument {
-  importoIniziale: number
-  importoOriginale?: number
-  saldoResiduo: number
-  debitoResiduo?: number
-  rata: number
-  rataMensile?: number
-  tassoAnnuo: number
-  tasso?: number
+export interface MutuoConfig {
+  // Campi primari (usati da mutuo.ts e whatIf.ts)
+  importoOriginale: number
+  debitoResiduo: number
+  rataMensile: number
+  tasso: number
   dataInizio: Timestamp | string
-  dataFine?: Timestamp | string
-  durataAnni: number
-  banca: string
-  tipoTasso: 'fisso' | 'variabile' | 'misto'
-  isMutuoVariabile?: boolean
+  dataFine: Timestamp | string
+  isMutuoVariabile: boolean
+  // Campi alias legacy (opzionali per retrocompatibilità)
+  importoIniziale?: number
+  saldoResiduo?: number
+  rata?: number
+  tassoAnnuo?: number
+  durataAnni?: number
+  banca?: string
+  tipoTasso?: 'fisso' | 'variabile' | 'misto'
   notes?: string
 }
 
 // --------------------------------------------------------
 // MONTHLY CLOSE
-// /users/{uid}/monthlyClose/{year_month}
 // --------------------------------------------------------
 
 export type MonthStatus =
   | 'open' | 'pending' | 'closed'
-  | 'OPEN' | 'PENDING' | 'CLOSED'
+  | 'OPEN' | 'PENDING' | 'CLOSED' | 'LOCKED'
 
 export interface MonthlyCloseResult extends BaseDocument {
   year: number
@@ -301,14 +311,14 @@ export interface MonthlyCloseResult extends BaseDocument {
   surplusMensile: number
   netSalary: number
   fixedExpenses: number
+  surplusGross?: number
+  snapshotId?: string
   closedAt?: Timestamp
   notes?: string
-  snapshotId?: string
 }
 
 // --------------------------------------------------------
 // GOALS / OBIETTIVI
-// /users/{uid}/goals/{goalId}
 // --------------------------------------------------------
 
 export type GoalType =
@@ -325,24 +335,26 @@ export interface Goal extends BaseDocument {
   status: GoalStatus
   targetAmount: number
   currentAmount: number
-  targetDate?: Timestamp | string
-  priority: 1 | 2 | 3
+  baselineAmount: number       // required — usato da goal.ts per calcolo progressPercent
+  targetDate: Timestamp        // required — sempre Timestamp (non stringa)
+  priority?: 1 | 2 | 3        // opzionale — non tutti i servizi lo scrivono
   linkedAccountId?: string
   notes?: string
   note?: string
-  baselineAmount?: number
 }
 
+// GoalProgress — fonte di verita': goal.ts (calculateGoalProgress)
+// Vedi §9 di issue #46 per dettagli
 export interface GoalProgress {
   goalId: string
-  percent: number
-  progressPercent?: number
-  remainingAmount: number
+  progressPercent: number           // campo primario (non 'percent')
+  currentAmount: number
+  targetAmount: number
+  remainingAmount?: number
   remainingMonths?: number
-  onTrack: boolean
-  isOnTrack?: boolean
-  projectedCompletionDate?: string
-  milestoneReached?: boolean
+  projectedCompletionDate: Date | null   // Date JS o null (non stringa)
+  isOnTrack: boolean                // campo primario (non 'onTrack')
+  milestoneReached: 0 | 25 | 50 | 75 | 100 | null
 }
 
 export interface GoalWithProgress extends Goal {
@@ -351,21 +363,20 @@ export interface GoalWithProgress extends Goal {
 
 // --------------------------------------------------------
 // ALERTS
-// /users/{uid}/alerts/{alertId}
 // --------------------------------------------------------
 
 export type AlertSeverity = 'info' | 'warning' | 'error' | 'success' | 'critical'
 
 export interface FinancialAlert extends BaseDocument {
-  title: string
+  title?: string           // opzionale — alert.ts non lo popola sempre
   message: string
   severity: AlertSeverity
   read: boolean
+  type?: string
   entityType?: string
   entityId?: string
   actionLabel?: string
   actionRoute?: string
-  type?: string
   snoozedUntil?: Timestamp
 }
 
@@ -379,34 +390,45 @@ export type InboxItemStatus =
   | 'RICEVUTO' | 'IN_ELABORAZIONE' | 'ESTRATTO'
   | 'IN_REVIEW' | 'CONFERMATO' | 'ERRORE'
 
-export type ConfidenceField =
+// ConfidenceField è un OGGETTO (non una union di stringhe)
+// I servizi usano array di ConfidenceField, non Record<string, number>
+export interface ConfidenceField {
+  fieldName: string
+  extractedValue: unknown
+  confidence: number        // 0-100
+  confirmedValue?: unknown
+  confirmedAt?: Timestamp
+}
+
+// Alias per la union di nomi di campo (usato internamente dove serve)
+export type ConfidenceFieldName =
   | 'amount' | 'category' | 'date' | 'description' | 'type' | 'accountId'
 
 export interface InboxItem extends BaseDocument {
-  title: string
-  description: string
+  title?: string           // opzionale nei nuovi documenti
+  description?: string     // opzionale
   status: InboxItemStatus
-  source: 'email' | 'import' | 'ai_suggestion' | 'upload'
-  confidence: number
-  confidenceFields: Partial<Record<ConfidenceField, number>>
+  source: 'email' | 'import' | 'upload'
+  confidence?: number      // opzionale — non sempre calcolato
+  confidenceFields: ConfidenceField[]   // ARRAY di oggetti
   linkedTransactionId?: string
   suggestedTransaction?: Partial<Transaction>
   reviewedAt?: Timestamp
   reviewedBy?: string
   fileName?: string
+  documentId?: string
   errorMessage?: string
   confirmedAt?: Timestamp
 }
 
 export interface InboxBadgeCount {
-  pending: number
   total: number
-  requiresReview?: number
+  requiresReview: number   // campo primario
+  pending?: number         // alias legacy opzionale
 }
 
 // --------------------------------------------------------
 // DOCUMENTI
-// /users/{uid}/documents/{documentId}
 // --------------------------------------------------------
 
 export type DocumentType =
@@ -419,11 +441,12 @@ export type DocumentStatus =
   | 'linked' | 'classified'
 
 export interface FinancialDocument extends BaseDocument {
-  name: string
+  name?: string            // opzionale — document.ts non lo scrive sempre
   type: DocumentType
   status: DocumentStatus
   storagePath: string
   downloadUrl?: string
+  fileName?: string
   fileSize: number
   mimeType: string
   year?: number
@@ -434,19 +457,17 @@ export interface FinancialDocument extends BaseDocument {
   extractedText?: string
   notes?: string
   note?: string
-  fileName?: string
   documentDate?: Timestamp | string
 }
 
 // --------------------------------------------------------
 // AUDIT LOG
-// /users/{uid}/audit/{auditId}
 // --------------------------------------------------------
 
 export type AuditAction =
   | 'create' | 'update' | 'delete' | 'read'
   | 'login' | 'logout' | 'export' | 'import'
-  | 'snapshot'
+  | 'snapshot' | 'LEGACY_IMPORT'
 
 export type AuditEntityType =
   | 'transaction' | 'investment' | 'payslip' | 'snapshot'
@@ -457,32 +478,34 @@ export type AuditEntityType =
 export interface AuditLogEntry extends BaseDocument {
   action: AuditAction
   entityType: AuditEntityType
-  entityId?: string
+  entityId: string
   uid: string
   userEmail?: string
   metadata?: Record<string, unknown>
+  ipHash?: string
   ipAddress?: string
   userAgent?: string
-  source?: string
-  previousValue?: unknown
-  newValue?: unknown
+  source?: 'user' | 'import' | 'system'
+  previousValue?: Record<string, unknown>
+  newValue?: Record<string, unknown>
 }
 
 // --------------------------------------------------------
 // PREVIDENZA
-// /users/{uid}/config/previdenza
 // --------------------------------------------------------
 
 export interface TFRData {
-  saldoAttuale: number
-  anno: number
-  mese: Month
-  destinazione: 'azienda' | 'fondo_pensione' | 'inps'
+  // Campi primari scritti da previdenza.ts
   annoCompetenza?: number
-  quota?: number
   retribuzioneAnnuale?: number
-  totale?: number
+  quota?: number
   rivalutazione?: number
+  totale?: number
+  // Campi richiesti da types v2 (da allineare con il servizio)
+  saldoAttuale?: number
+  anno?: number
+  mese?: Month
+  destinazione?: 'azienda' | 'fondo_pensione' | 'inps'
 }
 
 export interface FonteData extends BaseDocument {
@@ -494,6 +517,7 @@ export interface FonteData extends BaseDocument {
   quotaDipendente?: number
   quotaDatore?: number
   tfr?: number
+  // NOTA: 'totale' non esiste in FonteData — errore in previdenza.ts da fixare separatamente
 }
 
 export type PensionContributionType = 'volontario' | 'datoriale' | 'tfr'
@@ -526,16 +550,10 @@ export interface PensionFund extends BaseDocument {
 // --------------------------------------------------------
 // KINDERGARTEN (legacy expense model — deprecato)
 // Nuovo modello investimenti/PAC: src/types/kindergarten.ts
-// /users/{uid}/kindergartenExpenses/{expenseId}  <- legacy
-// /users/{uid}/config/kindergarten               <- legacy
 // --------------------------------------------------------
 
 export type KindergartenCategory =
-  | 'retta'
-  | 'mensa'
-  | 'attivita_extra'
-  | 'materiale'
-  | 'altro'
+  | 'retta' | 'mensa' | 'attivita_extra' | 'materiale' | 'altro'
 
 export type KindergartenFrequency = 'monthly' | 'once'
 
