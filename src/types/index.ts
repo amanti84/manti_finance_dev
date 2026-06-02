@@ -217,7 +217,7 @@ export interface SurplusBreakdown {
   year: number
   netSalary: number
   fixedExpenses: number
-  surplus?: number          // calcolato downstream, non sempre presente
+  surplus?: number
   surplusGross: number
   bonusAmount: number
   variableComponent: number
@@ -230,13 +230,16 @@ export interface AnnualProjection {
   projectedGross: number
   projectedNet: number
   projectedAnnualNet?: number
+  projectedAnnualSurplus?: number
   projectedBonus: number
   projectedTFR: number
   projectedFondoPensione: number
   monthsRemaining: number
   monthsElapsed?: number
   cumulativeNet?: number
-  cumulativeSurplus?: number  // aggiunto da payroll.ts
+  cumulativeSurplus?: number
+  averageMonthlyNet?: number
+  averageMonthlySurplus?: number
   confidence: 'high' | 'medium' | 'low'
 }
 
@@ -250,19 +253,23 @@ export interface YoYComparison {
   bonusDelta: number
   avgNetCurrent?: number
   avgNetPrevious?: number
-  avgSurplusPrevious?: number  // aggiunto da payroll.ts
+  avgSurplusPrevious?: number
   netDeltaAbsolute?: number
   netDeltaPercent?: number
   avgSurplusCurrent?: number
+  surplusDeltaAbsolute?: number
+  surplusDeltaPercent?: number
+  totalBonusCurrent?: number
+  totalBonusPrevious?: number
 }
 
 export interface MonthlyVariableComponents {
   month: Month
   year: number
   bonus: number
-  rimborsi: number           // campo primario (non rimborsiSpese)
-  rimborsiSpese?: number     // alias legacy opzionale
-  total: number              // campo primario
+  rimborsi: number
+  rimborsiSpese?: number
+  total: number
   totalVariable?: number
   totalStable?: number
   variableRatio?: number
@@ -270,13 +277,9 @@ export interface MonthlyVariableComponents {
 
 // --------------------------------------------------------
 // MUTUO
-// /users/{uid}/config/mutuo
-// NOTA: non estende BaseDocument — il documento Firestore
-// è un config singleton senza id/createdAt/updatedAt espliciti
 // --------------------------------------------------------
 
 export interface MutuoConfig {
-  // Campi primari (usati da mutuo.ts e whatIf.ts)
   importoOriginale: number
   debitoResiduo: number
   rataMensile: number
@@ -284,7 +287,6 @@ export interface MutuoConfig {
   dataInizio: Timestamp | string
   dataFine: Timestamp | string
   isMutuoVariabile: boolean
-  // Campi alias legacy (opzionali per retrocompatibilità)
   importoIniziale?: number
   saldoResiduo?: number
   rata?: number
@@ -335,25 +337,23 @@ export interface Goal extends BaseDocument {
   status: GoalStatus
   targetAmount: number
   currentAmount: number
-  baselineAmount: number       // required — usato da goal.ts per calcolo progressPercent
-  targetDate: Timestamp        // required — sempre Timestamp (non stringa)
-  priority?: 1 | 2 | 3        // opzionale — non tutti i servizi lo scrivono
+  baselineAmount: number
+  targetDate: Timestamp
+  priority?: 1 | 2 | 3
   linkedAccountId?: string
   notes?: string
   note?: string
 }
 
-// GoalProgress — fonte di verita': goal.ts (calculateGoalProgress)
-// Vedi §9 di issue #46 per dettagli
 export interface GoalProgress {
   goalId: string
-  progressPercent: number           // campo primario (non 'percent')
+  progressPercent: number
   currentAmount: number
   targetAmount: number
   remainingAmount?: number
   remainingMonths?: number
-  projectedCompletionDate: Date | null   // Date JS o null (non stringa)
-  isOnTrack: boolean                // campo primario (non 'onTrack')
+  projectedCompletionDate: Date | null
+  isOnTrack: boolean
   milestoneReached: 0 | 25 | 50 | 75 | 100 | null
 }
 
@@ -368,7 +368,7 @@ export interface GoalWithProgress extends Goal {
 export type AlertSeverity = 'info' | 'warning' | 'error' | 'success' | 'critical'
 
 export interface FinancialAlert extends BaseDocument {
-  title?: string           // opzionale — alert.ts non lo popola sempre
+  title?: string
   message: string
   severity: AlertSeverity
   read: boolean
@@ -382,7 +382,6 @@ export interface FinancialAlert extends BaseDocument {
 
 // --------------------------------------------------------
 // INBOX
-// /users/{uid}/inbox/{inboxItemId}
 // --------------------------------------------------------
 
 export type InboxItemStatus =
@@ -390,27 +389,24 @@ export type InboxItemStatus =
   | 'RICEVUTO' | 'IN_ELABORAZIONE' | 'ESTRATTO'
   | 'IN_REVIEW' | 'CONFERMATO' | 'ERRORE'
 
-// ConfidenceField è un OGGETTO (non una union di stringhe)
-// I servizi usano array di ConfidenceField, non Record<string, number>
 export interface ConfidenceField {
   fieldName: string
   extractedValue: unknown
-  confidence: number        // 0-100
+  confidence: number
   confirmedValue?: unknown
   confirmedAt?: Timestamp
 }
 
-// Alias per la union di nomi di campo (usato internamente dove serve)
 export type ConfidenceFieldName =
   | 'amount' | 'category' | 'date' | 'description' | 'type' | 'accountId'
 
 export interface InboxItem extends BaseDocument {
-  title?: string           // opzionale nei nuovi documenti
-  description?: string     // opzionale
+  title?: string
+  description?: string
   status: InboxItemStatus
   source: 'email' | 'import' | 'upload'
-  confidence?: number      // opzionale — non sempre calcolato
-  confidenceFields: ConfidenceField[]   // ARRAY di oggetti
+  confidence?: number
+  confidenceFields: ConfidenceField[]
   linkedTransactionId?: string
   suggestedTransaction?: Partial<Transaction>
   reviewedAt?: Timestamp
@@ -423,8 +419,8 @@ export interface InboxItem extends BaseDocument {
 
 export interface InboxBadgeCount {
   total: number
-  requiresReview: number   // campo primario
-  pending?: number         // alias legacy opzionale
+  requiresReview: number
+  pending?: number
 }
 
 // --------------------------------------------------------
@@ -441,7 +437,7 @@ export type DocumentStatus =
   | 'linked' | 'classified'
 
 export interface FinancialDocument extends BaseDocument {
-  name?: string            // opzionale — document.ts non lo scrive sempre
+  name?: string
   type: DocumentType
   status: DocumentStatus
   storagePath: string
@@ -495,13 +491,11 @@ export interface AuditLogEntry extends BaseDocument {
 // --------------------------------------------------------
 
 export interface TFRData {
-  // Campi primari scritti da previdenza.ts
   annoCompetenza?: number
   retribuzioneAnnuale?: number
   quota?: number
   rivalutazione?: number
   totale?: number
-  // Campi richiesti da types v2 (da allineare con il servizio)
   saldoAttuale?: number
   anno?: number
   mese?: Month
@@ -517,7 +511,6 @@ export interface FonteData extends BaseDocument {
   quotaDipendente?: number
   quotaDatore?: number
   tfr?: number
-  // NOTA: 'totale' non esiste in FonteData — errore in previdenza.ts da fixare separatamente
 }
 
 export type PensionContributionType = 'volontario' | 'datoriale' | 'tfr'
@@ -546,11 +539,6 @@ export interface PensionFund extends BaseDocument {
   dataAdesione?: string
   notes?: string
 }
-
-// --------------------------------------------------------
-// KINDERGARTEN (legacy expense model — deprecato)
-// Nuovo modello investimenti/PAC: src/types/kindergarten.ts
-// --------------------------------------------------------
 
 export type KindergartenCategory =
   | 'retta' | 'mensa' | 'attivita_extra' | 'materiale' | 'altro'

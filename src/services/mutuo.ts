@@ -11,12 +11,9 @@ import {
   getDoc,
   updateDoc,
 } from 'firebase/firestore'
+import type { Timestamp } from 'firebase/firestore'
 import type { MutuoConfig, ApiResult } from '../types'
 import { logAudit } from './audit'
-
-// ---------------------------------------------------------------------------
-// TYPES
-// ---------------------------------------------------------------------------
 
 export interface RataDettaglio {
   numero: number
@@ -58,16 +55,9 @@ export interface MutuoSummary {
   scadenza: Date
 }
 
-// ---------------------------------------------------------------------------
-// HELPER
-// ---------------------------------------------------------------------------
-
 const COLLECTION = (uid: string) => `users/${uid}/mutuo`
 const MUTUO_DOC_ID = 'config'
 
-/**
- * Calcola il numero di rate mensili tra due date.
- */
 function calcolaNumeroRate(dataInizio: Date, dataFine: Date): number {
   const mesi =
     (dataFine.getFullYear() - dataInizio.getFullYear()) * 12 +
@@ -75,13 +65,10 @@ function calcolaNumeroRate(dataInizio: Date, dataFine: Date): number {
   return mesi
 }
 
-// ---------------------------------------------------------------------------
-// CRUD OPERATIONS
-// ---------------------------------------------------------------------------
+function toDateSafe(value: Timestamp | string): Date {
+  return typeof value === 'string' ? new Date(value) : value.toDate()
+}
 
-/**
- * Salva o aggiorna la configurazione del mutuo.
- */
 export async function saveMutuoConfig(
   uid: string,
   config: MutuoConfig
@@ -109,9 +96,6 @@ export async function saveMutuoConfig(
   }
 }
 
-/**
- * Recupera la configurazione del mutuo.
- */
 export async function getMutuoConfig(uid: string): Promise<ApiResult<MutuoConfig>> {
   try {
     const db = getFirestore()
@@ -128,9 +112,6 @@ export async function getMutuoConfig(uid: string): Promise<ApiResult<MutuoConfig
   }
 }
 
-/**
- * Aggiorna il debito residuo del mutuo.
- */
 export async function updateDebitoResiduo(
   uid: string,
   nuovoDebito: number
@@ -155,17 +136,10 @@ export async function updateDebitoResiduo(
   }
 }
 
-// ---------------------------------------------------------------------------
-// CALCOLI AMMORTAMENTO
-// ---------------------------------------------------------------------------
-
-/**
- * Genera il piano di ammortamento completo.
- */
 export function getPianoAmmortamento(config: MutuoConfig): ApiResult<PianoAmmortamento> {
   try {
-    const dataInizio = config.dataInizio.toDate()
-    const dataFine = config.dataFine.toDate()
+    const dataInizio = toDateSafe(config.dataInizio)
+    const dataFine = toDateSafe(config.dataFine)
     const numeroRate = calcolaNumeroRate(dataInizio, dataFine)
 
     if (numeroRate <= 0) {
@@ -228,9 +202,6 @@ export function getPianoAmmortamento(config: MutuoConfig): ApiResult<PianoAmmort
   }
 }
 
-/**
- * Calcola il debito residuo a una data specifica.
- */
 export function getDebitoResiduoAllaData(
   config: MutuoConfig,
   data: Date
@@ -250,13 +221,10 @@ export function getDebitoResiduoAllaData(
   return { success: true, data: rataTarget.debitoResiduo }
 }
 
-/**
- * Genera un summary sintetico del mutuo.
- */
 export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
   try {
-    const dataInizio = config.dataInizio.toDate()
-    const dataFine = config.dataFine.toDate()
+    const dataInizio = toDateSafe(config.dataInizio)
+    const dataFine = toDateSafe(config.dataFine)
     const numeroRateTotali = calcolaNumeroRate(dataInizio, dataFine)
 
     const pianoResult = getPianoAmmortamento(config)
@@ -295,13 +263,6 @@ export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// SIMULAZIONI
-// ---------------------------------------------------------------------------
-
-/**
- * Simula l'estinzione anticipata del mutuo.
- */
 export function simulateAnticipatedExtinction(
   config: MutuoConfig,
   dataEstinzione: Date,
@@ -351,9 +312,6 @@ export function simulateAnticipatedExtinction(
   }
 }
 
-/**
- * Calcola il risparmio da un pagamento extra.
- */
 export function simulateExtraPayment(
   config: MutuoConfig,
   importoExtra: number
