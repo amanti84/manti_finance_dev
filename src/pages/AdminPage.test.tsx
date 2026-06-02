@@ -23,6 +23,13 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
+type MockAuthReturn = {
+  user: User | null
+  loading: boolean
+  signInWithGoogle: ReturnType<typeof vi.fn>
+  logout: ReturnType<typeof vi.fn>
+}
+
 describe('AdminPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -35,7 +42,7 @@ describe('AdminPage', () => {
       loading: true,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
-    })
+    } satisfies MockAuthReturn)
     render(<MemoryRouter><AdminPage /></MemoryRouter>)
     expect(screen.getByText('Caricamento...')).toBeTruthy()
   })
@@ -46,7 +53,7 @@ describe('AdminPage', () => {
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
-    })
+    } satisfies MockAuthReturn)
     render(<MemoryRouter><AdminPage /></MemoryRouter>)
     expect(screen.getByTestId('navigate')).toBeTruthy()
     expect(screen.getByTestId('navigate').getAttribute('data-to')).toBe('/')
@@ -60,7 +67,7 @@ describe('AdminPage', () => {
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
-    })
+    } satisfies MockAuthReturn)
     render(<MemoryRouter><AdminPage /></MemoryRouter>)
 
     expect(screen.queryByTestId('navigate')).toBeNull()
@@ -69,9 +76,9 @@ describe('AdminPage', () => {
   })
 
   it('calls seedUserData function via fetch and shows success message', async () => {
-    const mockUser = {
+    const mockUser: User = {
       email: 'amanti84@gmail.com',
-      getIdToken: vi.fn().mockResolvedValue('mock-token')
+      getIdToken: vi.fn().mockResolvedValue('mock-token'),
     } as unknown as User
 
     vi.mocked(useAuth).mockReturnValue({
@@ -79,7 +86,7 @@ describe('AdminPage', () => {
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
-    })
+    } satisfies MockAuthReturn)
 
     mockFetch.mockResolvedValue({
       ok: true,
@@ -114,9 +121,9 @@ describe('AdminPage', () => {
   })
 
   it('shows error message on fetch failure', async () => {
-    const mockUser = {
+    const mockUser: User = {
       email: 'amanti84@gmail.com',
-      getIdToken: vi.fn().mockResolvedValue('mock-token')
+      getIdToken: vi.fn().mockResolvedValue('mock-token'),
     } as unknown as User
 
     vi.mocked(useAuth).mockReturnValue({
@@ -124,7 +131,7 @@ describe('AdminPage', () => {
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),
-    })
+    } satisfies MockAuthReturn)
 
     mockFetch.mockResolvedValue({
       ok: false,
