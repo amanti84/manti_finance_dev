@@ -465,8 +465,10 @@ export interface PensionFund extends BaseDocument {
 }
 
 // --------------------------------------------------------
-// KINDERGARTEN (legacy expense model - deprecato)
-// Nuovo modello: src/types/kindergarten.ts
+// KINDERGARTEN (legacy expense model — deprecato)
+// Nuovo modello investimenti/PAC: src/types/kindergarten.ts
+// /users/{uid}/kindergartenExpenses/{expenseId}  ← legacy
+// /users/{uid}/config/kindergarten               ← legacy
 // --------------------------------------------------------
 
 export type KindergartenCategory =
