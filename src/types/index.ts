@@ -1,7 +1,6 @@
 // ============================================================
 // CORE TYPES - manti_finance_dev
-// Modello dati v1 - allineato alle collection Firestore
-// /users/{uid}/snapshots | transactions | investments | payslips | audit | config
+// Modello dati v2 - tutti i tipi del progetto
 // ============================================================
 
 import type { Timestamp } from 'firebase/firestore'
@@ -214,12 +213,262 @@ export interface SurplusBreakdown {
   netSalary: number
   fixedExpenses: number
   surplus: number
+  /** Surplus lordo prima delle spese fisse */
+  surplusGross: number
+  /** Quota bonus del mese (0 se assente) */
+  bonusAmount: number
+  /** Quota variabile (bonus + rimborsi) */
+  variableComponent: number
+  /** Quota stabile (netto senza variabile) */
+  stableComponent: number
+  /** Rimborsi spese del mese */
+  rimborsiAmount: number
+}
+
+export interface AnnualProjection {
+  year: number
+  projectedGross: number
+  projectedNet: number
+  projectedBonus: number
+  projectedTFR: number
+  projectedFondoPensione: number
+  monthsRemaining: number
+  confidence: 'high' | 'medium' | 'low'
+}
+
+export interface YoYComparison {
+  currentYear: number
+  previousYear: number
+  netSalaryDelta: number
+  netSalaryDeltaPercent: number
+  grossSalaryDelta: number
+  bonusDelta: number
+}
+
+export interface MonthlyVariableComponents {
+  month: Month
+  year: number
+  bonus: number
+  rimborsi: number
+  total: number
 }
 
 // --------------------------------------------------------
-// KINDERGARTEN (Issue #19)
-// /users/{uid}/kindergartenExpenses/{expenseId}
-// /users/{uid}/config/kindergarten
+// MUTUO
+// /users/{uid}/config/mutuo
+// --------------------------------------------------------
+
+export interface MutuoConfig extends BaseDocument {
+  importoIniziale: number
+  saldoResiduo: number
+  rata: number
+  tassoAnnuo: number
+  dataInizio: string
+  durataAnni: number
+  banca: string
+  tipoTasso: 'fisso' | 'variabile' | 'misto'
+  notes?: string
+}
+
+// --------------------------------------------------------
+// MONTHLY CLOSE
+// /users/{uid}/monthlyClose/{year_month}
+// --------------------------------------------------------
+
+export type MonthStatus = 'open' | 'pending' | 'closed'
+
+export interface MonthlyCloseResult extends BaseDocument {
+  year: number
+  month: Month
+  status: MonthStatus
+  patrimonioNetto: number
+  surplusMensile: number
+  netSalary: number
+  fixedExpenses: number
+  closedAt?: Timestamp
+  notes?: string
+}
+
+// --------------------------------------------------------
+// GOALS / OBIETTIVI
+// /users/{uid}/goals/{goalId}
+// --------------------------------------------------------
+
+export type GoalType =
+  | 'risparmio' | 'investimento' | 'estinzione_debito'
+  | 'acquisto' | 'pensione' | 'emergenza' | 'altro'
+
+export type GoalStatus = 'active' | 'completed' | 'paused' | 'cancelled'
+
+export interface Goal extends BaseDocument {
+  name: string
+  description?: string
+  type: GoalType
+  status: GoalStatus
+  targetAmount: number
+  currentAmount: number
+  targetDate?: string
+  priority: 1 | 2 | 3
+  linkedAccountId?: string
+  notes?: string
+}
+
+export interface GoalProgress {
+  goalId: string
+  percent: number
+  remainingAmount: number
+  remainingMonths?: number
+  onTrack: boolean
+  projectedCompletionDate?: string
+}
+
+export interface GoalWithProgress extends Goal {
+  progress: GoalProgress
+}
+
+// --------------------------------------------------------
+// ALERTS
+// /users/{uid}/alerts/{alertId}
+// --------------------------------------------------------
+
+export type AlertSeverity = 'info' | 'warning' | 'error' | 'success'
+
+export interface FinancialAlert extends BaseDocument {
+  title: string
+  message: string
+  severity: AlertSeverity
+  read: boolean
+  entityType?: string
+  entityId?: string
+  actionLabel?: string
+  actionRoute?: string
+}
+
+// --------------------------------------------------------
+// INBOX
+// /users/{uid}/inbox/{inboxItemId}
+// --------------------------------------------------------
+
+export type InboxItemStatus = 'pending' | 'reviewed' | 'dismissed' | 'escalated'
+
+export type ConfidenceField =
+  | 'amount' | 'category' | 'date' | 'description' | 'type' | 'accountId'
+
+export interface InboxItem extends BaseDocument {
+  title: string
+  description: string
+  status: InboxItemStatus
+  source: 'email' | 'import' | 'ai_suggestion'
+  confidence: number
+  confidenceFields: Partial<Record<ConfidenceField, number>>
+  linkedTransactionId?: string
+  suggestedTransaction?: Partial<Transaction>
+  reviewedAt?: Timestamp
+  reviewedBy?: string
+}
+
+export interface InboxBadgeCount {
+  pending: number
+  total: number
+}
+
+// --------------------------------------------------------
+// DOCUMENTI
+// /users/{uid}/documents/{documentId}
+// --------------------------------------------------------
+
+export type DocumentType =
+  | 'cedolino' | 'estratto_conto' | 'contratto' | 'polizza'
+  | 'dichiarazione_redditi' | 'quietanza' | 'altro'
+
+export type DocumentStatus = 'uploaded' | 'processing' | 'indexed' | 'error'
+
+export interface FinancialDocument extends BaseDocument {
+  name: string
+  type: DocumentType
+  status: DocumentStatus
+  storagePath: string
+  downloadUrl?: string
+  fileSize: number
+  mimeType: string
+  year?: number
+  month?: Month
+  linkedEntityType?: string
+  linkedEntityId?: string
+  tags?: string[]
+  extractedText?: string
+  notes?: string
+}
+
+// --------------------------------------------------------
+// AUDIT LOG
+// /users/{uid}/audit/{auditId}
+// --------------------------------------------------------
+
+export type AuditAction =
+  | 'create' | 'update' | 'delete' | 'read'
+  | 'login' | 'logout' | 'export' | 'import'
+
+export type AuditEntityType =
+  | 'transaction' | 'investment' | 'payslip' | 'snapshot'
+  | 'goal' | 'document' | 'inbox' | 'alert' | 'config'
+
+export interface AuditLogEntry extends BaseDocument {
+  action: AuditAction
+  entityType: AuditEntityType
+  entityId?: string
+  uid: string
+  userEmail?: string
+  metadata?: Record<string, unknown>
+  ipAddress?: string
+  userAgent?: string
+}
+
+// --------------------------------------------------------
+// PREVIDENZA
+// /users/{uid}/config/previdenza
+// --------------------------------------------------------
+
+export interface TFRData {
+  saldoAttuale: number
+  anno: number
+  mese: Month
+  destinazione: 'azienda' | 'fondo_pensione' | 'inps'
+}
+
+export interface FonteData extends BaseDocument {
+  nome: string
+  codice: string
+  tipologia: 'aperto' | 'chiuso' | 'pip'
+  rendimentoAnnuo?: number
+}
+
+export type PensionContributionType = 'volontario' | 'datoriale' | 'tfr'
+
+export interface PensionContribution extends BaseDocument {
+  fondoId: string
+  type: PensionContributionType
+  amount: number
+  year: number
+  month: Month
+}
+
+export interface PensionFund extends BaseDocument {
+  nome: string
+  codice: string
+  saldoAttuale: number
+  rendimentoStorico?: number
+  contribuzioneAnnua: number
+  tipologia: 'aperto' | 'chiuso' | 'pip'
+  dataAdesione?: string
+  notes?: string
+}
+
+// --------------------------------------------------------
+// KINDERGARTEN (legacy expense model — deprecato)
+// Nuovo modello investimenti/PAC: src/types/kindergarten.ts
+// /users/{uid}/kindergartenExpenses/{expenseId}  <- legacy
+// /users/{uid}/config/kindergarten               <- legacy
 // --------------------------------------------------------
 
 export type KindergartenCategory =
