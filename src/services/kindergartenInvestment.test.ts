@@ -4,13 +4,11 @@
  * Verifica:
  * 1. CRUD su users/{uid}/kindergarten_investments
  * 2. Calcolo KPI patrimoniali autonomi
- * 3. Segregazione: nessun import da investment.ts
- * 4. Path collection corretto (NON investments del main)
+ * 3. Segregazione: collection path usa kindergarten_investments, non investments
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { KindergartenInvestment } from '../types/kindergarten'
 
-// Mock Firestore
 vi.mock('../firebase', () => ({ db: {} }))
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn((_db, ...path) => ({ path: path.join('/') })),
@@ -39,6 +37,7 @@ const mockInvestment: KindergartenInvestment = {
   id: 'inv-001',
   name: 'ETF World Junior',
   ticker: 'VWCE',
+  category: 'etf',
   quantity: 10,
   purchasePrice: 100,
   currentPrice: 120,
@@ -51,9 +50,6 @@ const mockInvestment: KindergartenInvestment = {
 describe('kindergartenInvestment service', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  // ----------------------------------------------------------------
-  // SEGREGAZIONE: verifica path collection
-  // ----------------------------------------------------------------
   it('usa la collection kindergarten_investments, non investments', () => {
     ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({ path: 'users/uid/kindergarten_investments' })
     ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValue({ docs: [] })
@@ -62,7 +58,7 @@ describe('kindergartenInvestment service', () => {
 
     const callArgs = (collection as ReturnType<typeof vi.fn>).mock.calls[0] as unknown[]
     expect(callArgs).toContain('kindergarten_investments')
-    expect(callArgs).not.toContain('investments') // NON la collection del main
+    expect(callArgs).not.toContain('investments')
   })
 
   it('include uid nel path della collection', () => {
@@ -75,9 +71,6 @@ describe('kindergartenInvestment service', () => {
     expect(callArgs).toContain(UID)
   })
 
-  // ----------------------------------------------------------------
-  // READ
-  // ----------------------------------------------------------------
   it('getKindergartenInvestments: ritorna lista investimenti', async () => {
     ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({ path: 'users/uid/kindergarten_investments' })
     ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -103,9 +96,6 @@ describe('kindergartenInvestment service', () => {
     }
   })
 
-  // ----------------------------------------------------------------
-  // CREATE
-  // ----------------------------------------------------------------
   it('addKindergartenInvestment: aggiunge e ritorna id', async () => {
     ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(addDoc as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'new-inv-id' })
@@ -117,9 +107,6 @@ describe('kindergartenInvestment service', () => {
     if (result.success) expect(result.data).toBe('new-inv-id')
   })
 
-  // ----------------------------------------------------------------
-  // UPDATE
-  // ----------------------------------------------------------------
   it('updateKindergartenInvestment: aggiorna il documento', async () => {
     ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(updateDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
@@ -130,9 +117,6 @@ describe('kindergartenInvestment service', () => {
     expect(updateCalls).toHaveLength(1)
   })
 
-  // ----------------------------------------------------------------
-  // DELETE
-  // ----------------------------------------------------------------
   it('deleteKindergartenInvestment: elimina il documento', async () => {
     ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(deleteDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
@@ -141,17 +125,12 @@ describe('kindergartenInvestment service', () => {
     expect(result.success).toBe(true)
   })
 
-  // ----------------------------------------------------------------
-  // KPI CALC — puro, senza Firestore
-  // ----------------------------------------------------------------
   describe('calculateKindergartenInvestmentKPIs', () => {
     it('calcola totalInvested, currentValue, gainLoss, gainLossPercent', () => {
       const investments: KindergartenInvestment[] = [
         { ...mockInvestment, purchasePrice: 100, currentPrice: 120, quantity: 10 },
         { ...mockInvestment, id: 'inv-002', purchasePrice: 200, currentPrice: 180, quantity: 5 },
       ]
-      // inv1: invested=1000, value=1200, gain=+200
-      // inv2: invested=1000, value=900, gain=-100
       const kpi = calculateKindergartenInvestmentKPIs(investments)
       expect(kpi.totalInvested).toBe(2000)
       expect(kpi.currentValue).toBe(2100)
