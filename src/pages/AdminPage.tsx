@@ -2,10 +2,6 @@ import { useState, type FC } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Navigate } from 'react-router-dom'
 
-const ALLOWED_EMAILS = (import.meta.env.VITE_ALLOWED_EMAILS as string || '')
-  .split(',')
-  .map((e) => e.trim().toLowerCase())
-
 const SEED_FUNCTION_URL = 'https://us-central1-mantifinance.cloudfunctions.net/seedUserData'
 
 export const AdminPage: FC = () => {
@@ -14,11 +10,16 @@ export const AdminPage: FC = () => {
   const [result, setResult] = useState<{ inserted: number; skipped: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Calcolato ad ogni render per riflettere correttamente i cambiamenti dell'ambiente nei test
+  const allowedEmails = (import.meta.env.VITE_ALLOWED_EMAILS as string || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+
   if (authLoading) {
     return <div className="p-8 text-center">Caricamento...</div>
   }
 
-  if (!user?.email || !ALLOWED_EMAILS.includes(user.email.toLowerCase())) {
+  if (!user?.email || !allowedEmails.includes(user.email.toLowerCase())) {
     return <Navigate to="/" replace />
   }
 
