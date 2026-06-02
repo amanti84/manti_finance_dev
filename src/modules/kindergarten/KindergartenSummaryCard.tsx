@@ -1,72 +1,123 @@
+/**
+ * KindergartenSummaryCard — KPI patrimoniali aggregati del portafoglio bambini.
+ *
+ * Mostra esclusivamente dati di investimento:
+ * - Totale investito (investimenti diretti + PAC)
+ * - Valore corrente
+ * - Gain/Loss totale e percentuale
+ * - Breakdown investimenti vs PAC
+ *
+ * NON contiene: budget, spese, cashflow, categorie di uscita.
+ * Dominio: solo investimenti + PAC bambini.
+ */
 import type { FC } from 'react'
-import type { KindergartenSummary } from '../../types'
-import { formatCurrency } from '../../utils/format'
+import { formatCurrency, formatPercent } from '../../utils/format'
 
-interface Props {
-  summary: KindergartenSummary
+interface InvKPIs {
+  totalInvested: number
+  currentValue: number
+  gainLoss: number
+  gainLossPercent: number
 }
 
-export const KindergartenSummaryCard: FC<Props> = ({ summary }) => {
+interface PacKPIs {
+  totalPACInvested: number
+  totalPACValue: number
+  totalPACGainLoss: number
+  totalPACGainLossPercent: number
+}
+
+interface GrandKPIs {
+  grandTotalInvested: number
+  grandTotalValue: number
+  grandTotalGainLoss: number
+  grandTotalGainLossPercent: number
+}
+
+interface Props {
+  invKPIs: InvKPIs
+  pacKPIs: PacKPIs
+  grandKPIs: GrandKPIs
+}
+
+const GainBadge: FC<{ value: number; percent: number }> = ({ value, percent }) => {
+  const positive = value >= 0
   return (
-    <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">Riepilogo {summary.year}</h2>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold ${
+        positive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+      }`}
+    >
+      {positive ? '+' : ''}{formatCurrency(value)}
+      <span className="opacity-75">({positive ? '+' : ''}{formatPercent(percent)})</span>
+    </span>
+  )
+}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-blue-50 p-4 rounded-lg">
-          <p className="text-sm text-blue-600 font-medium uppercase mb-1">Totale Annuo</p>
-          <p className="text-2xl font-bold text-blue-900">{formatCurrency(summary.totalAnnual)}</p>
+export const KindergartenSummaryCard: FC<Props> = ({ invKPIs, pacKPIs, grandKPIs }) => {
+  const isPositive = grandKPIs.grandTotalGainLoss >= 0
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Portafoglio Bambini</h2>
+        <GainBadge
+          value={grandKPIs.grandTotalGainLoss}
+          percent={grandKPIs.grandTotalGainLossPercent}
+        />
+      </div>
+
+      {/* KPI principali */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-lg bg-gray-50 p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Totale Investito</p>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrency(grandKPIs.grandTotalInvested)}</p>
         </div>
-
-        <div className="bg-indigo-50 p-4 rounded-lg">
-          <p className="text-sm text-indigo-600 font-medium uppercase mb-1">Media Mensile</p>
-          <p className="text-2xl font-bold text-indigo-900">{formatCurrency(summary.totalMonthly)}</p>
+        <div className={`rounded-lg p-4 ${
+          isPositive ? 'bg-green-50' : 'bg-red-50'
+        }`}>
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">Valore Attuale</p>
+          <p className={`text-2xl font-bold ${
+            isPositive ? 'text-green-900' : 'text-red-900'
+          }`}>{formatCurrency(grandKPIs.grandTotalValue)}</p>
         </div>
       </div>
 
-      <div className={`p-4 rounded-lg border ${summary.isOverBudget ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
-        <div className="flex justify-between items-center mb-2">
-          <p className={`text-sm font-medium uppercase ${summary.isOverBudget ? 'text-red-600' : 'text-green-600'}`}>
-            Stato Budget Mensile
-          </p>
-          <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${summary.isOverBudget ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'}`}>
-            {summary.isOverBudget ? 'Sforato' : 'In Linea'}
-          </span>
-        </div>
-        <div className="flex justify-between items-end">
+      {/* Breakdown: Investimenti diretti vs PAC */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">Breakdown</h3>
+
+        {/* Investimenti diretti */}
+        <div className="flex items-center justify-between rounded-lg bg-blue-50 px-4 py-3">
           <div>
-            <p className="text-xs text-gray-500 uppercase">Spesa Mese Corrente</p>
-            <p className={`text-xl font-bold ${summary.isOverBudget ? 'text-red-900' : 'text-green-900'}`}>
-              {formatCurrency(summary.currentMonthTotal)}
+            <p className="text-sm font-medium text-blue-900">Investimenti Diretti</p>
+            <p className="text-xs text-blue-600">
+              Investito: {formatCurrency(invKPIs.totalInvested)}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500 uppercase">Budget</p>
-            <p className="text-lg font-semibold text-gray-700">
-              {formatCurrency(summary.budgetMonthly)}
-            </p>
+            <p className="text-sm font-bold text-blue-900">{formatCurrency(invKPIs.currentValue)}</p>
+            <GainBadge value={invKPIs.gainLoss} percent={invKPIs.gainLossPercent} />
           </div>
         </div>
-      </div>
 
-      <div className="mt-6">
-        <h3 className="text-sm font-bold text-gray-700 uppercase mb-3">Breakdown per Categoria</h3>
-        <div className="space-y-3">
-          {Object.entries(summary.byCategory).map(([cat, amount]) => (
-            <div key={cat} className="flex items-center">
-              <div className="w-32 text-sm text-gray-600 capitalize">{cat.replace('_', ' ')}</div>
-              <div className="flex-1 h-2 bg-gray-100 rounded-full mx-3">
-                <div
-                  className="h-full bg-blue-500 rounded-full"
-                  style={{ width: `${summary.totalAnnual > 0 ? (amount / summary.totalAnnual) * 100 : 0}%` }}
-                ></div>
-              </div>
-              <div className="w-24 text-right text-sm font-semibold text-gray-800">
-                {formatCurrency(amount)}
-              </div>
-            </div>
-          ))}
+        {/* PAC */}
+        <div className="flex items-center justify-between rounded-lg bg-indigo-50 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-indigo-900">Piani di Accumulo (PAC)</p>
+            <p className="text-xs text-indigo-600">
+              Investito: {formatCurrency(pacKPIs.totalPACInvested)}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-bold text-indigo-900">{formatCurrency(pacKPIs.totalPACValue)}</p>
+            <GainBadge value={pacKPIs.totalPACGainLoss} percent={pacKPIs.totalPACGainLossPercent} />
+          </div>
         </div>
       </div>
     </div>
   )
 }
+
+export default KindergartenSummaryCard
