@@ -16,7 +16,7 @@ const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof ReactRouterDom>('react-router-dom')
+  const actual: typeof ReactRouterDom = await vi.importActual('react-router-dom')
   return {
     ...actual,
     Navigate: vi.fn(({ to }: { to: string }) => <div data-testid="navigate" data-to={to} />)
