@@ -213,15 +213,10 @@ export interface SurplusBreakdown {
   netSalary: number
   fixedExpenses: number
   surplus: number
-  /** Surplus lordo prima delle spese fisse */
   surplusGross: number
-  /** Quota bonus del mese (0 se assente) */
   bonusAmount: number
-  /** Quota variabile (bonus + rimborsi) */
   variableComponent: number
-  /** Quota stabile (netto senza variabile) */
   stableComponent: number
-  /** Rimborsi spese del mese */
   rimborsiAmount: number
 }
 
@@ -229,19 +224,17 @@ export interface AnnualProjection {
   year: number
   projectedGross: number
   projectedNet: number
-  /** @alias projectedNet - legacy name used by payroll.ts */
   projectedAnnualNet?: number
   projectedBonus: number
   projectedTFR: number
   projectedFondoPensione: number
   monthsRemaining: number
-  /** @alias monthsRemaining - legacy name used by payroll.ts */
   monthsElapsed?: number
+  cumulativeNet?: number
   confidence: 'high' | 'medium' | 'low'
 }
 
 export interface YoYComparison {
-  /** Anno corrente di riferimento */
   year?: number
   currentYear: number
   previousYear: number
@@ -249,14 +242,11 @@ export interface YoYComparison {
   netSalaryDeltaPercent: number
   grossSalaryDelta: number
   bonusDelta: number
-  /** Media netto anno corrente */
   avgNetCurrent?: number
-  /** Media netto anno precedente */
   avgNetPrevious?: number
-  /** Delta assoluto netto */
   netDeltaAbsolute?: number
-  /** Delta percentuale netto */
   netDeltaPercent?: number
+  avgSurplusCurrent?: number
 }
 
 export interface MonthlyVariableComponents {
@@ -264,14 +254,10 @@ export interface MonthlyVariableComponents {
   year: number
   bonus: number
   rimborsi: number
-  /** @alias rimborsi - legacy name used by payroll.ts */
   rimborsiSpese?: number
   total: number
-  /** @alias total - legacy alias */
   totalVariable?: number
-  /** Componente stabile */
   totalStable?: number
-  /** Ratio variabile/totale */
   variableRatio?: number
 }
 
@@ -282,24 +268,18 @@ export interface MonthlyVariableComponents {
 
 export interface MutuoConfig extends BaseDocument {
   importoIniziale: number
-  /** @alias importoIniziale - legacy name used by mutuo.ts/whatIf.ts */
   importoOriginale?: number
   saldoResiduo: number
-  /** @alias saldoResiduo - legacy name used by mutuo.ts/whatIf.ts/monthlyClose.ts */
   debitoResiduo?: number
   rata: number
-  /** @alias rata - legacy name used by mutuo.ts/whatIf.ts */
   rataMensile?: number
   tassoAnnuo: number
-  /** @alias tassoAnnuo - legacy name used by mutuo.ts */
   tasso?: number
-  dataInizio: string
-  /** Data fine mutuo calcolata */
-  dataFine?: string
+  dataInizio: Timestamp | string
+  dataFine?: Timestamp | string
   durataAnni: number
   banca: string
   tipoTasso: 'fisso' | 'variabile' | 'misto'
-  /** Flag tasso variabile (legacy) */
   isMutuoVariabile?: boolean
   notes?: string
 }
@@ -323,7 +303,6 @@ export interface MonthlyCloseResult extends BaseDocument {
   fixedExpenses: number
   closedAt?: Timestamp
   notes?: string
-  /** ID snapshot patrimoniale generato alla chiusura */
   snapshotId?: string
 }
 
@@ -346,31 +325,23 @@ export interface Goal extends BaseDocument {
   status: GoalStatus
   targetAmount: number
   currentAmount: number
-  /** ISO date string o Timestamp (normalizzato a string in lettura) */
-  targetDate?: string
+  targetDate?: Timestamp | string
   priority: 1 | 2 | 3
   linkedAccountId?: string
   notes?: string
-  /** @alias notes - legacy field used by GoalCard */
   note?: string
-  /** Importo baseline al momento della creazione dell'obiettivo */
   baselineAmount?: number
 }
 
 export interface GoalProgress {
   goalId: string
-  /** Percentuale di completamento [0-100] */
   percent: number
-  /** @alias percent - legacy name used by GoalCard/GoalWidget/goal.ts */
   progressPercent?: number
   remainingAmount: number
   remainingMonths?: number
-  /** Obiettivo on-track */
   onTrack: boolean
-  /** @alias onTrack - legacy name used by GoalCard/goal.ts */
   isOnTrack?: boolean
   projectedCompletionDate?: string
-  /** Milestone raggiunta (25/50/75/100%) */
   milestoneReached?: boolean
 }
 
@@ -394,9 +365,7 @@ export interface FinancialAlert extends BaseDocument {
   entityId?: string
   actionLabel?: string
   actionRoute?: string
-  /** Categoria/tipo alert usato da alert.ts */
   type?: string
-  /** Snooze fino a questa data */
   snoozedUntil?: Timestamp
 }
 
@@ -424,18 +393,14 @@ export interface InboxItem extends BaseDocument {
   suggestedTransaction?: Partial<Transaction>
   reviewedAt?: Timestamp
   reviewedBy?: string
-  /** Nome file allegato (legacy) */
   fileName?: string
-  /** Messaggio di errore elaborazione */
   errorMessage?: string
-  /** Timestamp conferma */
   confirmedAt?: Timestamp
 }
 
 export interface InboxBadgeCount {
   pending: number
   total: number
-  /** Items che richiedono review esplicita */
   requiresReview?: number
 }
 
@@ -468,11 +433,8 @@ export interface FinancialDocument extends BaseDocument {
   tags?: string[]
   extractedText?: string
   notes?: string
-  /** @alias notes - legacy field used by document.ts/DocumentCard */
   note?: string
-  /** Nome file originale (legacy usato da document.ts/DocumentCard) */
   fileName?: string
-  /** Data documento (legacy usato da DocumentCard) */
   documentDate?: Timestamp | string
 }
 
@@ -501,11 +463,8 @@ export interface AuditLogEntry extends BaseDocument {
   metadata?: Record<string, unknown>
   ipAddress?: string
   userAgent?: string
-  /** Sorgente operazione (es. 'web', 'api', 'cron') */
   source?: string
-  /** Valore precedente per operazioni di update */
   previousValue?: unknown
-  /** Nuovo valore per operazioni di update/create */
   newValue?: unknown
 }
 
@@ -519,15 +478,10 @@ export interface TFRData {
   anno: number
   mese: Month
   destinazione: 'azienda' | 'fondo_pensione' | 'inps'
-  /** Anno di competenza (legacy usato da previdenza.ts) */
   annoCompetenza?: number
-  /** Quota mensile TFR */
   quota?: number
-  /** Retribuzione annuale di riferimento */
   retribuzioneAnnuale?: number
-  /** Totale TFR maturato */
   totale?: number
-  /** Rivalutazione annua applicata */
   rivalutazione?: number
 }
 
@@ -536,11 +490,9 @@ export interface FonteData extends BaseDocument {
   codice: string
   tipologia: 'aperto' | 'chiuso' | 'pip'
   rendimentoAnnuo?: number
-  /** Anno di riferimento versamento */
   anno?: number
-  /** Quota a carico del dipendente */
   quotaDipendente?: number
-  /** Quota TFR conferita */
+  quotaDatore?: number
   tfr?: number
 }
 
@@ -548,19 +500,14 @@ export type PensionContributionType = 'volontario' | 'datoriale' | 'tfr'
 
 export interface PensionContribution extends BaseDocument {
   fondoId: string
-  /** @alias fondoId - legacy name used by previdenza.ts */
   fundId?: string
   type: PensionContributionType
   amount: number
   year: number
   month: Month
-  /** Totale contribuzione (dipendente + datore + tfr) */
   totale?: number
-  /** Quota a carico dipendente */
   quotaDipendente?: number
-  /** Quota a carico datore */
   quotaDatore?: number
-  /** TFR conferito */
   tfrConferito?: number
 }
 
@@ -571,7 +518,6 @@ export interface PensionFund extends BaseDocument {
   rendimentoStorico?: number
   contribuzioneAnnua: number
   tipologia: 'aperto' | 'chiuso' | 'pip'
-  /** @alias tipologia - legacy field used by previdenza.ts */
   tipo?: 'aperto' | 'chiuso' | 'pip'
   dataAdesione?: string
   notes?: string
