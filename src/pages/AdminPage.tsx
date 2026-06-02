@@ -2,7 +2,7 @@ import { useState, type FC } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Navigate } from 'react-router-dom'
 
-const SEED_FUNCTION_URL = 'https://us-central1-mantifinance.cloudfunctions.net/seedUserData'
+const SEED_FUNCTION_URL = 'https://us-central1-mantifinance.cloudfunctions.net/seeduserdata'
 
 export const AdminPage: FC = () => {
   const { user, loading: authLoading } = useAuth()
