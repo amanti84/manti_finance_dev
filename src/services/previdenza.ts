@@ -74,7 +74,6 @@ export function calculateTFRRivalutazione(
 
 /**
  * Calcola il TFR maturato cumulativo dai cedolini per un dato anno.
- * Aggrega i TFR mensili dal cedolino per ottenere il totale annuo.
  */
 export function calculateTFRFromPayslips(
   payslips: Payslip[],
@@ -215,7 +214,6 @@ export interface PensionProjection {
 /**
  * Proiezione montante pensionistico a 67 anni.
  * Usa interesse composto: M = P * (1 + r)^n + C * [(1 + r)^n - 1] / r
- * dove P = montante attuale, C = contribuzione annua, r = tasso, n = anni
  */
 export function calculatePensionProjection(
   montanteAttuale: number,
@@ -283,11 +281,6 @@ export interface TFRComparison {
   convenienza: 'azienda' | 'fondo' | 'pari'
 }
 
-/**
- * Confronto TFR in azienda vs fondo pensione.
- * TFR azienda: rivalutazione = 1.5% + 75% inflazione
- * TFR fondo: rendimento atteso dal mercato
- */
 export function compareTFRAziendaVsFondo(
   quotaTfrAnnua: number,
   anni: number,

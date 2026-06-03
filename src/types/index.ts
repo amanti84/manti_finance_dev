@@ -21,7 +21,6 @@ export interface BaseDocument {
 // --------------------------------------------------------
 
 // Permissive union: .error is accessible after narrowing (!result.success)
-// Never access .error without checking success first (see §4 of issue #46)
 export type ApiResult<T> =
   | { success: true; data: T; error?: never }
   | { success: false; data?: never; error: string }
@@ -562,7 +561,7 @@ export interface PensionFund extends BaseDocument {
 export type KindergartenCategory =
   | 'retta' | 'mensa' | 'attivita_extra' | 'materiale' | 'altro'
 
-export type KindergartenFrequency = 'monthly' | 'once'
+export type KindergartenFrequency = 'monthly' | 'once' | 'annual'
 
 export interface KindergartenExpense extends BaseDocument {
   description: string
