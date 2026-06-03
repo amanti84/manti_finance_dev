@@ -50,32 +50,32 @@ const mockInvestment: KindergartenInvestment = {
 describe('kindergartenInvestment service', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('usa la collection kindergarten_investments, non investments', () => {
-    vi.mocked(collection).mockReturnValue({ path: 'users/uid/kindergarten_investments' } as ReturnType<typeof collection>)
-    vi.mocked(getDocs).mockResolvedValue({ docs: [] } as unknown as ReturnType<typeof getDocs> extends Promise<infer R> ? R : never)
+  it('usa la collection kindergarten_investments, non investments', async () => {
+    vi.mocked(collection).mockReturnValue({ path: 'users/uid/kindergarten_investments' } as unknown as ReturnType<typeof collection>)
+    vi.mocked(getDocs).mockResolvedValue({ docs: [] } as unknown as Awaited<ReturnType<typeof getDocs>>)
 
-    void getKindergartenInvestments(UID)
+    await getKindergartenInvestments(UID)
 
     const callArgs = vi.mocked(collection).mock.calls[0]
     expect(callArgs).toContain('kindergarten_investments')
     expect(callArgs).not.toContain('investments')
   })
 
-  it('include uid nel path della collection', () => {
-    vi.mocked(collection).mockReturnValue({ path: `users/${UID}/kindergarten_investments` } as ReturnType<typeof collection>)
-    vi.mocked(getDocs).mockResolvedValue({ docs: [] } as unknown as ReturnType<typeof getDocs> extends Promise<infer R> ? R : never)
+  it('include uid nel path della collection', async () => {
+    vi.mocked(collection).mockReturnValue({ path: `users/${UID}/kindergarten_investments` } as unknown as ReturnType<typeof collection>)
+    vi.mocked(getDocs).mockResolvedValue({ docs: [] } as unknown as Awaited<ReturnType<typeof getDocs>>)
 
-    void getKindergartenInvestments(UID)
+    await getKindergartenInvestments(UID)
 
     const callArgs = vi.mocked(collection).mock.calls[0]
     expect(callArgs).toContain(UID)
   })
 
   it('getKindergartenInvestments: ritorna lista investimenti', async () => {
-    vi.mocked(collection).mockReturnValue({ path: 'users/uid/kindergarten_investments' } as ReturnType<typeof collection>)
+    vi.mocked(collection).mockReturnValue({ path: 'users/uid/kindergarten_investments' } as unknown as ReturnType<typeof collection>)
     vi.mocked(getDocs).mockResolvedValue({
       docs: [{ id: 'inv-001', data: () => ({ ...mockInvestment, id: undefined }) }],
-    } as unknown as ReturnType<typeof getDocs> extends Promise<infer R> ? R : never)
+    } as unknown as Awaited<ReturnType<typeof getDocs>>)
 
     const result = await getKindergartenInvestments(UID)
     expect(result.success).toBe(true)
@@ -86,7 +86,7 @@ describe('kindergartenInvestment service', () => {
   })
 
   it('getKindergartenInvestments: gestisce errore Firestore', async () => {
-    vi.mocked(collection).mockReturnValue({} as ReturnType<typeof collection>)
+    vi.mocked(collection).mockReturnValue({} as unknown as ReturnType<typeof collection>)
     vi.mocked(getDocs).mockRejectedValue(new Error('Network error'))
 
     const result = await getKindergartenInvestments(UID)
@@ -97,8 +97,8 @@ describe('kindergartenInvestment service', () => {
   })
 
   it('addKindergartenInvestment: aggiunge e ritorna id', async () => {
-    vi.mocked(collection).mockReturnValue({} as ReturnType<typeof collection>)
-    vi.mocked(addDoc).mockResolvedValue({ id: 'new-inv-id' } as ReturnType<typeof addDoc> extends Promise<infer R> ? R : never)
+    vi.mocked(collection).mockReturnValue({} as unknown as ReturnType<typeof collection>)
+    vi.mocked(addDoc).mockResolvedValue({ id: 'new-inv-id' } as unknown as Awaited<ReturnType<typeof addDoc>>)
 
     const { id: _id, createdAt: _c, updatedAt: _u, ...payload } = mockInvestment
     const result = await addKindergartenInvestment(UID, payload)
@@ -108,7 +108,7 @@ describe('kindergartenInvestment service', () => {
   })
 
   it('updateKindergartenInvestment: aggiorna il documento', async () => {
-    vi.mocked(collection).mockReturnValue({} as ReturnType<typeof collection>)
+    vi.mocked(collection).mockReturnValue({} as unknown as ReturnType<typeof collection>)
     vi.mocked(updateDoc).mockResolvedValue(undefined)
 
     const result = await updateKindergartenInvestment(UID, 'inv-001', { currentPrice: 130 })
@@ -118,7 +118,7 @@ describe('kindergartenInvestment service', () => {
   })
 
   it('deleteKindergartenInvestment: elimina il documento', async () => {
-    vi.mocked(collection).mockReturnValue({} as ReturnType<typeof collection>)
+    vi.mocked(collection).mockReturnValue({} as unknown as ReturnType<typeof collection>)
     vi.mocked(deleteDoc).mockResolvedValue(undefined)
 
     const result = await deleteKindergartenInvestment(UID, 'inv-001')
