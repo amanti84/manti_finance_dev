@@ -57,6 +57,16 @@ const makeSnapshot = (patrimonioNetto: number): PatrimonioSnapshot => ({
 const makeMutuoConfig = () => ({
   success: true as const,
   data: {
+    id: 'mutuo-1',
+    createdAt: fakeTimestamp,
+    updatedAt: fakeTimestamp,
+    importoIniziale: 100000,
+    saldoResiduo: 80000,
+    rata: 500,
+    tassoAnnuo: 2,
+    durataAnni: 20,
+    banca: 'Test Bank',
+    tipoTasso: 'fisso' as const,
     rataMensile: 500,
     importoOriginale: 100000,
     debitoResiduo: 80000,

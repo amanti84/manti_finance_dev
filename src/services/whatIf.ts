@@ -150,7 +150,7 @@ async function simulateEstinzioneMutuo(
   if (!mutuoResult.success) return { success: false, error: mutuoResult.error }
   const config = mutuoResult.data
 
-  const isTotal = importoEstinzione >= config.debitoResiduo * 0.95
+  const isTotal = importoEstinzione >= (config.debitoResiduo ?? 0) * 0.95
   const simResult = simulateAnticipatedExtinction(config, new Date(), 0)
   if (!simResult.success) return { success: false, error: simResult.error }
   const sim = simResult.data
@@ -161,12 +161,12 @@ async function simulateEstinzioneMutuo(
 
   if (isTotal) {
     risparmioInteressi = sim.interessiRisparmiati
-    nuovoSurplus = config.rataMensile
+    nuovoSurplus = config.rataMensile ?? 0
     descrizione = `Estinguendo totalmente il mutuo risparmieresti ${Math.round(risparmioInteressi)}€ di interessi e libereresti ${Math.round(nuovoSurplus)}€ di surplus mensile.`
   } else {
-    const quotaEstinta = importoEstinzione / config.debitoResiduo
+    const quotaEstinta = importoEstinzione / (config.debitoResiduo ?? 1)
     risparmioInteressi = sim.interessiRisparmiati * quotaEstinta
-    nuovoSurplus = config.rataMensile * quotaEstinta
+    nuovoSurplus = (config.rataMensile ?? 0) * quotaEstinta
     descrizione = `Con un'estinzione parziale di ${importoEstinzione}€, risparmieresti circa ${Math.round(risparmioInteressi)}€ di interessi e ridurresti la rata di ${Math.round(nuovoSurplus)}€.`
   }
 

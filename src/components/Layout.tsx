@@ -201,7 +201,7 @@ export const Layout: FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [alertCount, setAlertCount] = useState(0)
-  const [inboxCount, setInboxCount] = useState<InboxBadgeCount>({ total: 0, requiresReview: 0 })
+  const [inboxCount, setInboxCount] = useState<InboxBadgeCount>({ total: 0, requiresReview: 0, pending: 0 })
 
   const { user } = useAuth()
   const navigate = useNavigate()

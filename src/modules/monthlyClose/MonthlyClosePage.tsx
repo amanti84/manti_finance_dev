@@ -29,8 +29,12 @@ const MONTH_NAMES: Record<Month, string> = {
 }
 
 const StatusBadge: FC<{ status: MonthStatus }> = ({ status }) => {
-  const styles: Record<MonthStatus, React.CSSProperties> = {
+  const styles: Record<string, React.CSSProperties> = {
+    open: { backgroundColor: '#28a745', color: '#fff' },
+    pending: { backgroundColor: '#ffc107', color: '#212529' },
+    closed: { backgroundColor: '#007bff', color: '#fff' },
     OPEN: { backgroundColor: '#28a745', color: '#fff' },
+    PENDING: { backgroundColor: '#ffc107', color: '#212529' },
     CLOSED: { backgroundColor: '#007bff', color: '#fff' },
     LOCKED: { backgroundColor: '#6c757d', color: '#fff' },
   }
@@ -233,13 +237,13 @@ export const MonthlyClosePage: FC<Props> = ({ uid }) => {
                     <StatusBadge status={item.status} />
                   </td>
                   <td style={{ padding: '12px' }}>
-                    {item.closedAt.toDate().toLocaleDateString('it-IT', {
+                    {item.closedAt ? item.closedAt.toDate().toLocaleDateString('it-IT', {
                       day: '2-digit',
                       month: '2-digit',
                       year: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
-                    })}
+                    }) : '-'}
                   </td>
                   <td style={{ padding: '12px' }}>
                     <button

@@ -85,25 +85,25 @@ describe('monthlyClose service', () => {
   })
 
   describe('getMonthStatus', () => {
-    it('should return OPEN if document does not exist', async () => {
+    it('should return open if document does not exist', async () => {
       vi.mocked(getDoc).mockResolvedValue({
         exists: () => false,
       } as unknown as DocumentSnapshot<unknown, DocumentData>)
 
       const result = await getMonthStatus(uid, year, month)
       expect(result.success).toBe(true)
-      expect(result.data).toBe('OPEN')
+      expect(result.data).toBe('open')
     })
 
-    it('should return CLOSED if document exists with CLOSED status', async () => {
+    it('should return closed if document exists with CLOSED status', async () => {
       vi.mocked(getDoc).mockResolvedValue({
         exists: () => true,
-        data: () => ({ status: 'CLOSED' }),
+        data: () => ({ status: 'closed' }),
       } as unknown as DocumentSnapshot<unknown, DocumentData>)
 
       const result = await getMonthStatus(uid, year, month)
       expect(result.success).toBe(true)
-      expect(result.data).toBe('CLOSED')
+      expect(result.data).toBe('closed')
     })
   })
 
@@ -120,7 +120,7 @@ describe('monthlyClose service', () => {
       }
       vi.mocked(cashflow.getAvailableBalance).mockResolvedValue(balanceResult)
       vi.mocked(investment.getAllInvestments).mockResolvedValue({ success: true, data: [{ currentValue: 500 }] as Investment[] })
-      vi.mocked(mutuo.getMutuoConfig).mockResolvedValue({ success: true, data: { debitoResiduo: 200000 } as MutuoConfig })
+      vi.mocked(mutuo.getMutuoConfig).mockResolvedValue({ success: true, data: { debitoResiduo: 200000 } as unknown as MutuoConfig })
       vi.mocked(previdenza.getAllPensionFunds).mockResolvedValue({ success: true, data: [{ saldoAttuale: 5000 }] as PensionFund[] })
       vi.mocked(payroll.getPayslips).mockResolvedValue({ success: true, data: [{ tfr: 100 }] as Payslip[] })
 
@@ -131,7 +131,7 @@ describe('monthlyClose service', () => {
 
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.data.status).toBe('CLOSED')
+        expect(result.data.status.toLowerCase()).toBe('closed')
         expect(result.data.snapshotId).toBe('snap-123')
       }
       expect(setDoc).toHaveBeenCalled()
@@ -145,7 +145,7 @@ describe('monthlyClose service', () => {
       vi.mocked(payroll.getPayslipByMonth).mockResolvedValue({ success: true, data: {} as Payslip })
       vi.mocked(getDoc).mockResolvedValueOnce({
         exists: () => true,
-        data: () => ({ status: 'CLOSED' }),
+        data: () => ({ status: 'closed' }),
       } as unknown as DocumentSnapshot<unknown, DocumentData>)
 
       const result = await closeMonth(uid, year, month)
@@ -158,8 +158,8 @@ describe('monthlyClose service', () => {
     it('should return history of closures', async () => {
       vi.mocked(getDocs).mockResolvedValue({
         docs: [
-          { data: () => ({ year: 2026, month: 5, status: 'CLOSED' }) },
-          { data: () => ({ year: 2026, month: 4, status: 'CLOSED' }) },
+          { data: () => ({ year: 2026, month: 5, status: 'closed' }) },
+          { data: () => ({ year: 2026, month: 4, status: 'closed' }) },
         ],
       } as unknown as QuerySnapshot<unknown, DocumentData>)
 

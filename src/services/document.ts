@@ -66,7 +66,7 @@ export async function uploadDocument(
                 storagePath,
                 downloadUrl,
                 fileSize: file.size,
-                mimeType: file.type as 'application/pdf' | 'image/jpeg' | 'image/png',
+                mimeType: file.type,
                 createdAt: now,
                 updatedAt: now,
               }

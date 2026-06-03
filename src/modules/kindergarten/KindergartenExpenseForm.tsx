@@ -39,7 +39,7 @@ export const KindergartenExpenseForm: FC<Props> = ({ expense, onSubmit, onCancel
         description,
         amount,
         frequency,
-        month: frequency === 'annual' ? null : month,
+        month: (frequency === 'annual' ? 1 : month),
         year,
         note,
       })

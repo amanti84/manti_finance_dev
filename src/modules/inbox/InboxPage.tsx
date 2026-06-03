@@ -72,7 +72,12 @@ export const InboxPage: FC = () => {
 
   const stats = {
     all: items.length,
-    daRivedere: items.filter((i) => i.status !== 'CONFERMATO' && i.confidenceFields.some((f) => f.confidence < 80)).length,
+    daRivedere: items.filter((i) => {
+      const hasLowConf = Array.isArray(i.confidenceFields)
+        ? i.confidenceFields.some((f) => typeof f === 'object' && f !== null && f.confidence < 80)
+        : Object.values(i.confidenceFields).some((conf) => conf < 80)
+      return i.status !== 'CONFERMATO' && hasLowConf
+    }).length,
     confermati: items.filter((i) => i.status === 'CONFERMATO').length,
     errori: items.filter((i) => i.status === 'ERRORE').length,
   }

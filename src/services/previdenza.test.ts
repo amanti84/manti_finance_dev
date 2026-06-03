@@ -158,8 +158,8 @@ describe('calculateTFRCumulativo', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.length).toBe(2)
-      expect(result.data[1].totale).toBeGreaterThan(result.data[0].totale)
-      expect(result.data[1].rivalutazione).toBeGreaterThan(0)
+      expect((result.data[1].totale ?? 0)).toBeGreaterThan((result.data[0].totale ?? 0))
+      expect((result.data[1].rivalutazione ?? 0)).toBeGreaterThan(0)
     }
   })
 
@@ -300,8 +300,9 @@ describe('createPensionFund', () => {
     ;(addDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ id: 'fund-001' })
     const result = await createPensionFund('user-123', {
       nome: 'Fon.Te',
-      tipo: 'fonte',
-      lineaInvestimento: 'Dinamico',
+      codice: 'FONTE',
+      tipologia: 'aperto',
+      contribuzioneAnnua: 2000,
       saldoAttuale: 15000,
     })
     expect(result.success).toBe(true)
@@ -315,8 +316,9 @@ describe('createPensionFund', () => {
     ;(addDoc as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase error'))
     const result = await createPensionFund('user-123', {
       nome: 'Fon.Te',
-      tipo: 'fonte',
-      lineaInvestimento: 'Dinamico',
+      codice: 'FONTE',
+      tipologia: 'aperto',
+      contribuzioneAnnua: 2000,
       saldoAttuale: 15000,
     })
     expect(result.success).toBe(false)
@@ -376,7 +378,7 @@ describe('getPensionFund', () => {
     ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       exists: () => true,
       id: 'fund-001',
-      data: () => ({ nome: 'Fon.Te', tipo: 'fonte', lineaInvestimento: 'Dinamico', saldoAttuale: 15000 }),
+      data: () => ({ nome: 'Fon.Te', tipologia: 'aperto', codice: 'FONTE', contribuzioneAnnua: 2000, saldoAttuale: 15000 }),
     })
     const result = await getPensionFund('user-123', 'fund-001')
     expect(result.success).toBe(true)
@@ -404,7 +406,7 @@ describe('getAllPensionFunds', () => {
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       forEach: (cb: (d: { id: string; data: () => Record<string, unknown> }) => void) => {
-        cb({ id: 'fund-001', data: () => ({ nome: 'Fon.Te', tipo: 'fonte', lineaInvestimento: 'Dinamico', saldoAttuale: 15000 }) })
+        cb({ id: 'fund-001', data: () => ({ nome: 'Fon.Te', tipologia: 'aperto', codice: 'FONTE', contribuzioneAnnua: 2000, saldoAttuale: 15000 }) })
       },
     })
     const result = await getAllPensionFunds('user-123')
@@ -433,9 +435,11 @@ describe('recordContribution', () => {
     const { addDoc } = await import('firebase/firestore')
     ;(addDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ id: 'contrib-001' })
     const result = await recordContribution('user-123', {
-      fundId: 'fund-001',
-      anno: 2025,
-      mese: 1,
+      fondoId: 'fund-001',
+      year: 2025,
+      month: 1,
+      amount: 460,
+      type: 'volontario',
       quotaDipendente: 80,
       quotaDatore: 80,
       tfrConferito: 300,
@@ -450,9 +454,11 @@ describe('recordContribution', () => {
     const { addDoc } = await import('firebase/firestore')
     ;(addDoc as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase error'))
     const result = await recordContribution('user-123', {
-      fundId: 'fund-001',
-      anno: 2025,
-      mese: 1,
+      fondoId: 'fund-001',
+      year: 2025,
+      month: 1,
+      amount: 460,
+      type: 'volontario',
       quotaDipendente: 80,
       quotaDatore: 80,
       tfrConferito: 300,
@@ -472,8 +478,8 @@ describe('getContributionsByFund', () => {
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       forEach: (cb: (d: { id: string; data: () => Record<string, unknown> }) => void) => {
-        cb({ id: 'contrib-001', data: () => ({ fundId: 'fund-001', anno: 2025, mese: 1, quotaDipendente: 80, quotaDatore: 80, tfrConferito: 300, totale: 460 }) })
-        cb({ id: 'contrib-002', data: () => ({ fundId: 'fund-002', anno: 2025, mese: 1, quotaDipendente: 100, quotaDatore: 100, tfrConferito: 0, totale: 200 }) })
+        cb({ id: 'contrib-001', data: () => ({ fundId: 'fund-001', year: 2025, month: 1, quotaDipendente: 80, quotaDatore: 80, tfrConferito: 300, totale: 460 }) })
+        cb({ id: 'contrib-002', data: () => ({ fundId: 'fund-002', year: 2025, month: 1, quotaDipendente: 100, quotaDatore: 100, tfrConferito: 0, totale: 200 }) })
       },
     })
     const result = await getContributionsByFund('user-123', 'fund-001')

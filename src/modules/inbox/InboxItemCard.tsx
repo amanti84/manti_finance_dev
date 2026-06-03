@@ -27,7 +27,9 @@ const getStatusBadgeColor = (status: InboxItemStatus) => {
 
 export const InboxItemCard: FC<InboxItemCardProps> = ({ item, onReview, onDelete }) => {
   const statusColors = getStatusBadgeColor(item.status)
-  const hasLowConfidence = item.confidenceFields.some((f) => f.confidence < 80)
+  const hasLowConfidence = Array.isArray(item.confidenceFields)
+    ? item.confidenceFields.some((f) => typeof f === 'object' && f !== null && f.confidence < 80)
+    : Object.values(item.confidenceFields).some((conf) => conf < 80)
   const canReview = item.status !== 'CONFERMATO' && (item.status === 'IN_REVIEW' || item.status === 'ESTRATTO' || hasLowConfidence)
 
   return (

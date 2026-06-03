@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Timestamp } from 'firebase/firestore'
 import type { FinancialDocument, DocumentType } from '../../types'
 import { classifyDocument, deleteDocument, updateDocumentNote } from '../../services/document'
 
@@ -15,7 +16,12 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ uid, document, onUpd
   const [newType, setNewType] = useState<DocumentType>(document.type)
   const [newNote, setNewNote] = useState(document.note ?? '')
   const [docDate, setDocDate] = useState(
-    document.documentDate ? document.documentDate.toDate().toISOString().split('T')[0] : ''
+    document.documentDate
+      ? (document.documentDate instanceof Timestamp
+          ? document.documentDate.toDate()
+          : new Date(document.documentDate)
+        ).toISOString().split('T')[0]
+      : ''
   )
 
   // Sync state when document prop changes
@@ -23,7 +29,12 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ uid, document, onUpd
     setNewType(document.type)
     setNewNote(document.note ?? '')
     setDocDate(
-      document.documentDate ? document.documentDate.toDate().toISOString().split('T')[0] : ''
+      document.documentDate
+        ? (document.documentDate instanceof Timestamp
+            ? document.documentDate.toDate()
+            : new Date(document.documentDate)
+          ).toISOString().split('T')[0]
+        : ''
     )
   }, [document])
 
@@ -143,7 +154,13 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({ uid, document, onUpd
 
       <div className="text-xs text-gray-500 mb-3">
         {document.documentDate ? (
-          <p>Data documento: {document.documentDate.toDate().toLocaleDateString('it-IT')}</p>
+          <p>
+            Data documento:{' '}
+            {(document.documentDate instanceof Timestamp
+              ? document.documentDate.toDate()
+              : new Date(document.documentDate)
+            ).toLocaleDateString('it-IT')}
+          </p>
         ) : (
           <p>Caricato il: {document.createdAt.toDate().toLocaleDateString('it-IT')}</p>
         )}

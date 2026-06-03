@@ -27,7 +27,7 @@ vi.mock('../services/alert', () => ({
 
 vi.mock('../services/inbox', () => ({
   listInboxItems: vi.fn(() => Promise.resolve({ success: true, data: [] })),
-  calculateBadgeCount: vi.fn(() => ({ total: 0, requiresReview: 0 })),
+  calculateBadgeCount: vi.fn(() => ({ total: 0, requiresReview: 0, pending: 0 })),
 }))
 
 vi.mock('../modules/inbox', () => ({

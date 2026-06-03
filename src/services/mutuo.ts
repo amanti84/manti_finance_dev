@@ -164,8 +164,16 @@ export async function updateDebitoResiduo(
  */
 export function getPianoAmmortamento(config: MutuoConfig): ApiResult<PianoAmmortamento> {
   try {
-    const dataInizio = config.dataInizio.toDate()
-    const dataFine = config.dataFine.toDate()
+    const dInizioRaw = config.dataInizio
+    const dFineRaw = config.dataFine
+    const isStartTimestamp = typeof dInizioRaw === 'object' && dInizioRaw !== null && 'toDate' in dInizioRaw
+    const isEndTimestamp = typeof dFineRaw === 'object' && dFineRaw !== null && 'toDate' in dFineRaw
+    const dataInizio = isStartTimestamp
+      ? dInizioRaw.toDate()
+      : new Date(dInizioRaw)
+    const dataFine = isEndTimestamp
+      ? dFineRaw.toDate()
+      : new Date(dFineRaw)
     const numeroRate = calcolaNumeroRate(dataInizio, dataFine)
 
     if (numeroRate <= 0) {
@@ -180,7 +188,7 @@ export function getPianoAmmortamento(config: MutuoConfig): ApiResult<PianoAmmort
     let totaleInteressi = 0
 
     for (let i = 1; i <= numeroRate; i++) {
-      const dataRata = new Date(dataInizio)
+      const dataRata = new Date(dataInizio.getTime())
       dataRata.setMonth(dataRata.getMonth() + i)
 
       const quotaInteressi = Math.round(debitoResiduo * tassoMensile * 100) / 100
@@ -255,8 +263,16 @@ export function getDebitoResiduoAllaData(
  */
 export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
   try {
-    const dataInizio = config.dataInizio.toDate()
-    const dataFine = config.dataFine.toDate()
+    const dInizioRaw = config.dataInizio
+    const dFineRaw = config.dataFine
+    const isStartTimestamp = typeof dInizioRaw === 'object' && dInizioRaw !== null && 'toDate' in dInizioRaw
+    const isEndTimestamp = typeof dFineRaw === 'object' && dFineRaw !== null && 'toDate' in dFineRaw
+    const dataInizio = isStartTimestamp
+      ? dInizioRaw.toDate()
+      : new Date(dInizioRaw)
+    const dataFine = isEndTimestamp
+      ? dFineRaw.toDate()
+      : new Date(dFineRaw)
     const numeroRateTotali = calcolaNumeroRate(dataInizio, dataFine)
 
     const pianoResult = getPianoAmmortamento(config)

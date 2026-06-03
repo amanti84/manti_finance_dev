@@ -76,7 +76,7 @@ describe('goal service', () => {
       const progress = calculateGoalProgress(mockGoal)
       expect(progress.projectedCompletionDate).toBeDefined()
       if (progress.projectedCompletionDate) {
-        const diff = progress.projectedCompletionDate.getTime() - Date.now()
+        const diff = new Date(progress.projectedCompletionDate).getTime() - Date.now()
         const months = diff / (1000 * 60 * 60 * 24 * 30.4375)
         expect(months).toBeCloseTo(6, 0)
       }
