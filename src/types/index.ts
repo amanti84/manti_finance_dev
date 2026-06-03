@@ -242,13 +242,6 @@ export interface AnnualProjection {
   averageMonthlyNet?: number
   averageMonthlySurplus?: number
   confidence: 'high' | 'medium' | 'low'
-  monthsElapsed?: number
-  cumulativeNet?: number
-  cumulativeSurplus?: number
-  projectedAnnualNet?: number
-  projectedAnnualSurplus?: number
-  averageMonthlyNet?: number
-  averageMonthlySurplus?: number
 }
 
 export interface YoYComparison {
@@ -306,12 +299,6 @@ export interface MutuoConfig {
   banca?: string
   tipoTasso?: 'fisso' | 'variabile' | 'misto'
   notes?: string
-  importoOriginale: number
-  debitoResiduo: number
-  rataMensile: number
-  tasso: number
-  dataFine: Timestamp | string
-  isMutuoVariabile: boolean
 }
 
 // --------------------------------------------------------
@@ -565,7 +552,6 @@ export interface PensionFund extends BaseDocument {
   tipo?: 'aperto' | 'chiuso' | 'pip'
   dataAdesione?: string
   notes?: string
-  tipo?: 'aperto' | 'chiuso' | 'pip'
 }
 
 // --------------------------------------------------------
