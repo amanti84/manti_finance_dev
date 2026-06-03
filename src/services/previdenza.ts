@@ -115,18 +115,21 @@ export function calculateTFRCumulativo(
     return { success: false, error: 'Nessun dato TFR fornito' }
   }
 
-  const sorted = [...annualData].sort((a, b) => a.annoCompetenza - b.annoCompetenza)
+  const sorted = [...annualData]
+    .filter((d): d is TFRData & { annoCompetenza: number } => d.annoCompetenza !== undefined)
+    .sort((a, b) => a.annoCompetenza - b.annoCompetenza)
   const result: TFRData[] = []
   let tfrAccumulato = 0
 
   for (const data of sorted) {
     const inflazione = inflazionePerAnno[data.annoCompetenza] ?? 0
     const rivalutazione = calculateTFRRivalutazione(tfrAccumulato, inflazione)
-    tfrAccumulato += rivalutazione + data.quota
+    tfrAccumulato += rivalutazione + (data.quota ?? 0)
     result.push({
+      ...data,
       annoCompetenza: data.annoCompetenza,
-      retribuzioneAnnuale: data.retribuzioneAnnuale,
-      quota: data.quota,
+      retribuzioneAnnuale: data.retribuzioneAnnuale ?? 0,
+      quota: data.quota ?? 0,
       rivalutazione: Math.round(rivalutazione * 100) / 100,
       totale: Math.round(tfrAccumulato * 100) / 100,
     })
@@ -159,11 +162,17 @@ export function calculateFonteFromPayslips(
   return {
     success: true,
     data: {
+      nome: 'Fon.Te', // Placeholder
+      codice: 'FONTE', // Placeholder
+      tipologia: 'chiuso', // Placeholder
       anno,
       quotaDipendente: Math.round(quotaDipendente * 100) / 100,
       quotaDatore: Math.round(quotaDatore * 100) / 100,
       tfr: Math.round(tfrConferito * 100) / 100,
       totale: Math.round(totale * 100) / 100,
+      id: `fonte-${anno}`,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
     },
   }
 }
@@ -420,7 +429,7 @@ export async function recordContribution(
   data: Omit<PensionContribution, 'id' | 'totale' | 'createdAt' | 'updatedAt'>
 ): Promise<ApiResult<string>> {
   try {
-    const totale = data.quotaDipendente + data.quotaDatore + data.tfrConferito
+    const totale = (data.quotaDipendente ?? 0) + (data.quotaDatore ?? 0) + (data.tfrConferito ?? 0)
     await logAudit({ uid, action: 'create', entityType: 'investment', entityId: 'pending' })
     const colRef = collection(db, CONTRIBUTIONS_COLLECTION(uid))
     const docRef = await addDoc(colRef, {

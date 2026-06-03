@@ -157,8 +157,9 @@ export async function confirmInboxItem(
     const currentData = snap.data() as InboxItem
     const now = Timestamp.now()
 
-    const updatedConfidenceFields = currentData.confidenceFields.map((field) => {
-      if (Object.prototype.hasOwnProperty.call(confirmedFields, field.fieldName)) {
+    const currentFields = Array.isArray(currentData.confidenceFields) ? currentData.confidenceFields : []
+    const updatedConfidenceFields = currentFields.map((field) => {
+      if (typeof field === 'object' && field !== null && Object.prototype.hasOwnProperty.call(confirmedFields, field.fieldName)) {
         return {
           ...field,
           confirmedValue: confirmedFields[field.fieldName],
@@ -234,12 +235,18 @@ export function calculateBadgeCount(items: InboxItem[]): InboxBadgeCount {
   const terminalStatuses: InboxItemStatus[] = ['CONFERMATO', 'ERRORE']
   const totalItems = items.filter((item) => !terminalStatuses.includes(item.status))
 
-  const requiresReviewItems = totalItems.filter((item) =>
-    item.confidenceFields.some((field) => field.confidence < 80)
-  )
+  const requiresReviewItems = totalItems.filter((item) => {
+    if (Array.isArray(item.confidenceFields)) {
+      return item.confidenceFields.some((field) => typeof field === 'object' && field !== null && (field as any).confidence < 80)
+    }
+    return Object.values(item.confidenceFields).some((conf) => (conf as number) < 80)
+  })
+
+  const pendingItems = totalItems.filter((item) => item.status === 'RICEVUTO' || item.status === 'pending')
 
   return {
     total: totalItems.length,
     requiresReview: requiresReviewItems.length,
+    pending: pendingItems.length,
   }
 }

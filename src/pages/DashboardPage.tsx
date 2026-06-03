@@ -399,7 +399,7 @@ const DashboardPage: React.FC = () => {
                 <div key={alert.id} className="p-4 flex items-center justify-between hover:bg-surface-offset transition-colors">
                   <div className="flex items-center gap-3">
                     <Badge variant={alert.severity === 'critical' ? 'error' : alert.severity === 'warning' ? 'warning' : 'info'}>
-                      {alert.type.replace(/_/g, ' ')}
+                      {(alert.type ?? '').replace(/_/g, ' ')}
                     </Badge>
                     <span className="text-sm font-medium text-text">{alert.message}</span>
                   </div>

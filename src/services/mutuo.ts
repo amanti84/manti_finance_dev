@@ -10,6 +10,7 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  Timestamp,
 } from 'firebase/firestore'
 import type { MutuoConfig, ApiResult } from '../types'
 import { logAudit } from './audit'
@@ -164,8 +165,8 @@ export async function updateDebitoResiduo(
  */
 export function getPianoAmmortamento(config: MutuoConfig): ApiResult<PianoAmmortamento> {
   try {
-    const dataInizio = config.dataInizio.toDate()
-    const dataFine = config.dataFine.toDate()
+    const dataInizio = config.dataInizio instanceof Timestamp ? config.dataInizio.toDate() : new Date(config.dataInizio)
+    const dataFine = config.dataFine instanceof Timestamp ? config.dataFine.toDate() : new Date(config.dataFine)
     const numeroRate = calcolaNumeroRate(dataInizio, dataFine)
 
     if (numeroRate <= 0) {
@@ -255,8 +256,8 @@ export function getDebitoResiduoAllaData(
  */
 export function getMutuoSummary(config: MutuoConfig): ApiResult<MutuoSummary> {
   try {
-    const dataInizio = config.dataInizio.toDate()
-    const dataFine = config.dataFine.toDate()
+    const dataInizio = config.dataInizio instanceof Timestamp ? config.dataInizio.toDate() : new Date(config.dataInizio)
+    const dataFine = config.dataFine instanceof Timestamp ? config.dataFine.toDate() : new Date(config.dataFine)
     const numeroRateTotali = calcolaNumeroRate(dataInizio, dataFine)
 
     const pianoResult = getPianoAmmortamento(config)

@@ -48,6 +48,7 @@ export async function logAudit(
   const ref = collection(db, 'users', input.uid, 'audit')
   // Usa spread per gestire exactOptionalPropertyTypes
   const entry: Omit<AuditLogEntry, 'id'> = {
+    uid: input.uid,
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
     action: input.action,

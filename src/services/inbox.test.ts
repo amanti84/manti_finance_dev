@@ -92,12 +92,12 @@ describe('inbox service', () => {
 
     it('should count items with at least one confidence < 80 in requiresReview', () => {
       const fields: ConfidenceField[] = [
-        { fieldName: 'f1', extractedValue: 'v1', confidence: 90 },
-        { fieldName: 'f2', extractedValue: 'v2', confidence: 70 },
+        { fieldName: 'f1', extractedValue: 'v1', confidence: 90 } as any,
+        { fieldName: 'f2', extractedValue: 'v2', confidence: 70 } as any,
       ]
       const items: InboxItem[] = [
         makeInboxItem({ status: 'RICEVUTO', confidenceFields: fields }),
-        makeInboxItem({ status: 'ESTRATTO', confidenceFields: [{ fieldName: 'f3', extractedValue: 'v3', confidence: 85 }] }),
+        makeInboxItem({ status: 'ESTRATTO', confidenceFields: [{ fieldName: 'f3', extractedValue: 'v3', confidence: 85 } as any] }),
       ]
       const result = calculateBadgeCount(items)
       expect(result.requiresReview).toBe(1)
@@ -105,7 +105,7 @@ describe('inbox service', () => {
 
     it('should not count in requiresReview if all fields confidence >= 80', () => {
       const items: InboxItem[] = [
-        makeInboxItem({ status: 'RICEVUTO', confidenceFields: [{ fieldName: 'f1', extractedValue: 'v1', confidence: 80 }] }),
+        makeInboxItem({ status: 'RICEVUTO', confidenceFields: [{ fieldName: 'f1', extractedValue: 'v1', confidence: 80 } as any] }),
       ]
       const result = calculateBadgeCount(items)
       expect(result.requiresReview).toBe(0)
@@ -113,7 +113,7 @@ describe('inbox service', () => {
 
     it('should not count CONFERMATO items in requiresReview even if low confidence', () => {
       const items: InboxItem[] = [
-        makeInboxItem({ status: 'CONFERMATO', confidenceFields: [{ fieldName: 'f1', extractedValue: 'v1', confidence: 10 }] }),
+        makeInboxItem({ status: 'CONFERMATO', confidenceFields: [{ fieldName: 'f1', extractedValue: 'v1', confidence: 10 } as any] }),
       ]
       const result = calculateBadgeCount(items)
       expect(result.total).toBe(0)
@@ -219,7 +219,7 @@ describe('inbox service', () => {
   describe('confirmInboxItem', () => {
     it('should update confirmedValue for each field and set status CONFERMATO', async () => {
       const initialFields: ConfidenceField[] = [
-        { fieldName: 'salary', extractedValue: 2000, confidence: 70 },
+        { fieldName: 'salary', extractedValue: 2000, confidence: 70 } as any,
       ]
       vi.mocked(getDoc).mockResolvedValueOnce({
         exists: () => true,

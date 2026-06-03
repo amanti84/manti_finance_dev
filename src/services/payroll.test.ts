@@ -276,7 +276,7 @@ describe('calculateYoYComparison', () => {
     const result = calculateYoYComparison(all, 2026)
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.avgNetCurrent).toBeGreaterThan(result.data.avgNetPrevious)
+      expect((result.data.avgNetCurrent ?? 0)).toBeGreaterThan((result.data.avgNetPrevious ?? 0))
       expect(result.data.netDeltaAbsolute).toBe(200)
       expect(result.data.netDeltaPercent).toBeGreaterThan(0)
     }
