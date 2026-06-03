@@ -3,7 +3,7 @@
  * Props-driven: riceve dati e callbacks da KindergartenPage.
  * Nessun import da src/services/pac.ts o moduli PAC principali.
  */
-import React, { useState } from 'react'
+import { useState } from 'react'
 import type { KindergartenPAC } from '../../types/kindergarten'
 
 interface Props {

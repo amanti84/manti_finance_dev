@@ -3,7 +3,7 @@
  * Props-driven: riceve dati e callbacks da KindergartenPage.
  * Nessun accesso diretto a Firestore, nessun import da moduli investment principali.
  */
-import React, { useState } from 'react'
+import { useState } from 'react'
 import type { KindergartenInvestment } from '../../types/kindergarten'
 
 interface Props {

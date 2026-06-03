@@ -10,7 +10,7 @@
  * ⚠️  File sostituisce la versione precedente orientata a Expenses/Budget.
  *     Il dominio corretto è: investimenti bambini + PAC bambini.
  */
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { useKindergartenInvestments } from './useKindergartenInvestments'
 import { useKindergartenPacs } from './useKindergartenPacs'
 import KindergartenInvestmentList from './KindergartenInvestmentList'
@@ -73,14 +73,11 @@ export default function KindergartenPage({ uid }: Props) {
 
   return (
     <div className="space-y-8">
-      {/* KPI aggregati globali */}
       <KindergartenKPICard
         invKPIs={invKPIs}
         pacKPIs={pacKPIs}
         grandKPIs={grandKPIs}
       />
-
-      {/* Investimenti diretti */}
       <section>
         <h2 className="text-lg font-semibold mb-4">Investimenti Diretti</h2>
         <KindergartenInvestmentList
@@ -90,8 +87,6 @@ export default function KindergartenPage({ uid }: Props) {
           onDelete={deleteInvestment}
         />
       </section>
-
-      {/* PAC */}
       <section>
         <h2 className="text-lg font-semibold mb-4">Piano di Accumulo (PAC)</h2>
         <KindergartenPACList

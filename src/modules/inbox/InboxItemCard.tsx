@@ -1,5 +1,5 @@
 import type { FC } from 'react'
-import type { InboxItem, InboxItemStatus } from '../../types'
+import type { InboxItem, InboxItemStatus, ConfidenceField } from '../../types'
 
 interface InboxItemCardProps {
   item: InboxItem
@@ -25,12 +25,16 @@ const getStatusBadgeColor = (status: InboxItemStatus) => {
   }
 }
 
+function hasLowConfidenceFields(fields: ConfidenceField[]): boolean {
+  return fields.some((f) => f.confidence < 80)
+}
+
 export const InboxItemCard: FC<InboxItemCardProps> = ({ item, onReview, onDelete }) => {
   const statusColors = getStatusBadgeColor(item.status)
-  const hasLowConfidence = Array.isArray(item.confidenceFields)
-    ? item.confidenceFields.some((f) => typeof f === 'object' && f !== null && f.confidence < 80)
-    : Object.values(item.confidenceFields).some((conf) => conf < 80)
-  const canReview = item.status !== 'CONFERMATO' && (item.status === 'IN_REVIEW' || item.status === 'ESTRATTO' || hasLowConfidence)
+  const hasLowConfidence = hasLowConfidenceFields(item.confidenceFields)
+  const canReview =
+    item.status !== 'CONFERMATO' &&
+    (item.status === 'IN_REVIEW' || item.status === 'ESTRATTO' || hasLowConfidence)
 
   return (
     <div
@@ -76,7 +80,6 @@ export const InboxItemCard: FC<InboxItemCardProps> = ({ item, onReview, onDelete
             </span>
           </div>
         </div>
-
         <div style={{ display: 'flex', gap: '8px' }}>
           {canReview && (
             <button
@@ -114,7 +117,6 @@ export const InboxItemCard: FC<InboxItemCardProps> = ({ item, onReview, onDelete
           </button>
         </div>
       </div>
-
       {item.errorMessage && (
         <div
           style={{
@@ -130,7 +132,6 @@ export const InboxItemCard: FC<InboxItemCardProps> = ({ item, onReview, onDelete
           <strong>Errore:</strong> {item.errorMessage}
         </div>
       )}
-
       {item.status !== 'CONFERMATO' && hasLowConfidence && (
         <div
           style={{

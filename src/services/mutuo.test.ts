@@ -17,9 +17,6 @@ import {
 import type { MutuoConfig, ApiResult } from '../types';
 import type { Timestamp } from 'firebase/firestore';
 
-// ---------------------------------------------------------------------------
-// MOCK FIREBASE
-// ---------------------------------------------------------------------------
 vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(),
   collection: vi.fn(),
@@ -33,14 +30,10 @@ vi.mock('firebase/firestore', () => ({
   },
 }));
 
-// fix: service chiama logAudit, non logAuditEvent
 vi.mock('./audit', () => ({
   logAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
-// ---------------------------------------------------------------------------
-// MOCK FIXTURES
-// ---------------------------------------------------------------------------
 const makeTimestamp = (d: Date): Timestamp =>
   ({
     seconds: Math.floor(d.getTime() / 1000),
@@ -50,18 +43,9 @@ const makeTimestamp = (d: Date): Timestamp =>
     isEqual: () => false,
   }) as unknown as Timestamp;
 
+// MutuoConfig è plain interface (no BaseDocument) — no id/createdAt/updatedAt
 const makeMutuoConfig = (overrides: Partial<MutuoConfig> = {}): MutuoConfig => {
   const base: MutuoConfig = {
-    id: 'mutuo-001',
-    createdAt: makeTimestamp(new Date()),
-    updatedAt: makeTimestamp(new Date()),
-    importoIniziale: 200000,
-    saldoResiduo: 200000,
-    rata: 1004.52,
-    tassoAnnuo: 3.5,
-    durataAnni: 25,
-    banca: 'Banca Intesa',
-    tipoTasso: 'fisso',
     importoOriginale: 200000,
     debitoResiduo: 200000,
     rataMensile: 1004.52,
@@ -69,20 +53,24 @@ const makeMutuoConfig = (overrides: Partial<MutuoConfig> = {}): MutuoConfig => {
     dataInizio: makeTimestamp(new Date('2023-01-01')),
     dataFine: makeTimestamp(new Date('2048-01-01')),
     isMutuoVariabile: false,
+    // optional backward-compat fields
+    importoIniziale: 200000,
+    saldoResiduo: 200000,
+    rata: 1004.52,
+    tassoAnnuo: 3.5,
+    durataAnni: 25,
+    banca: 'Banca Intesa',
+    tipoTasso: 'fisso',
   }
   return { ...base, ...overrides }
 }
 
-// ---------------------------------------------------------------------------
-// TEST SUITE
-// ---------------------------------------------------------------------------
 describe('Mutuo Service', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  // --- getPianoAmmortamento ---
   describe('getPianoAmmortamento', () => {
     it('genera piano ammortamento con numero corretto di rate', () => {
       const config = makeMutuoConfig({
@@ -119,7 +107,6 @@ describe('Mutuo Service', () => {
     });
   });
 
-  // --- getDebitoResiduoAllaData ---
   describe('getDebitoResiduoAllaData', () => {
     it('calcola debito residuo dopo 12 mesi', () => {
       const config = makeMutuoConfig({
@@ -133,12 +120,9 @@ describe('Mutuo Service', () => {
     });
   });
 
-  // --- getMutuoSummary ---
   describe('getMutuoSummary', () => {
     it('restituisce summary con rate rimanenti', () => {
-      const config = makeMutuoConfig({
-        debitoResiduo: 180000,
-      });
+      const config = makeMutuoConfig({ debitoResiduo: 180000 });
       const result = getMutuoSummary(config);
       expect(result.success).toBe(true);
       expect(result.data?.rateRimanenti).toBeGreaterThan(0);
@@ -146,12 +130,9 @@ describe('Mutuo Service', () => {
     });
   });
 
-  // --- simulateAnticipatedExtinction ---
   describe('simulateAnticipatedExtinction', () => {
     it('calcola risparmio interessi per estinzione anticipata', () => {
-      const config = makeMutuoConfig({
-        debitoResiduo: 180000,
-      });
+      const config = makeMutuoConfig({ debitoResiduo: 180000 });
       const result = simulateAnticipatedExtinction(config, new Date('2028-01-01'));
       expect(result.success).toBe(true);
       expect(result.data?.interessiRisparmiati).toBeGreaterThan(0);
@@ -159,12 +140,9 @@ describe('Mutuo Service', () => {
     });
   });
 
-  // --- simulateExtraPayment ---
   describe('simulateExtraPayment', () => {
     it('pagamento extra riduce le rate rimanenti', () => {
-      const config = makeMutuoConfig({
-        debitoResiduo: 180000,
-      });
+      const config = makeMutuoConfig({ debitoResiduo: 180000 });
       const result = simulateExtraPayment(config, 10000);
       expect(result.success).toBe(true);
       expect(result.data?.rateRisparmiate).toBeGreaterThan(0);
@@ -172,7 +150,6 @@ describe('Mutuo Service', () => {
     });
   });
 
-  // --- saveMutuoConfig (Firebase) ---
   describe('saveMutuoConfig', () => {
     it('salva configurazione e ritorna successo', async () => {
       const { setDoc, doc, getDoc } = await import('firebase/firestore');
@@ -194,7 +171,6 @@ describe('Mutuo Service', () => {
     });
   });
 
-  // --- getMutuoConfig (Firebase) ---
   describe('getMutuoConfig', () => {
     it('ritorna configurazione esistente', async () => {
       const { getDoc, doc } = await import('firebase/firestore');
@@ -217,7 +193,6 @@ describe('Mutuo Service', () => {
     });
   });
 
-  // --- updateDebitoResiduo (Firebase) ---
   describe('updateDebitoResiduo', () => {
     it('aggiorna debito residuo e ritorna successo', async () => {
       const { updateDoc, doc } = await import('firebase/firestore');
