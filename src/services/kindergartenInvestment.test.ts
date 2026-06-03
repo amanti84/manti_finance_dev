@@ -11,13 +11,13 @@ import type { KindergartenInvestment } from '../types/kindergarten'
 
 vi.mock('../firebase', () => ({ db: {} }))
 vi.mock('firebase/firestore', () => ({
-  collection: vi.fn((_db, ...path) => ({ path: path.join('/') })),
-  doc: vi.fn((_col, id) => ({ id })),
+  collection: vi.fn((_db: unknown, ...path: string[]) => ({ path: path.join('/') })),
+  doc: vi.fn((_col: unknown, id: string) => ({ id })),
   getDocs: vi.fn(),
   addDoc: vi.fn(),
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
-  query: vi.fn(col => col),
+  query: vi.fn((col: unknown) => col),
   orderBy: vi.fn(),
   serverTimestamp: vi.fn(() => ({ _isServerTimestamp: true })),
 }))
@@ -51,31 +51,31 @@ describe('kindergartenInvestment service', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('usa la collection kindergarten_investments, non investments', () => {
-    ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({ path: 'users/uid/kindergarten_investments' })
-    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValue({ docs: [] })
+    vi.mocked(collection).mockReturnValue({ path: 'users/uid/kindergarten_investments' } as ReturnType<typeof collection>)
+    vi.mocked(getDocs).mockResolvedValue({ docs: [] } as unknown as ReturnType<typeof getDocs> extends Promise<infer R> ? R : never)
 
-    getKindergartenInvestments(UID)
+    void getKindergartenInvestments(UID)
 
-    const callArgs = (collection as ReturnType<typeof vi.fn>).mock.calls[0] as unknown[]
+    const callArgs = vi.mocked(collection).mock.calls[0]
     expect(callArgs).toContain('kindergarten_investments')
     expect(callArgs).not.toContain('investments')
   })
 
   it('include uid nel path della collection', () => {
-    ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({ path: `users/${UID}/kindergarten_investments` })
-    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValue({ docs: [] })
+    vi.mocked(collection).mockReturnValue({ path: `users/${UID}/kindergarten_investments` } as ReturnType<typeof collection>)
+    vi.mocked(getDocs).mockResolvedValue({ docs: [] } as unknown as ReturnType<typeof getDocs> extends Promise<infer R> ? R : never)
 
-    getKindergartenInvestments(UID)
+    void getKindergartenInvestments(UID)
 
-    const callArgs = (collection as ReturnType<typeof vi.fn>).mock.calls[0] as unknown[]
+    const callArgs = vi.mocked(collection).mock.calls[0]
     expect(callArgs).toContain(UID)
   })
 
   it('getKindergartenInvestments: ritorna lista investimenti', async () => {
-    ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({ path: 'users/uid/kindergarten_investments' })
-    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValue({
+    vi.mocked(collection).mockReturnValue({ path: 'users/uid/kindergarten_investments' } as ReturnType<typeof collection>)
+    vi.mocked(getDocs).mockResolvedValue({
       docs: [{ id: 'inv-001', data: () => ({ ...mockInvestment, id: undefined }) }],
-    })
+    } as unknown as ReturnType<typeof getDocs> extends Promise<infer R> ? R : never)
 
     const result = await getKindergartenInvestments(UID)
     expect(result.success).toBe(true)
@@ -86,8 +86,8 @@ describe('kindergartenInvestment service', () => {
   })
 
   it('getKindergartenInvestments: gestisce errore Firestore', async () => {
-    ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({})
-    ;(getDocs as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'))
+    vi.mocked(collection).mockReturnValue({} as ReturnType<typeof collection>)
+    vi.mocked(getDocs).mockRejectedValue(new Error('Network error'))
 
     const result = await getKindergartenInvestments(UID)
     expect(result.success).toBe(false)
@@ -97,8 +97,8 @@ describe('kindergartenInvestment service', () => {
   })
 
   it('addKindergartenInvestment: aggiunge e ritorna id', async () => {
-    ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({})
-    ;(addDoc as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'new-inv-id' })
+    vi.mocked(collection).mockReturnValue({} as ReturnType<typeof collection>)
+    vi.mocked(addDoc).mockResolvedValue({ id: 'new-inv-id' } as ReturnType<typeof addDoc> extends Promise<infer R> ? R : never)
 
     const { id: _id, createdAt: _c, updatedAt: _u, ...payload } = mockInvestment
     const result = await addKindergartenInvestment(UID, payload)
@@ -108,18 +108,18 @@ describe('kindergartenInvestment service', () => {
   })
 
   it('updateKindergartenInvestment: aggiorna il documento', async () => {
-    ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({})
-    ;(updateDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
+    vi.mocked(collection).mockReturnValue({} as ReturnType<typeof collection>)
+    vi.mocked(updateDoc).mockResolvedValue(undefined)
 
     const result = await updateKindergartenInvestment(UID, 'inv-001', { currentPrice: 130 })
     expect(result.success).toBe(true)
-    const updateCalls = (updateDoc as ReturnType<typeof vi.fn>).mock.calls
+    const updateCalls = vi.mocked(updateDoc).mock.calls
     expect(updateCalls).toHaveLength(1)
   })
 
   it('deleteKindergartenInvestment: elimina il documento', async () => {
-    ;(collection as ReturnType<typeof vi.fn>).mockReturnValue({})
-    ;(deleteDoc as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
+    vi.mocked(collection).mockReturnValue({} as ReturnType<typeof collection>)
+    vi.mocked(deleteDoc).mockResolvedValue(undefined)
 
     const result = await deleteKindergartenInvestment(UID, 'inv-001')
     expect(result.success).toBe(true)

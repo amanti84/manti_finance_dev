@@ -105,7 +105,7 @@ describe('KindergartenPage', () => {
     expect(screen.getByText('PAC Futuro')).toBeTruthy()
   })
 
-  it('calls deleteInvestment when delete button is clicked and confirmed', async () => {
+  it('calls deleteInvestment when delete button is clicked and confirmed', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     render(<KindergartenPage uid="test-uid" />)
     const deleteButtons = screen.getAllByText('Elimina')

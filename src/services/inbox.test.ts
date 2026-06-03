@@ -231,7 +231,7 @@ describe('inbox service', () => {
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.status).toBe('CONFERMATO')
-        const fields = result.data.confidenceFields as ConfidenceField[]
+        const fields = result.data.confidenceFields
         expect(fields[0].confirmedValue).toBe(2100)
         expect(result.data.confirmedAt).toBeDefined()
       }
