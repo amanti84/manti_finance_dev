@@ -86,10 +86,10 @@ export async function deleteKindergartenPAC(
 
 /** Calcola KPI esclusivamente sui PAC kindergarten */
 export function calculateKindergartenPACKPIs(pacs: KindergartenPAC[]) {
-  const totalMonthly = pacs.reduce((acc, p) => acc + p.monthlyAmount, 0)
+  const totalPACMonthly = pacs.reduce((acc, p) => acc + p.monthlyAmount, 0)
   const totalPACInvested = pacs.reduce((acc, p) => acc + p.totalInvested, 0)
   const totalPACValue = pacs.reduce((acc, p) => acc + p.currentValue, 0)
   const pacGainLoss = totalPACValue - totalPACInvested
   const pacGainLossPercent = totalPACInvested > 0 ? (pacGainLoss / totalPACInvested) * 100 : 0
-  return { totalMonthly, totalPACInvested, totalPACValue, pacGainLoss, pacGainLossPercent }
+  return { totalPACMonthly, totalPACInvested, totalPACValue, pacGainLoss, pacGainLossPercent }
 }
