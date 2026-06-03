@@ -76,7 +76,7 @@ describe('inbox service', () => {
   describe('calculateBadgeCount', () => {
     it('should return total 0 and requiresReview 0 for empty array', () => {
       const result = calculateBadgeCount([])
-      expect(result).toEqual({ total: 0, requiresReview: 0 })
+      expect(result).toEqual({ total: 0, requiresReview: 0, pending: 0 })
     })
 
     it('should count only non-terminal items in total', () => {
@@ -231,7 +231,8 @@ describe('inbox service', () => {
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.status).toBe('CONFERMATO')
-        expect(result.data.confidenceFields[0].confirmedValue).toBe(2100)
+        const fields = result.data.confidenceFields as ConfidenceField[]
+        expect(fields[0].confirmedValue).toBe(2100)
         expect(result.data.confirmedAt).toBeDefined()
       }
       expect(logAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'update' }))

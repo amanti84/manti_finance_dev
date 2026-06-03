@@ -64,7 +64,7 @@ export async function getMonthStatus(
     const id = buildMonthlyCloseId(year, month)
     const docRef = doc(db, COLLECTION(uid), id)
     const snap = await getDoc(docRef)
-    if (!snap.exists()) return { success: true, data: 'OPEN' }
+    if (!snap.exists()) return { success: true, data: 'open' }
     const data = snap.data() as MonthlyCloseResult
     return { success: true, data: data.status }
   } catch (error) {
@@ -104,7 +104,7 @@ export async function closeMonth(
 
     // 2. Verifica se già chiuso
     const statusResult = await getMonthStatus(uid, year, month)
-    if (statusResult.success && statusResult.data !== 'OPEN') {
+    if (statusResult.success && (statusResult.data as string).toLowerCase() !== 'open') {
       return { success: false, error: `Mese ${month}/${year} già chiuso o bloccato` }
     }
 
@@ -125,7 +125,7 @@ export async function closeMonth(
 
     const contiCorrenti = balanceRes.data.totalBalance
     const investimenti = investRes.data.reduce((sum, inv) => sum + inv.currentValue, 0)
-    const mutuo = mutuoRes.data.debitoResiduo
+    const mutuo = mutuoRes.data.debitoResiduo ?? 0
     const fondoPensione = pensionRes.data.reduce((sum, f) => sum + f.saldoAttuale, 0)
     const tfr = payslipsRes.data.reduce((sum, p) => sum + (p.tfr || 0), 0)
 
@@ -146,11 +146,18 @@ export async function closeMonth(
 
     // 5. Salvataggio record chiusura
     const closeResult: MonthlyCloseResult = {
+      id: buildMonthlyCloseId(year, month),
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
       month,
       year,
-      status: 'CLOSED',
+      status: 'closed',
       snapshotId: snapshot.id,
       closedAt: Timestamp.now(),
+      patrimonioNetto: contiCorrenti + investimenti + fondoPensione + tfr - mutuo,
+      surplusMensile: 0,
+      netSalary: 0,
+      fixedExpenses: 0,
     }
 
     const id = buildMonthlyCloseId(year, month)

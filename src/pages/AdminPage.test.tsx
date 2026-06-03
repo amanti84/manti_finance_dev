@@ -23,11 +23,11 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-type MockAuthReturn = {
+interface MockAuthReturn {
   user: User | null
   loading: boolean
-  signInWithGoogle: ReturnType<typeof vi.fn>
-  logout: ReturnType<typeof vi.fn>
+  signInWithGoogle: () => Promise<{ success: boolean; error?: string; }>
+  logout: () => Promise<void>
 }
 
 describe('AdminPage', () => {
@@ -40,8 +40,8 @@ describe('AdminPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: null,
       loading: true,
-      signInWithGoogle: vi.fn(),
-      logout: vi.fn(),
+      signInWithGoogle: vi.fn() as unknown as () => Promise<{ success: boolean; error?: string; }>,
+      logout: vi.fn() as unknown as () => Promise<void>,
     } satisfies MockAuthReturn)
     render(<MemoryRouter><AdminPage /></MemoryRouter>)
     expect(screen.getByText('Caricamento...')).toBeTruthy()
@@ -51,8 +51,8 @@ describe('AdminPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { email: 'not-admin@gmail.com' } as unknown as User,
       loading: false,
-      signInWithGoogle: vi.fn(),
-      logout: vi.fn(),
+      signInWithGoogle: vi.fn() as unknown as () => Promise<{ success: boolean; error?: string; }>,
+      logout: vi.fn() as unknown as () => Promise<void>,
     } satisfies MockAuthReturn)
     render(<MemoryRouter><AdminPage /></MemoryRouter>)
     expect(screen.getByTestId('navigate')).toBeTruthy()
@@ -65,8 +65,8 @@ describe('AdminPage', () => {
         email: 'amanti84@gmail.com'
       } as unknown as User,
       loading: false,
-      signInWithGoogle: vi.fn(),
-      logout: vi.fn(),
+      signInWithGoogle: vi.fn() as unknown as () => Promise<{ success: boolean; error?: string; }>,
+      logout: vi.fn() as unknown as () => Promise<void>,
     } satisfies MockAuthReturn)
     render(<MemoryRouter><AdminPage /></MemoryRouter>)
 
@@ -84,8 +84,8 @@ describe('AdminPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: mockUser,
       loading: false,
-      signInWithGoogle: vi.fn(),
-      logout: vi.fn(),
+      signInWithGoogle: vi.fn() as unknown as () => Promise<{ success: boolean; error?: string; }>,
+      logout: vi.fn() as unknown as () => Promise<void>,
     } satisfies MockAuthReturn)
 
     mockFetch.mockResolvedValue({
@@ -129,8 +129,8 @@ describe('AdminPage', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: mockUser,
       loading: false,
-      signInWithGoogle: vi.fn(),
-      logout: vi.fn(),
+      signInWithGoogle: vi.fn() as unknown as () => Promise<{ success: boolean; error?: string; }>,
+      logout: vi.fn() as unknown as () => Promise<void>,
     } satisfies MockAuthReturn)
 
     mockFetch.mockResolvedValue({

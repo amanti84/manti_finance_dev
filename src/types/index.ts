@@ -218,6 +218,7 @@ export interface SurplusBreakdown {
   netSalary: number
   fixedExpenses: number
   surplus?: number
+  /** Surplus lordo prima delle spese fisse */
   surplusGross: number
   bonusAmount: number
   variableComponent: number
@@ -241,6 +242,13 @@ export interface AnnualProjection {
   averageMonthlyNet?: number
   averageMonthlySurplus?: number
   confidence: 'high' | 'medium' | 'low'
+  monthsElapsed?: number
+  cumulativeNet?: number
+  cumulativeSurplus?: number
+  projectedAnnualNet?: number
+  projectedAnnualSurplus?: number
+  averageMonthlyNet?: number
+  averageMonthlySurplus?: number
 }
 
 export interface YoYComparison {
@@ -298,6 +306,12 @@ export interface MutuoConfig {
   banca?: string
   tipoTasso?: 'fisso' | 'variabile' | 'misto'
   notes?: string
+  importoOriginale: number
+  debitoResiduo: number
+  rataMensile: number
+  tasso: number
+  dataFine: Timestamp | string
+  isMutuoVariabile: boolean
 }
 
 // --------------------------------------------------------
@@ -363,6 +377,7 @@ export interface GoalProgress {
 
 export interface GoalWithProgress extends Goal {
   progress: GoalProgress
+  on_track?: boolean
 }
 
 // --------------------------------------------------------
@@ -518,6 +533,7 @@ export interface FonteData extends BaseDocument {
   codice: string
   tipologia: 'aperto' | 'chiuso' | 'pip'
   rendimentoAnnuo?: number
+  totale?: number
   anno?: number
   quotaDipendente?: number
   quotaDatore?: number
@@ -549,6 +565,7 @@ export interface PensionFund extends BaseDocument {
   tipo?: 'aperto' | 'chiuso' | 'pip'
   dataAdesione?: string
   notes?: string
+  tipo?: 'aperto' | 'chiuso' | 'pip'
 }
 
 // --------------------------------------------------------

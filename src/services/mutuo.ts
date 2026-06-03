@@ -154,7 +154,7 @@ export function getPianoAmmortamento(config: MutuoConfig): ApiResult<PianoAmmort
     let totaleInteressi = 0
 
     for (let i = 1; i <= numeroRate; i++) {
-      const dataRata = new Date(dataInizio)
+      const dataRata = new Date(dataInizio.getTime())
       dataRata.setMonth(dataRata.getMonth() + i)
 
       const quotaInteressi = Math.round(debitoResiduo * tassoMensile * 100) / 100

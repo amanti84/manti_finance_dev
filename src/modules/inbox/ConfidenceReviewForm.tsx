@@ -11,16 +11,21 @@ interface ConfidenceReviewFormProps {
 export const ConfidenceReviewForm: FC<ConfidenceReviewFormProps> = ({ item, onSubmit, onCancel }) => {
   const [values, setValues] = useState<Record<string, unknown>>(() => {
     const initial: Record<string, unknown> = {}
-    item.confidenceFields.forEach((f) => {
-      initial[f.fieldName] = f.confirmedValue ?? f.extractedValue
-    })
+    if (Array.isArray(item.confidenceFields)) {
+      item.confidenceFields.forEach((f) => {
+        if (typeof f === 'object' && f !== null) {
+          initial[f.fieldName] = f.confirmedValue ?? f.extractedValue
+        }
+      })
+    }
     return initial
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleChange = (fieldName: string, value: string) => {
-    const field = item.confidenceFields.find((f) => f.fieldName === fieldName)
+    const fields = Array.isArray(item.confidenceFields) ? item.confidenceFields : []
+    const field = fields.find((f) => typeof f === 'object' && f !== null && f.fieldName === fieldName)
     const originalValue = field?.extractedValue
 
     let finalValue: unknown = value
@@ -63,7 +68,8 @@ export const ConfidenceReviewForm: FC<ConfidenceReviewFormProps> = ({ item, onSu
       </p>
 
       <form onSubmit={(e) => { void handleSubmit(e) }}>
-        {item.confidenceFields.map((field) => {
+        {Array.isArray(item.confidenceFields) && item.confidenceFields.map((field) => {
+          if (typeof field !== 'object' || field === null) return null
           const isLowConfidence = field.confidence < 80
           return (
             <div key={field.fieldName} style={{ marginBottom: '16px' }}>

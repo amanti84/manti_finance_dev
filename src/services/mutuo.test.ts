@@ -50,16 +50,28 @@ const makeTimestamp = (d: Date): Timestamp =>
     isEqual: () => false,
   }) as unknown as Timestamp;
 
-const makeMutuoConfig = (overrides: Partial<MutuoConfig> = {}): MutuoConfig => ({
-  importoOriginale: 200000,
-  debitoResiduo: 200000,
-  rataMensile: 1004.52,
-  tasso: 3.5,
-  dataInizio: makeTimestamp(new Date('2023-01-01')),
-  dataFine: makeTimestamp(new Date('2048-01-01')),
-  isMutuoVariabile: false,
-  ...overrides,
-});
+const makeMutuoConfig = (overrides: Partial<MutuoConfig> = {}): MutuoConfig => {
+  const base: MutuoConfig = {
+    id: 'mutuo-001',
+    createdAt: makeTimestamp(new Date()),
+    updatedAt: makeTimestamp(new Date()),
+    importoIniziale: 200000,
+    saldoResiduo: 200000,
+    rata: 1004.52,
+    tassoAnnuo: 3.5,
+    durataAnni: 25,
+    banca: 'Banca Intesa',
+    tipoTasso: 'fisso',
+    importoOriginale: 200000,
+    debitoResiduo: 200000,
+    rataMensile: 1004.52,
+    tasso: 3.5,
+    dataInizio: makeTimestamp(new Date('2023-01-01')),
+    dataFine: makeTimestamp(new Date('2048-01-01')),
+    isMutuoVariabile: false,
+  }
+  return { ...base, ...overrides }
+}
 
 // ---------------------------------------------------------------------------
 // TEST SUITE

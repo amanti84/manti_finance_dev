@@ -200,14 +200,18 @@ export async function deleteGoal(uid: string, goalId: string): Promise<ApiResult
 export function calculateGoalProgress(goal: Goal): GoalProgress {
   const now = new Date()
   const createdAt = goal.createdAt.toDate()
-  const targetDate = goal.targetDate.toDate()
+  const targetDateRaw = goal.targetDate
+  const targetDate = (typeof targetDateRaw === 'object' && targetDateRaw !== null && 'toDate' in targetDateRaw)
+    ? (targetDateRaw as { toDate: () => Date }).toDate()
+    : new Date(targetDateRaw)
 
   // Differenza in mesi tra createdAt e oggi
   const diffInMs = now.getTime() - createdAt.getTime()
   // Approssimazione mesi (30.44 giorni)
   const mesiTrascorsi = Math.max(diffInMs / (1000 * 60 * 60 * 24 * 30.4375), 0.1) // Evita divisione per zero, minimo 0.1 mesi
 
-  const progressAmount = goal.currentAmount - goal.baselineAmount
+  const baselineAmount = goal.baselineAmount ?? 0
+  const progressAmount = goal.currentAmount - baselineAmount
   const tasso = progressAmount / mesiTrascorsi
 
   let projectedCompletionDate: Date | null = null
@@ -222,7 +226,7 @@ export function calculateGoalProgress(goal: Goal): GoalProgress {
   }
 
   const progressPercent = Math.min(
-    Math.max(Math.round(((goal.currentAmount - goal.baselineAmount) / (goal.targetAmount - goal.baselineAmount)) * 100), 0),
+    Math.max(Math.round(((goal.currentAmount - baselineAmount) / (goal.targetAmount - baselineAmount)) * 100), 0),
     100
   )
 
@@ -238,8 +242,11 @@ export function calculateGoalProgress(goal: Goal): GoalProgress {
     goalId: goal.id,
     currentAmount: goal.currentAmount,
     targetAmount: goal.targetAmount,
+    percent: progressPercent,
+    remainingAmount: Math.max(goal.targetAmount - goal.currentAmount, 0),
+    onTrack: isOnTrack,
+    projectedCompletionDate: projectedCompletionDate ? projectedCompletionDate.toISOString() : null,
     progressPercent,
-    projectedCompletionDate,
     isOnTrack,
     milestoneReached,
   }
