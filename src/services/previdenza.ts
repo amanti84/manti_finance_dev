@@ -74,6 +74,7 @@ export function calculateTFRRivalutazione(
 
 /**
  * Calcola il TFR maturato cumulativo dai cedolini per un dato anno.
+ * Aggrega i TFR mensili dal cedolino per ottenere il totale annuo.
  */
 export function calculateTFRFromPayslips(
   payslips: Payslip[],
@@ -114,7 +115,6 @@ export function calculateTFRCumulativo(
     return { success: false, error: 'Nessun dato TFR fornito' }
   }
 
-  // type-guard filter (main): skip entries without annoCompetenza
   const sorted = [...annualData]
     .filter((d): d is TFRData & { annoCompetenza: number } => d.annoCompetenza !== undefined)
     .sort((a, b) => a.annoCompetenza - b.annoCompetenza)
@@ -214,6 +214,7 @@ export interface PensionProjection {
 /**
  * Proiezione montante pensionistico a 67 anni.
  * Usa interesse composto: M = P * (1 + r)^n + C * [(1 + r)^n - 1] / r
+ * dove P = montante attuale, C = contribuzione annua, r = tasso, n = anni
  */
 export function calculatePensionProjection(
   montanteAttuale: number,
@@ -281,6 +282,11 @@ export interface TFRComparison {
   convenienza: 'azienda' | 'fondo' | 'pari'
 }
 
+/**
+ * Confronto TFR in azienda vs fondo pensione.
+ * TFR azienda: rivalutazione = 1.5% + 75% inflazione
+ * TFR fondo: rendimento atteso dal mercato
+ */
 export function compareTFRAziendaVsFondo(
   quotaTfrAnnua: number,
   anni: number,
@@ -424,7 +430,6 @@ export async function recordContribution(
   data: Omit<PensionContribution, 'id' | 'totale' | 'createdAt' | 'updatedAt'>
 ): Promise<ApiResult<string>> {
   try {
-    // optional chaining (main): handles undefined quotaDipendente/quotaDatore/tfrConferito
     const totale = (data.quotaDipendente ?? 0) + (data.quotaDatore ?? 0) + (data.tfrConferito ?? 0)
     await logAudit({ uid, action: 'create', entityType: 'investment', entityId: 'pending' })
     const colRef = collection(db, CONTRIBUTIONS_COLLECTION(uid))
