@@ -36,7 +36,14 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
-    exclude: ['**/node_modules/**', '**/dist/**', '**/functions/**', '**/.{idea,git,cache,output,temp}/**'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/functions/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      // Requires Firebase Emulator on 127.0.0.1:8080 — run separately with: firebase emulators:exec
+      '**/firestore.rules.test.ts',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -46,6 +53,7 @@ export default defineConfig({
         '**/*.d.ts',
         '**/*.config.*',
         'functions/**',
+        '**/firestore.rules.test.ts',
       ],
     },
   },
