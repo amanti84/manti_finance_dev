@@ -75,7 +75,7 @@ export const InboxPage: FC = () => {
     daRivedere: items.filter((i) => {
       const hasLowConf = Array.isArray(i.confidenceFields)
         ? i.confidenceFields.some((f) => typeof f === 'object' && f !== null && f.confidence < 80)
-        : Object.values(i.confidenceFields).some((conf) => (conf as number) < 80)
+        : Object.values(i.confidenceFields).some((conf) => conf < 80)
       return i.status !== 'CONFERMATO' && hasLowConf
     }).length,
     confermati: items.filter((i) => i.status === 'CONFERMATO').length,

@@ -237,16 +237,19 @@ export function calculateBadgeCount(items: InboxItem[]): InboxBadgeCount {
 
   const requiresReviewItems = totalItems.filter((item) => {
     if (Array.isArray(item.confidenceFields)) {
-      return item.confidenceFields.some((field) => typeof field === 'object' && field !== null && (field as any).confidence < 80)
+      return item.confidenceFields.some((field) =>
+        typeof field === 'object' && field !== null && 'confidence' in field && field.confidence < 80
+      )
     }
-    return Object.values(item.confidenceFields).some((conf) => (conf as number) < 80)
+    return Object.values(item.confidenceFields).some((conf) => conf < 80)
   })
 
   const pendingItems = totalItems.filter((item) => item.status === 'RICEVUTO' || item.status === 'pending')
 
-  return {
+  const result: InboxBadgeCount = {
     total: totalItems.length,
     requiresReview: requiresReviewItems.length,
     pending: pendingItems.length,
   }
+  return result
 }

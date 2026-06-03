@@ -184,7 +184,7 @@ describe('KindergartenPage', () => {
 
   it('allows year selection to change the year', () => {
     render(<KindergartenPage />)
-    const select = screen.getByRole('combobox') as HTMLSelectElement
+    const select = screen.getByRole('combobox') as unknown as HTMLSelectElement
     const currentYear = new Date().getFullYear()
     expect(select.value).toBe(String(currentYear))
     fireEvent.change(select, { target: { value: String(currentYear - 1) } })

@@ -23,7 +23,7 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-type MockAuthReturn = {
+interface MockAuthReturn {
   user: User | null
   loading: boolean
   signInWithGoogle: () => Promise<{ success: boolean; error?: string; }>

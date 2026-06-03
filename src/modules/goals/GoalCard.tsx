@@ -93,9 +93,9 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, onDelete, onStatusChan
             {progress.isOnTrack ? '✓ In linea' : '⚠ A rischio'}
           </span>
         </div>
-        {(goal.notes || goal.note) && (
+        {(goal.notes ?? goal.note) && (
           <p className="text-xs text-gray-500 italic mt-2 border-t pt-2">
-            {goal.notes || goal.note}
+            {goal.notes ?? goal.note}
           </p>
         )}
       </div>
