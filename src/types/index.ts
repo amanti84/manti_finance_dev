@@ -1,7 +1,7 @@
 // ============================================================
 // CORE TYPES - manti_finance_dev
 // Modello dati v3 - allineato alle implementazioni reali
-// Aggiornato 03/06/2026 — fix tsc --noEmit (post-mortem #46)
+// Aggiornato 03/06/2026 — merge resolution PR#107 + main
 // ============================================================
 
 import type { Timestamp } from 'firebase/firestore'
@@ -168,6 +168,7 @@ export interface Investment extends BaseDocument {
   isPac: boolean
   pacMonthlyAmount?: number
   lastPriceUpdate: Timestamp
+  // Extra fields from main (auto-update / Yahoo Finance integration)
   tickerOnly?: boolean
   autoUpdate?: boolean
   lastUpdateError?: string | null
@@ -277,9 +278,11 @@ export interface MonthlyVariableComponents {
 
 // --------------------------------------------------------
 // MUTUO
+// Plain interface (v3) — required fields from main as optional for backward compat
 // --------------------------------------------------------
 
 export interface MutuoConfig {
+  // v3 canonical fields
   importoOriginale: number
   debitoResiduo: number
   rataMensile: number
@@ -287,6 +290,7 @@ export interface MutuoConfig {
   dataInizio: Timestamp | string
   dataFine: Timestamp | string
   isMutuoVariabile: boolean
+  // main required fields — kept optional for backward compat
   importoIniziale?: number
   saldoResiduo?: number
   rata?: number
@@ -345,6 +349,7 @@ export interface Goal extends BaseDocument {
   note?: string
 }
 
+// v3 clean shape — no percent/onTrack duplicates
 export interface GoalProgress {
   goalId: string
   progressPercent: number
@@ -404,8 +409,10 @@ export interface InboxItem extends BaseDocument {
   title?: string
   description?: string
   status: InboxItemStatus
-  source: 'email' | 'import' | 'upload'
+  // 'ai_suggestion' added from main
+  source: 'email' | 'import' | 'upload' | 'ai_suggestion'
   confidence?: number
+  // v3: typed ConfidenceField[] (not partial record)
   confidenceFields: ConfidenceField[]
   linkedTransactionId?: string
   suggestedTransaction?: Partial<Transaction>
@@ -420,6 +427,7 @@ export interface InboxItem extends BaseDocument {
 export interface InboxBadgeCount {
   total: number
   requiresReview: number
+  // optional per v3
   pending?: number
 }
 
@@ -465,11 +473,13 @@ export type AuditAction =
   | 'login' | 'logout' | 'export' | 'import'
   | 'snapshot' | 'LEGACY_IMPORT'
 
+// v3 base + 'kindergartenExpense' | 'kindergartenConfig' from main
 export type AuditEntityType =
   | 'transaction' | 'investment' | 'payslip' | 'snapshot'
   | 'goal' | 'document' | 'inbox' | 'alert' | 'config'
   | 'account' | 'recurringExpense' | 'inboxItem'
   | 'scenario' | 'monthlyClose'
+  | 'kindergartenExpense' | 'kindergartenConfig'
 
 export interface AuditLogEntry extends BaseDocument {
   action: AuditAction
@@ -481,7 +491,9 @@ export interface AuditLogEntry extends BaseDocument {
   ipHash?: string
   ipAddress?: string
   userAgent?: string
+  // strict union (v3) — no loose string
   source?: 'user' | 'import' | 'system'
+  // non-nullable (v3)
   previousValue?: Record<string, unknown>
   newValue?: Record<string, unknown>
 }
@@ -539,6 +551,13 @@ export interface PensionFund extends BaseDocument {
   dataAdesione?: string
   notes?: string
 }
+
+// --------------------------------------------------------
+// KINDERGARTEN (legacy expense model — deprecato in PR#107)
+// Nuovo modello: src/types/kindergarten.ts (investments/PAC)
+// /users/{uid}/kindergartenExpenses/{expenseId}  <- legacy
+// /users/{uid}/config/kindergarten               <- legacy
+// --------------------------------------------------------
 
 export type KindergartenCategory =
   | 'retta' | 'mensa' | 'attivita_extra' | 'materiale' | 'altro'
