@@ -109,7 +109,7 @@ describe('AdminPage', () => {
     })
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://us-central1-mantifinance.cloudfunctions.net/seedUserData',
+      'https://us-central1-mantifinance.cloudfunctions.net/seeduserdata',
       expect.objectContaining({
         method: 'POST',
         headers: {

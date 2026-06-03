@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { KindergartenPage } from './KindergartenPage'
 import { useAuth } from '../../hooks/useAuth'
 import { useKindergarten } from './useKindergarten'
 import type { User } from 'firebase/auth'
+import { Timestamp } from 'firebase/firestore'
 import type { KindergartenExpense, KindergartenConfig, KindergartenSummary } from '../../types'
 
 vi.mock('../../hooks/useAuth', () => ({
@@ -19,6 +20,8 @@ const mockUser: User = {
   email: 'amanti84@gmail.com',
 } as unknown as User
 
+const mockTimestamp = Timestamp.now()
+
 const mockExpenses: KindergartenExpense[] = [
   {
     id: 'exp-1',
@@ -28,8 +31,8 @@ const mockExpenses: KindergartenExpense[] = [
     month: 1,
     category: 'retta',
     frequency: 'monthly',
-    createdAt: {} as ReturnType<typeof import('firebase/firestore').serverTimestamp>,
-    updatedAt: {} as ReturnType<typeof import('firebase/firestore').serverTimestamp>,
+    createdAt: mockTimestamp,
+    updatedAt: mockTimestamp,
   },
   {
     id: 'exp-2',
@@ -39,8 +42,8 @@ const mockExpenses: KindergartenExpense[] = [
     month: 1,
     category: 'mensa',
     frequency: 'monthly',
-    createdAt: {} as ReturnType<typeof import('firebase/firestore').serverTimestamp>,
-    updatedAt: {} as ReturnType<typeof import('firebase/firestore').serverTimestamp>,
+    createdAt: mockTimestamp,
+    updatedAt: mockTimestamp,
   },
 ]
 
@@ -48,8 +51,8 @@ const mockConfig: KindergartenConfig = {
   id: 'kindergarten',
   monthlyBudget: 400,
   alertOnOverBudget: true,
-  createdAt: {} as ReturnType<typeof import('firebase/firestore').serverTimestamp>,
-  updatedAt: {} as ReturnType<typeof import('firebase/firestore').serverTimestamp>,
+  createdAt: mockTimestamp,
+  updatedAt: mockTimestamp,
 }
 
 const mockSummary: KindergartenSummary = {

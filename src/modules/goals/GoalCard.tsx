@@ -1,4 +1,5 @@
 import React from 'react'
+import { Timestamp } from 'firebase/firestore'
 import type { Goal, GoalStatus } from '../../types'
 import { calculateGoalProgress } from '../../services/goal'
 
@@ -68,13 +69,21 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, onDelete, onStatusChan
       <div className="flex-grow space-y-2 mb-6">
         <div className="flex justify-between text-sm">
           <span className="text-gray-500">Data Target:</span>
-          <span className="font-medium">{goal.targetDate.toDate().toLocaleDateString('it-IT')}</span>
+          <span className="font-medium">
+            {(goal.targetDate instanceof Timestamp
+              ? goal.targetDate.toDate()
+              : new Date(goal.targetDate)
+            ).toLocaleDateString('it-IT')}
+          </span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-gray-500">Proiezione:</span>
           <span className={`font-medium ${progress.isOnTrack ? 'text-green-600' : 'text-orange-600'}`}>
             {progress.projectedCompletionDate
-              ? progress.projectedCompletionDate.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' })
+              ? new Date(progress.projectedCompletionDate).toLocaleDateString('it-IT', {
+                  month: 'long',
+                  year: 'numeric',
+                })
               : 'N/A'}
           </span>
         </div>
@@ -84,8 +93,10 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, onDelete, onStatusChan
             {progress.isOnTrack ? '✓ In linea' : '⚠ A rischio'}
           </span>
         </div>
-        {goal.note && (
-          <p className="text-xs text-gray-500 italic mt-2 border-t pt-2">{goal.note}</p>
+        {(goal.notes || goal.note) && (
+          <p className="text-xs text-gray-500 italic mt-2 border-t pt-2">
+            {goal.notes || goal.note}
+          </p>
         )}
       </div>
 

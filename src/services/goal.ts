@@ -200,7 +200,9 @@ export async function deleteGoal(uid: string, goalId: string): Promise<ApiResult
 export function calculateGoalProgress(goal: Goal): GoalProgress {
   const now = new Date()
   const createdAt = goal.createdAt.toDate()
-  const targetDate = goal.targetDate instanceof Timestamp ? goal.targetDate.toDate() : new Date(goal.targetDate)
+  const targetDate = typeof goal.targetDate === 'object' && 'toDate' in goal.targetDate
+    ? (goal.targetDate as any).toDate()
+    : new Date(goal.targetDate)
 
   // Differenza in mesi tra createdAt e oggi
   const diffInMs = now.getTime() - createdAt.getTime()

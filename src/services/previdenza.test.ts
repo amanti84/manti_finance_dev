@@ -301,9 +301,8 @@ describe('createPensionFund', () => {
     const result = await createPensionFund('user-123', {
       nome: 'Fon.Te',
       codice: 'FONTE',
-      tipo: 'aperto',
-      contribuzioneAnnua: 2000,
       tipologia: 'aperto',
+      contribuzioneAnnua: 2000,
       saldoAttuale: 15000,
     })
     expect(result.success).toBe(true)
@@ -317,8 +316,9 @@ describe('createPensionFund', () => {
     ;(addDoc as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase error'))
     const result = await createPensionFund('user-123', {
       nome: 'Fon.Te',
-      tipo: 'fonte',
-      lineaInvestimento: 'Dinamico',
+      codice: 'FONTE',
+      tipologia: 'aperto',
+      contribuzioneAnnua: 2000,
       saldoAttuale: 15000,
     })
     expect(result.success).toBe(false)
@@ -378,7 +378,7 @@ describe('getPensionFund', () => {
     ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       exists: () => true,
       id: 'fund-001',
-      data: () => ({ nome: 'Fon.Te', tipo: 'fonte', lineaInvestimento: 'Dinamico', saldoAttuale: 15000 }),
+      data: () => ({ nome: 'Fon.Te', tipologia: 'aperto', codice: 'FONTE', contribuzioneAnnua: 2000, saldoAttuale: 15000 }),
     })
     const result = await getPensionFund('user-123', 'fund-001')
     expect(result.success).toBe(true)
@@ -406,7 +406,7 @@ describe('getAllPensionFunds', () => {
     ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
     ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
       forEach: (cb: (d: { id: string; data: () => Record<string, unknown> }) => void) => {
-        cb({ id: 'fund-001', data: () => ({ nome: 'Fon.Te', tipo: 'fonte', lineaInvestimento: 'Dinamico', saldoAttuale: 15000 }) })
+        cb({ id: 'fund-001', data: () => ({ nome: 'Fon.Te', tipologia: 'aperto', codice: 'FONTE', contribuzioneAnnua: 2000, saldoAttuale: 15000 }) })
       },
     })
     const result = await getAllPensionFunds('user-123')

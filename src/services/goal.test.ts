@@ -83,10 +83,10 @@ describe('goal service', () => {
       expect(progress.isOnTrack).toBe(true)
     })
 
-    it('should return undefined projectedCompletionDate when no progress', () => {
+    it('should return null projectedCompletionDate when no progress', () => {
       const noProgressGoal = { ...mockGoal, currentAmount: 0 }
       const progress = calculateGoalProgress(noProgressGoal)
-      expect(progress.projectedCompletionDate).toBeUndefined()
+      expect(progress.projectedCompletionDate).toBeNull()
       expect(progress.isOnTrack).toBe(false)
     })
 
