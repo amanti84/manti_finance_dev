@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import KindergartenPage from './KindergartenPage'
 import { useKindergartenInvestments } from './useKindergartenInvestments'
 import { useKindergartenPacs } from './useKindergartenPacs'
@@ -45,7 +45,7 @@ const defaultInvHook = {
   error: null,
   addInvestment: vi.fn(),
   updateInvestment: vi.fn(),
-  deleteInvestment: vi.fn(),
+  deleteInvestment: vi.fn().mockResolvedValue(undefined),
   refresh: vi.fn(),
 }
 
@@ -62,13 +62,15 @@ const defaultPacHook = {
   error: null,
   addPAC: vi.fn(),
   updatePAC: vi.fn(),
-  deletePAC: vi.fn(),
+  deletePAC: vi.fn().mockResolvedValue(undefined),
   refresh: vi.fn(),
 }
 
 describe('KindergartenPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // jsdom returns false for window.confirm by default — must mock explicitly
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(useKindergartenInvestments).mockReturnValue(defaultInvHook)
     vi.mocked(useKindergartenPacs).mockReturnValue(defaultPacHook)
   })
@@ -105,11 +107,14 @@ describe('KindergartenPage', () => {
     expect(screen.getByText('PAC Futuro')).toBeTruthy()
   })
 
-  it('calls deleteInvestment when delete button is clicked and confirmed', () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('calls deleteInvestment when delete button is clicked and confirmed', async () => {
     render(<KindergartenPage uid="test-uid" />)
     const deleteButtons = screen.getAllByText('Elimina')
-    fireEvent.click(deleteButtons[0])
-    expect(defaultInvHook.deleteInvestment).toHaveBeenCalledWith('inv-1')
+    await act(async () => {
+      fireEvent.click(deleteButtons[0])
+    })
+    await waitFor(() => {
+      expect(defaultInvHook.deleteInvestment).toHaveBeenCalledWith('inv-1')
+    })
   })
 })
