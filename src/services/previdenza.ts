@@ -144,6 +144,7 @@ export function calculateTFRCumulativo(
 
 /**
  * Calcola il totale versamenti Fon.Te per un anno dai cedolini.
+ * Returns full FonteData with id/nome/codice/tipologia/timestamps (main version).
  */
 export function calculateFonteFromPayslips(
   payslips: Payslip[],
@@ -162,15 +163,15 @@ export function calculateFonteFromPayslips(
   return {
     success: true,
     data: {
-      nome: 'Fon.Te', // Placeholder
-      codice: 'FONTE', // Placeholder
-      tipologia: 'chiuso', // Placeholder
+      id: `fonte-${anno}`,
+      nome: 'Fon.Te',
+      codice: 'FONTE',
+      tipologia: 'chiuso',
       anno,
       quotaDipendente: Math.round(quotaDipendente * 100) / 100,
       quotaDatore: Math.round(quotaDatore * 100) / 100,
       tfr: Math.round(tfrConferito * 100) / 100,
       totale: Math.round(totale * 100) / 100,
-      id: `fonte-${anno}`,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     },

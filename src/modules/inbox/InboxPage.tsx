@@ -2,9 +2,13 @@ import type { FC } from 'react'
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { listInboxItems, confirmInboxItem, deleteInboxItem } from '../../services/inbox'
-import type { InboxItem, InboxItemStatus } from '../../types'
+import type { InboxItem, InboxItemStatus, ConfidenceField } from '../../types'
 import { InboxItemCard } from './InboxItemCard'
 import { ConfidenceReviewForm } from './ConfidenceReviewForm'
+
+function hasLowConfidence(fields: ConfidenceField[]): boolean {
+  return fields.some((f) => f.confidence < 80)
+}
 
 export const InboxPage: FC = () => {
   const { user } = useAuth()
@@ -57,7 +61,6 @@ export const InboxPage: FC = () => {
     const confermati = items.filter((i) => i.status === 'CONFERMATO')
     if (confermati.length === 0) return
     if (!window.confirm(`Stai per eliminare ${confermati.length} elementi confermati. Continuare?`)) return
-
     setLoading(true)
     for (const item of confermati) {
       await deleteInboxItem(user.uid, item.id)
@@ -72,12 +75,7 @@ export const InboxPage: FC = () => {
 
   const stats = {
     all: items.length,
-    daRivedere: items.filter((i) => {
-      const hasLowConf = Array.isArray(i.confidenceFields)
-        ? i.confidenceFields.some((f) => typeof f === 'object' && f !== null && f.confidence < 80)
-        : Object.values(i.confidenceFields).some((conf) => conf < 80)
-      return i.status !== 'CONFERMATO' && hasLowConf
-    }).length,
+    daRivedere: items.filter((i) => i.status !== 'CONFERMATO' && hasLowConfidence(i.confidenceFields)).length,
     confermati: items.filter((i) => i.status === 'CONFERMATO').length,
     errori: items.filter((i) => i.status === 'ERRORE').length,
   }
@@ -93,7 +91,6 @@ export const InboxPage: FC = () => {
           Aggiorna
         </button>
       </div>
-
       {reviewingItem ? (
         <ConfidenceReviewForm
           item={reviewingItem}
@@ -121,7 +118,6 @@ export const InboxPage: FC = () => {
               </button>
             ))}
           </div>
-
           {stats.confermati > 0 && (
             <button
               onClick={() => { void handleSvuotaConfermati() }}
@@ -139,7 +135,6 @@ export const InboxPage: FC = () => {
               Svuota confermati
             </button>
           )}
-
           {loading ? (
             <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>Caricamento...</div>
           ) : error ? (

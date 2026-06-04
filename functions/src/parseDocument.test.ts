@@ -27,6 +27,11 @@ describe('parseDocument helpers', () => {
       expect(classifyDocumentType(text)).toBe('conferma_investimento')
     })
 
+    it('should classify estratto_conto by keyword "riepilogo"', () => {
+      const text = 'Riepilogo delle transazioni mensili'
+      expect(classifyDocumentType(text)).toBe('estratto_conto')
+    })
+
     it('should return "altro" for unrecognized text', () => {
       const text = 'Testo generico senza keyword'
       expect(classifyDocumentType(text)).toBe('altro')
@@ -42,6 +47,11 @@ describe('parseDocument helpers', () => {
     it('should extract month and year from pattern "05/2026"', () => {
       const text = 'Periodo 05/2026'
       expect(extractMonth(text)).toEqual({ month: 5, year: 2026, confidence: 90 })
+    })
+
+    it('should extract month and year from pattern "05-2026" (dash separator)', () => {
+      const text = 'Competenza 12-2025'
+      expect(extractMonth(text)).toEqual({ month: 12, year: 2025, confidence: 90 })
     })
 
     it('should return confidence 0 for text without date', () => {
@@ -88,6 +98,15 @@ describe('parseDocument helpers', () => {
         { fieldName: 'inps', extractedValue: '300,00', confidence: 75 },
         { fieldName: 'tfr', extractedValue: '100,00', confidence: 70 },
       ])
+    })
+
+    it('should return empty values when fields are not present in cedolino text', () => {
+      const text = 'Questo è un cedolino ma senza cifre'
+      const fields = extractFields(text, 'cedolino')
+      fields.forEach(f => {
+        expect(f.extractedValue).toBe('')
+        expect(f.confidence).toBe(0)
+      })
     })
   })
 })

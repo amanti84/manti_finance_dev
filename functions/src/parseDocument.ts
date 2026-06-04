@@ -26,7 +26,8 @@ export function classifyDocumentType(text: string): ParsedDocumentType {
   if (
     lowerText.includes('estratto conto') ||
     lowerText.includes('saldo') ||
-    lowerText.includes('movimenti')
+    lowerText.includes('movimenti') ||
+    lowerText.includes('riepilogo')
   ) {
     return 'estratto_conto'
   }

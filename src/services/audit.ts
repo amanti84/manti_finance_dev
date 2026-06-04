@@ -17,9 +17,6 @@ import {
 import { db } from '../firebase'
 import type { AuditLogEntry, AuditAction, AuditEntityType } from '../types'
 
-// --------------------------------------------------------
-// TYPES
-// --------------------------------------------------------
 export interface AuditEntryInput {
   uid: string
   action: AuditAction
@@ -36,17 +33,11 @@ export interface AuditFilter {
   action?: AuditAction
   limitN?: number
 }
-// --------------------------------------------------------
-// SERVICE
-// --------------------------------------------------------
-/**
- * Registra un evento audit (write-only).
- */
+
 export async function logAudit(
   input: AuditEntryInput
 ): Promise<AuditLogEntry> {
   const ref = collection(db, 'users', input.uid, 'audit')
-  // Usa spread per gestire exactOptionalPropertyTypes
   const entry: Omit<AuditLogEntry, 'id'> = {
     uid: input.uid,
     createdAt: Timestamp.now(),
@@ -66,9 +57,6 @@ export async function logAudit(
   }
 }
 
-/**
- * Recupera i record audit con filtri opzionali.
- */
 export async function getAuditLog(
   uid: string,
   filter: AuditFilter = {}
@@ -93,9 +81,6 @@ export async function getAuditLog(
   }) as AuditLogEntry)
 }
 
-/**
- * Helper: logga una modifica a un'entita' finanziaria.
- */
 export async function logChange(
   uid: string,
   entityType: AuditEntityType,
@@ -113,9 +98,6 @@ export async function logChange(
   })
 }
 
-/**
- * Helper: logga la creazione di un'entita'.
- */
 export async function logCreate(
   uid: string,
   entityType: AuditEntityType,
@@ -131,9 +113,6 @@ export async function logCreate(
   })
 }
 
-/**
- * Helper: logga la cancellazione di un'entita'.
- */
 export async function logDelete(
   uid: string,
   entityType: AuditEntityType,
