@@ -60,7 +60,7 @@ describe('kindergartenPac service', () => {
 
     const callArgs = mockCol.mock.calls[0]
     expect(callArgs).toContain('kindergarten_pacs')
-    expect(callArgs).toEqual(expect.not.arrayContaining(['pacs']))
+    expect(callArgs).not.toContain('pacs')
   })
 
   it('getKindergartenPACs: ritorna lista PAC', async () => {

@@ -12,7 +12,7 @@ import { MonthlyClosePage } from './modules/monthlyClose'
 import { MutuoPage } from './modules/mutuo'
 import { InvestimentiPage } from './modules/investimenti'
 import { PrevidenzaPage } from './modules/previdenza'
-import { KindergartenPage } from './modules/kindergarten'
+import KindergartenPage from './modules/kindergarten/KindergartenPage'
 import { DocumentiPage } from './modules/documenti'
 import { WhatIfPage } from './modules/whatIf'
 import { AlertsPage } from './modules/alerts'
@@ -46,7 +46,7 @@ function App(): React.ReactElement {
             <Route path="/monthly-close" element={user ? <MonthlyClosePage uid={user.uid} /> : null} />
             <Route path="/mutuo" element={<MutuoPage />} />
             <Route path="/previdenza" element={<PrevidenzaPage />} />
-            <Route path="/kindergarten" element={<KindergartenPage />} />
+            <Route path="/kindergarten" element={user ? <KindergartenPage uid={user.uid} /> : null} />
             <Route path="/documenti" element={<DocumentiPage />} />
             <Route path="/what-if" element={<WhatIfPage />} />
             <Route path="/alerts" element={<AlertsPage />} />

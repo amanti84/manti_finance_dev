@@ -17,9 +17,6 @@ import { logAudit } from './audit'
 
 const COLLECTION = (uid: string) => `users/${uid}/goals`
 
-/**
- * Crea un nuovo goal
- */
 export async function createGoal(
   uid: string,
   input: {
@@ -42,21 +39,15 @@ export async function createGoal(
       currentAmount: input.baselineAmount,
       status: 'active',
       ...(input.note !== undefined ? { note: input.note } : {}),
-      createdAt: Timestamp.now(), // Fallback for local result, Firestore will use serverTimestamp
+      createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     }
-
     const docRef = await addDoc(colRef, {
       ...goalData,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
-
-    const newGoal: Goal = {
-      id: docRef.id,
-      ...goalData,
-    }
-
+    const newGoal: Goal = { id: docRef.id, ...goalData }
     await logAudit({
       uid,
       action: 'create',
@@ -64,16 +55,12 @@ export async function createGoal(
       entityId: docRef.id,
       newValue: newGoal as unknown as Record<string, unknown>,
     })
-
     return { success: true, data: newGoal }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
-/**
- * Restituisce tutti i goal dell'utente ordinati per targetDate ASC
- */
 export async function listGoals(uid: string): Promise<ApiResult<Goal[]>> {
   try {
     const colRef = collection(db, COLLECTION(uid))
@@ -86,9 +73,6 @@ export async function listGoals(uid: string): Promise<ApiResult<Goal[]>> {
   }
 }
 
-/**
- * Aggiorna currentAmount di un goal (chiamato ogni monthly close)
- */
 export async function updateGoalProgress(
   uid: string,
   goalId: string,
@@ -98,38 +82,20 @@ export async function updateGoalProgress(
     const docRef = doc(db, COLLECTION(uid), goalId)
     const snap = await getDoc(docRef)
     if (!snap.exists()) return { success: false, error: 'Goal non trovato' }
-
     const previousValue = snap.data() as Goal
-    await updateDoc(docRef, {
-      currentAmount,
-      updatedAt: serverTimestamp(),
-    })
-
-    const updatedGoal: Goal = {
-      ...previousValue,
-      id: goalId,
-      currentAmount,
-      updatedAt: Timestamp.now(),
-    }
-
+    await updateDoc(docRef, { currentAmount, updatedAt: serverTimestamp() })
+    const updatedGoal: Goal = { ...previousValue, id: goalId, currentAmount, updatedAt: Timestamp.now() }
     await logAudit({
-      uid,
-      action: 'update',
-      entityType: 'goal',
-      entityId: goalId,
+      uid, action: 'update', entityType: 'goal', entityId: goalId,
       previousValue: { currentAmount: previousValue.currentAmount },
       newValue: { currentAmount },
     })
-
     return { success: true, data: updatedGoal }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
-/**
- * Cambia status di un goal
- */
 export async function updateGoalStatus(
   uid: string,
   goalId: string,
@@ -139,76 +105,45 @@ export async function updateGoalStatus(
     const docRef = doc(db, COLLECTION(uid), goalId)
     const snap = await getDoc(docRef)
     if (!snap.exists()) return { success: false, error: 'Goal non trovato' }
-
     const previousValue = snap.data() as Goal
-    await updateDoc(docRef, {
-      status,
-      updatedAt: serverTimestamp(),
-    })
-
-    const updatedGoal: Goal = {
-      ...previousValue,
-      id: goalId,
-      status,
-      updatedAt: Timestamp.now(),
-    }
-
+    await updateDoc(docRef, { status, updatedAt: serverTimestamp() })
+    const updatedGoal: Goal = { ...previousValue, id: goalId, status, updatedAt: Timestamp.now() }
     await logAudit({
-      uid,
-      action: 'update',
-      entityType: 'goal',
-      entityId: goalId,
+      uid, action: 'update', entityType: 'goal', entityId: goalId,
       previousValue: { status: previousValue.status },
       newValue: { status },
     })
-
     return { success: true, data: updatedGoal }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
-/**
- * Elimina un goal
- */
 export async function deleteGoal(uid: string, goalId: string): Promise<ApiResult<void>> {
   try {
     const docRef = doc(db, COLLECTION(uid), goalId)
     const snap = await getDoc(docRef)
     if (!snap.exists()) return { success: false, error: 'Goal non trovato' }
-
     const previousValue = snap.data()
     await deleteDoc(docRef)
-
-    await logAudit({
-      uid,
-      action: 'delete',
-      entityType: 'goal',
-      entityId: goalId,
-      previousValue: previousValue,
-    })
-
+    await logAudit({ uid, action: 'delete', entityType: 'goal', entityId: goalId, previousValue })
     return { success: true, data: undefined }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 
-/**
- * Calcola avanzamento e proiezione — funzione PURA, no async, no Firestore
- */
 export function calculateGoalProgress(goal: Goal): GoalProgress {
   const now = new Date()
   const createdAt = goal.createdAt.toDate()
   const targetDateRaw = goal.targetDate
-  const targetDate = (typeof targetDateRaw === 'object' && targetDateRaw !== null && 'toDate' in targetDateRaw)
-    ? (targetDateRaw as { toDate: () => Date }).toDate()
-    : new Date(targetDateRaw)
+  const targetDate =
+    typeof targetDateRaw === 'object' && targetDateRaw !== null && 'toDate' in targetDateRaw
+      ? (targetDateRaw as { toDate: () => Date }).toDate()
+      : new Date(targetDateRaw)
 
-  // Differenza in mesi tra createdAt e oggi
   const diffInMs = now.getTime() - createdAt.getTime()
-  // Approssimazione mesi (30.44 giorni)
-  const mesiTrascorsi = Math.max(diffInMs / (1000 * 60 * 60 * 24 * 30.4375), 0.1) // Evita divisione per zero, minimo 0.1 mesi
+  const mesiTrascorsi = Math.max(diffInMs / (1000 * 60 * 60 * 24 * 30.4375), 0.1)
 
   const baselineAmount = goal.baselineAmount ?? 0
   const progressAmount = goal.currentAmount - baselineAmount
@@ -226,7 +161,10 @@ export function calculateGoalProgress(goal: Goal): GoalProgress {
   }
 
   const progressPercent = Math.min(
-    Math.max(Math.round(((goal.currentAmount - baselineAmount) / (goal.targetAmount - baselineAmount)) * 100), 0),
+    Math.max(
+      Math.round(((goal.currentAmount - baselineAmount) / (goal.targetAmount - baselineAmount)) * 100),
+      0
+    ),
     100
   )
 
@@ -242,10 +180,8 @@ export function calculateGoalProgress(goal: Goal): GoalProgress {
     goalId: goal.id,
     currentAmount: goal.currentAmount,
     targetAmount: goal.targetAmount,
-    percent: progressPercent,
     remainingAmount: Math.max(goal.targetAmount - goal.currentAmount, 0),
-    onTrack: isOnTrack,
-    projectedCompletionDate: projectedCompletionDate ? projectedCompletionDate.toISOString() : null,
+    projectedCompletionDate,
     progressPercent,
     isOnTrack,
     milestoneReached,
