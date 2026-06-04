@@ -110,7 +110,7 @@ describe('KindergartenPage', () => {
   it('calls deleteInvestment when delete button is clicked and confirmed', async () => {
     render(<KindergartenPage uid="test-uid" />)
     const deleteButtons = screen.getAllByText('Elimina')
-    await act(async () => {
+    act(() => {
       fireEvent.click(deleteButtons[0])
     })
     await waitFor(() => {
