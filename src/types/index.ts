@@ -433,6 +433,30 @@ export interface InboxBadgeCount {
 }
 
 // --------------------------------------------------------
+// PARSE DOCUMENT (Issue #29)
+// --------------------------------------------------------
+
+export type ParsedDocumentType =
+  | 'cedolino'
+  | 'estratto_conto'
+  | 'conferma_investimento'
+  | 'altro'
+
+export interface ParsedField {
+  fieldName: string
+  extractedValue: string
+  confidence: number
+}
+
+export interface ParseDocumentResult {
+  documentType: ParsedDocumentType
+  month?: number
+  year?: number
+  fields: ParsedField[]
+  rawText: string
+}
+
+// --------------------------------------------------------
 // DOCUMENTI
 // --------------------------------------------------------
 
