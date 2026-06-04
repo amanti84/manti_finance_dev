@@ -57,8 +57,10 @@ describe('kindergartenInvestment service', () => {
     await getKindergartenInvestments(UID)
 
     const callArgs = vi.mocked(collection).mock.calls[0]
+    // Verify 'kindergarten_investments' is present as an exact element
     expect(callArgs).toContain('kindergarten_investments')
-    expect(callArgs).not.toContain('investments')
+    // Verify no element is exactly 'investments' (standalone, not as substring)
+    expect(callArgs).toEqual(expect.not.arrayContaining(['investments']))
   })
 
   it('include uid nel path della collection', async () => {
