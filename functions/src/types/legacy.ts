@@ -25,7 +25,9 @@ export interface LegacyInvestment {
   ticker?: string;
   type: string;
   amountInvested: number;
+  avgCost?: number;
   currentValue: number;
+  lastPrice?: number;
   quantity?: number;
   shares?: number;
   purchaseDate: string;

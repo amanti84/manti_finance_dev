@@ -99,13 +99,20 @@ export const migrateFromLegacy = onCall(async (request) => {
   const kgInvestmentsLegacy = kgInvestmentsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyKindergartenInvestment)
 
   // Calcolo totali legacy per validazione
+  // Usiamo amountInvested come fonte primaria per gli investimenti se disponibile,
+  // altrimenti ripieghiamo sul calcolo avgCost * shares/quantity
+  const getLegacyInvestmentCost = (i: LegacyInvestment | LegacyKindergartenInvestment) => {
+    if ('amountInvested' in i && i.amountInvested > 0) return i.amountInvested
+    return (i.avgCost || 0) * ((i as any).shares ?? (i as any).quantity ?? 0)
+  }
+
   report.validation.adultTotalInvested_legacy =
     pacsLegacy.reduce((sum, p) => sum + ((p.avgCost || 0) * (p.shares || 0)), 0) +
-    investmentsLegacy.reduce((sum, i) => sum + ((i.avgCost || 0) * (i.shares ?? i.quantity ?? 0)), 0)
+    investmentsLegacy.reduce((sum, i) => sum + getLegacyInvestmentCost(i), 0)
 
   report.validation.kindergartenTotalInvested_legacy =
     kgPacsLegacy.reduce((sum, p) => sum + ((p.avgCost || 0) * (p.shares || 0)), 0) +
-    kgInvestmentsLegacy.reduce((sum, i) => sum + ((i.avgCost || 0) * (i.shares || 0)), 0)
+    kgInvestmentsLegacy.reduce((sum, i) => sum + getLegacyInvestmentCost(i), 0)
 
   // Processo di migrazione
   const collectionsToMigrate = [
@@ -161,7 +168,13 @@ export const migrateFromLegacy = onCall(async (request) => {
         } else {
           const i = item as LegacyInvestment | LegacyKindergartenInvestment
           const quantity = Number((i as any).shares ?? (i as any).quantity ?? 0)
-          const avgCost = Number((i as any).avgCost || 0)
+
+          // Calcola avgCost se manca ma abbiamo amountInvested
+          let avgCost = Number((i as any).avgCost || 0)
+          if (avgCost === 0 && (i as any).amountInvested > 0 && quantity > 0) {
+            avgCost = (i as any).amountInvested / quantity
+          }
+
           const currentPrice = Number((i as any).lastPrice || (i as any).currentValue / (quantity || 1) || 0)
 
           docData = {
