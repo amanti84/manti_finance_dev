@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 import { useEffect, useState, useCallback } from 'react'
-import type { Investment } from '../../types'
-import { getPacPaymentsByInvestment, getPacSummary, type PacPayment, type PacSummary } from '../../services/pac'
+import type { Investment, PacPayment, PacSummary } from '../../types'
+import { getPacPaymentsByInvestment, getPacSummary } from '../../services/pac'
 
 interface PacDetailProps {
   uid: string

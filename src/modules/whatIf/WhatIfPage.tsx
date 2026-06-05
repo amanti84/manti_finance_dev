@@ -35,11 +35,13 @@ export const WhatIfPage: FC = () => {
 
   const loadInitialData = useCallback(async () => {
     if (!user) return
-    const [snaps, scenarios] = await Promise.all([
+    const [snapsResult, scenarios] = await Promise.all([
       listSnapshots(user.uid, 1),
       getSavedScenarios(user.uid),
     ])
-    if (snaps.length > 0) setBaseline(snaps[0])
+    if (snapsResult.success && snapsResult.data.length > 0) {
+      setBaseline(snapsResult.data[0])
+    }
     if (scenarios.success) setSavedScenarios(scenarios.data)
   }, [user])
 

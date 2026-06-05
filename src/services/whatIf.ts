@@ -112,7 +112,8 @@ export async function simulateScenario(
   input: ScenarioInput
 ): Promise<ApiResult<ScenarioOutput>> {
   try {
-    const snapshots = await listSnapshots(uid, 1)
+    const snapshotsResult = await listSnapshots(uid, 1)
+    const snapshots = snapshotsResult.success ? snapshotsResult.data : []
     const latestSnapshot = snapshots.length > 0 ? snapshots[0] : null
     const patrimonioAttuale = latestSnapshot?.patrimonioNetto ?? 0
 

@@ -130,7 +130,7 @@ export async function closeMonth(
     const tfr = payslipsRes.data.reduce((sum, p) => sum + (p.tfr || 0), 0)
 
     // 4. Creazione Snapshot
-    const snapshot = await createSnapshot({
+    const snapshotResult = await createSnapshot({
       uid,
       year,
       month,
@@ -143,6 +143,9 @@ export async function closeMonth(
       altriDebiti: 0,
       note: `Chiusura automatica mese ${month}/${year}`,
     })
+
+    if (!snapshotResult.success) return { success: false, error: snapshotResult.error }
+    const snapshot = snapshotResult.data
 
     // 5. Salvataggio record chiusura
     const closeResult: MonthlyCloseResult = {

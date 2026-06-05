@@ -4,7 +4,7 @@ import { listSnapshots } from '../../services/snapshot';
 import { getAvailableBalance } from '../../services/cashflow';
 import { getPayslips } from '../../services/payroll';
 import { calculateAllocatableSurplus } from '../../services/payroll';
-import type { DecisionResult, DecisionContext } from '../../services/decision-engine';
+import type { DecisionResult, DecisionContext } from '../../types';
 
 interface DecisionWidgetProps {
   uid: string;
@@ -18,12 +18,12 @@ const DecisionWidget: React.FC<DecisionWidgetProps> = ({ uid }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const snapshots = await listSnapshots(uid, 1);
+        const snapshotsResult = await listSnapshots(uid, 1);
         const balanceResult = await getAvailableBalance(uid);
         const payslipsResult = await getPayslips(uid);
 
-        if (snapshots.length > 0 && balanceResult.success && payslipsResult.success) {
-          const lastSnapshot = snapshots[0];
+        if (snapshotsResult.success && snapshotsResult.data.length > 0 && balanceResult.success && payslipsResult.success) {
+          const lastSnapshot = snapshotsResult.data[0];
           const payslips = payslipsResult.data || [];
 
           const allocatableResult = calculateAllocatableSurplus(payslips);

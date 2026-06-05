@@ -125,7 +125,7 @@ describe('monthlyClose service', () => {
       vi.mocked(payroll.getPayslips).mockResolvedValue({ success: true, data: [{ tfr: 100 }] as Payslip[] })
 
       // Mock for snapshot creation
-      vi.mocked(snapshot.createSnapshot).mockResolvedValue({ id: 'snap-123' } as PatrimonioSnapshot)
+      vi.mocked(snapshot.createSnapshot).mockResolvedValue({ success: true, data: { id: 'snap-123' } as PatrimonioSnapshot })
 
       const result = await closeMonth(uid, year, month)
 

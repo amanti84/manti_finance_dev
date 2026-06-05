@@ -41,7 +41,7 @@ export const DocumentLinkModal: React.FC<DocumentLinkModalProps> = ({
           if (result.success) setEntities(result.data)
         } else if (entityType === 'snapshot') {
           const result = await listSnapshots(uid)
-          setEntities(result)
+          if (result.success) setEntities(result.data)
         }
       } catch (error) {
         console.error('Error fetching entities:', error)

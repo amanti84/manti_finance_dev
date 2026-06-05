@@ -13,49 +13,8 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import type { DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
-import type { ApiResult } from '../types';
+import type { ApiResult, DecisionContext, DecisionResult, DecisionRecord } from '../types';
 import { logAudit } from './audit';
-
-// ---------------------------------------------------------------------------
-// TYPES
-// ---------------------------------------------------------------------------
-export interface DecisionRule {
-  id: string;
-  condition: string;
-  action: string;
-  priority: number;
-  enabled: boolean;
-}
-
-export interface DecisionContext {
-  uid: string;
-  surplusMensile: number;
-  sogliaInvestimento: number;
-  debitoResiduoMutuo: number;
-  anniResiduiMutuo: number;
-  sogliaAnniMutuo: number;
-  saldoPensione: number;
-  targetPensionePct: number;
-  redditoAnnuo: number;
-  saldoConto: number;
-  bufferSicurezza: number;
-}
-
-export interface DecisionResult {
-  recommendation: string;
-  motivation: string;
-  amount: number | null;
-  ruleTriggered: string;
-  priority: number;
-}
-
-export interface DecisionRecord {
-  id?: string;
-  uid: string;
-  context: DecisionContext;
-  results: DecisionResult[];
-  createdAt: Date;
-}
 
 interface DecisionRecordData {
   uid: string;

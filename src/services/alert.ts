@@ -67,8 +67,8 @@ export async function evaluateAlerts(uid: string): Promise<ApiResult<FinancialAl
     // Current month can never be "closed" while still in progress — that was a false positive.
     const prevMonth = (currentMonth === 1 ? 12 : currentMonth - 1) as Month
     const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear
-    const snapshotsForClose = await listSnapshots(uid, 1)
-    const latestSnapshot = snapshotsForClose[0]
+    const snapshotsForCloseResult = await listSnapshots(uid, 1)
+    const latestSnapshot = snapshotsForCloseResult.success ? snapshotsForCloseResult.data[0] : null
     const isPrevMonthClosed =
       latestSnapshot?.year === prevYear && latestSnapshot?.month === prevMonth
     if (!isPrevMonthClosed) {
@@ -81,7 +81,8 @@ export async function evaluateAlerts(uid: string): Promise<ApiResult<FinancialAl
     }
 
     // Recuperiamo gli ultimi snapshot per le regole 4 e 5
-    const snapshots = await listSnapshots(uid, 4)
+    const snapshotsResult = await listSnapshots(uid, 4)
+    const snapshots = snapshotsResult.success ? snapshotsResult.data : []
 
     // 4. Surplus mensile > 50% rispetto alla media degli ultimi 3 mesi -> SURPLUS_ANOMALO info
     if (snapshots.length >= 4) {

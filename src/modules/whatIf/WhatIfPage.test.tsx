@@ -28,9 +28,10 @@ describe('WhatIfPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     ;(useAuth as Mock).mockReturnValue({ user: mockUser })
-    ;(snapshotService.listSnapshots as Mock).mockResolvedValue([
-      { id: '2026-05', patrimonioNetto: 50000 },
-    ])
+    ;(snapshotService.listSnapshots as Mock).mockResolvedValue({
+      success: true,
+      data: [{ id: '2026-05', patrimonioNetto: 50000 }],
+    })
     ;(whatIfService.getSavedScenarios as Mock).mockResolvedValue({
       success: true,
       data: [],
