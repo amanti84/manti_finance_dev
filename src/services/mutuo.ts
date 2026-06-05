@@ -17,7 +17,7 @@ import { logAudit } from './audit'
 
 export interface RataDettaglio {
   numero: number
-  data: Date
+  data: Timestamp | Date
   rataTotale: number
   quotaCapitale: number
   quotaInteressi: number
@@ -34,7 +34,7 @@ export interface PianoAmmortamento {
 }
 
 export interface SimulazioneEstinzione {
-  dataEstinzione: Date
+  dataEstinzione: Timestamp | Date
   debitoResiduoAttuale: number
   interessiRisparmiati: number
   rateRisparmiate: number
@@ -51,8 +51,8 @@ export interface MutuoSummary {
   rateRimanenti: number
   ratePagate: number
   rataTotale: number
-  prossimaRata: Date | null
-  scadenza: Date
+  prossimaRata: Timestamp | Date | null
+  scadenza: Timestamp | Date
 }
 
 const COLLECTION = (uid: string) => `users/${uid}/mutuo`
@@ -315,7 +315,7 @@ export function simulateAnticipatedExtinction(
 export function simulateExtraPayment(
   config: MutuoConfig,
   importoExtra: number
-): ApiResult<{ rateRisparmiate: number; interessiRisparmiati: number; nuovaScadenza: Date }> {
+): ApiResult<{ rateRisparmiate: number; interessiRisparmiati: number; nuovaScadenza: Timestamp | Date }> {
   try {
     const nuovoDebito = Math.max(0, config.debitoResiduo - importoExtra)
     const configRidotto: MutuoConfig = {

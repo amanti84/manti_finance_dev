@@ -37,7 +37,7 @@ vi.mock('firebase/firestore', () => ({
 }))
 
 vi.mock('../firebase', () => ({ db: {} }))
-vi.mock('./audit', () => ({ logAudit: vi.fn().mockResolvedValue(undefined) }))
+vi.mock('./audit', () => ({ logAudit: vi.fn().mockResolvedValue({ success: true, data: {} }).mockResolvedValue({ success: true, data: undefined }) }))
 
 // -----------------------------------------------------------------------
 // HELPERS

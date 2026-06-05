@@ -41,7 +41,7 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 vi.mock('./audit', () => ({
-  logAudit: vi.fn().mockResolvedValue(undefined),
+  logAudit: vi.fn().mockResolvedValue({ success: true, data: {} }).mockResolvedValue({ success: true, data: undefined }),
 }));
 
 // ---------------------------------------------------------------------------

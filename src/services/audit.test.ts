@@ -47,11 +47,12 @@ describe('logAudit', () => {
     })
 
     expect(addDoc).toHaveBeenCalledOnce()
-    expect(result.id).toBe('mock-audit-id-123')
-    expect(result.action).toBe('create')
-    expect(result.entityType).toBe('investment')
-    expect(result.entityId).toBe('inv-001')
-    expect(result.source).toBe('user')
+    if (!result.success) throw new Error('Result should be successful')
+    expect(result.data.id).toBe('mock-audit-id-123')
+    expect(result.data.action).toBe('create')
+    expect(result.data.entityType).toBe('investment')
+    expect(result.data.entityId).toBe('inv-001')
+    expect(result.data.source).toBe('user')
   })
 
   it('usa source user come default', async () => {
@@ -62,7 +63,8 @@ describe('logAudit', () => {
       entityId: 'pay-001',
     })
 
-    expect(result.source).toBe('user')
+    if (!result.success) throw new Error('Result should be successful')
+    expect(result.data.source).toBe('user')
   })
 
   it('accetta source personalizzato', async () => {
@@ -74,7 +76,8 @@ describe('logAudit', () => {
       source: 'import',
     })
 
-    expect(result.source).toBe('import')
+    if (!result.success) throw new Error('Result should be successful')
+    expect(result.data.source).toBe('import')
   })
 })
 
@@ -99,9 +102,10 @@ describe('logChange', () => {
       newValue
     )
 
-    expect(result.action).toBe('update')
-    expect(result.previousValue).toEqual(previousValue)
-    expect(result.newValue).toEqual(newValue)
+    if (!result.success) throw new Error('Result should be successful')
+    expect(result.data.action).toBe('update')
+    expect(result.data.previousValue).toEqual(previousValue)
+    expect(result.data.newValue).toEqual(newValue)
   })
 })
 
@@ -120,8 +124,9 @@ describe('logCreate', () => {
       data
     )
 
-    expect(result.action).toBe('create')
-    expect(result.newValue).toEqual(data)
+    if (!result.success) throw new Error('Result should be successful')
+    expect(result.data.action).toBe('create')
+    expect(result.data.newValue).toEqual(data)
   })
 })
 
@@ -140,7 +145,8 @@ describe('logDelete', () => {
       data
     )
 
-    expect(result.action).toBe('delete')
-    expect(result.previousValue).toEqual(data)
+    if (!result.success) throw new Error('Result should be successful')
+    expect(result.data.action).toBe('delete')
+    expect(result.data.previousValue).toEqual(data)
   })
 })

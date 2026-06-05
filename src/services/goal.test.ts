@@ -33,7 +33,7 @@ vi.mock('../firebase', () => ({
 }))
 
 vi.mock('./audit', () => ({
-  logAudit: vi.fn().mockResolvedValue({ id: 'audit-id' }),
+  logAudit: vi.fn().mockResolvedValue({ success: true, data: {} }).mockResolvedValue({ success: true, data: { id: 'audit-id' } }),
 }))
 
 const makeTimestamp = (d: Date): Timestamp =>

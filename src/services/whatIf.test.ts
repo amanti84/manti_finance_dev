@@ -11,7 +11,7 @@ import type { PatrimonioSnapshot, Payslip, ScenarioType } from '../types'
 import type { Timestamp } from 'firebase/firestore'
 
 vi.mock('./audit', () => ({
-  logAudit: vi.fn(),
+  logAudit: vi.fn().mockResolvedValue({ success: true, data: {} }),
 }))
 
 vi.mock('firebase/firestore', () => ({

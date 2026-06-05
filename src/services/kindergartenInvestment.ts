@@ -16,17 +16,14 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import type { KindergartenInvestment } from '../types/kindergarten'
-
-type ServiceResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string }
+import type { ApiResult } from '../types'
 
 const investmentCol = (uid: string) =>
   collection(db, 'users', uid, 'kindergarten_investments')
 
 export async function getKindergartenInvestments(
   uid: string
-): Promise<ServiceResult<KindergartenInvestment[]>> {
+): Promise<ApiResult<KindergartenInvestment[]>> {
   try {
     const q = query(investmentCol(uid), orderBy('purchaseDate', 'desc'))
     const snap = await getDocs(q)
@@ -43,7 +40,7 @@ export async function getKindergartenInvestments(
 export async function addKindergartenInvestment(
   uid: string,
   investment: Omit<KindergartenInvestment, 'id' | 'createdAt' | 'updatedAt'>
-): Promise<ServiceResult<string>> {
+): Promise<ApiResult<string>> {
   try {
     const docRef = await addDoc(investmentCol(uid), {
       ...investment,
@@ -60,7 +57,7 @@ export async function updateKindergartenInvestment(
   uid: string,
   id: string,
   data: Partial<Omit<KindergartenInvestment, 'id' | 'createdAt' | 'updatedAt'>>
-): Promise<ServiceResult<void>> {
+): Promise<ApiResult<void>> {
   try {
     await updateDoc(doc(investmentCol(uid), id), {
       ...data,
@@ -75,7 +72,7 @@ export async function updateKindergartenInvestment(
 export async function deleteKindergartenInvestment(
   uid: string,
   id: string
-): Promise<ServiceResult<void>> {
+): Promise<ApiResult<void>> {
   try {
     await deleteDoc(doc(investmentCol(uid), id))
     return { success: true, data: undefined }
