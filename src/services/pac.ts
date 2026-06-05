@@ -48,8 +48,8 @@ export interface PacSummary {
   valoreAttuale: number
   pnlAssoluto: number
   pnlPercent: number
-  primoVersamento: Date
-  ultimoVersamento: Date
+  primoVersamento: Timestamp | Date
+  ultimoVersamento: Timestamp | Date
 }
 
 export interface PacProgress {
@@ -60,7 +60,7 @@ export interface PacProgress {
   progressoPercent: number
   mesiRimanenti: number | null
   importoMensileMedio: number
-  proiezioneCompletamento: Date | null
+  proiezioneCompletamento: Timestamp | Date | null
 }
 
 export interface PacAnalytics {

@@ -149,7 +149,7 @@ export function calculateGoalProgress(goal: Goal): GoalProgress {
   const progressAmount = goal.currentAmount - baselineAmount
   const tasso = progressAmount / mesiTrascorsi
 
-  let projectedCompletionDate: Date | null = null
+  let projectedCompletionDate: Timestamp | Date | null = null
   if (tasso > 0) {
     const remainingAmount = goal.targetAmount - goal.currentAmount
     if (remainingAmount <= 0) {

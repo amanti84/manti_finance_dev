@@ -6,7 +6,6 @@
 // Il test verrà aggiornato separatamente per riflettere la nuova architettura.
 export {}
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const useKindergarten = (): any => {
+export const useKindergarten = (): never => {
   throw new Error('useKindergarten is deprecated. Use useKindergartenInvestments and useKindergartenPacs.')
 }
