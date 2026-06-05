@@ -5,13 +5,13 @@ import { Button } from './Button'
 describe('Button Component', () => {
   it('renders correctly with children', () => {
     render(<Button>Click me</Button>)
-    expect(screen.getByText('Click me')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /click me/i })).toBeTruthy()
   })
 
   it('handles click events', () => {
     const handleClick = vi.fn()
     render(<Button onClick={handleClick}>Click me</Button>)
-    fireEvent.click(screen.getByText('Click me'))
+    fireEvent.click(screen.getByRole('button', { name: /click me/i }))
     expect(handleClick).toHaveBeenCalledTimes(1)
   })
 

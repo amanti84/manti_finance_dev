@@ -72,7 +72,8 @@ describe('App', () => {
       logout: vi.fn(),
     })
     render(<App />)
-    expect(screen.getAllByText('Accedi').length).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { name: /manti finance/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /accedi/i })).toBeTruthy()
   })
 
   it('renders dashboard when authenticated', () => {
@@ -84,7 +85,7 @@ describe('App', () => {
     })
     render(<App />)
     // Check for "Dashboard" in heading or link
-    expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { name: /dashboard/i })).toBeTruthy()
     expect(screen.getByText(/Benvenuto, test@example.com/)).toBeTruthy()
   })
 
@@ -96,6 +97,6 @@ describe('App', () => {
       logout: vi.fn(),
     })
     render(<App />)
-    expect(screen.getByText('Caricamento...')).toBeTruthy()
+    expect(screen.getByText(/caricamento/i)).toBeTruthy()
   })
 })

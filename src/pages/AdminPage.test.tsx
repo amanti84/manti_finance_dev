@@ -44,7 +44,7 @@ describe('AdminPage', () => {
       logout: vi.fn() as unknown as () => Promise<void>,
     } satisfies MockAuthReturn)
     render(<MemoryRouter><AdminPage /></MemoryRouter>)
-    expect(screen.getByText('Caricamento...')).toBeTruthy()
+    expect(screen.getByText(/caricamento/i)).toBeTruthy()
   })
 
   it('redirects if user is not admin', () => {
@@ -71,8 +71,8 @@ describe('AdminPage', () => {
     render(<MemoryRouter><AdminPage /></MemoryRouter>)
 
     expect(screen.queryByTestId('navigate')).toBeNull()
-    expect(screen.getByText('Pannello Amministrazione')).toBeTruthy()
-    expect(screen.getByText('Carica dati seed')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /pannello amministrazione/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /carica dati seed/i })).toBeTruthy()
   })
 
   it('calls seedUserData function via fetch and shows success message', async () => {
@@ -97,15 +97,15 @@ describe('AdminPage', () => {
     })
 
     render(<MemoryRouter><AdminPage /></MemoryRouter>)
-    const button = screen.getByText('Carica dati seed')
+    const button = screen.getByRole('button', { name: /carica dati seed/i })
     fireEvent.click(button)
 
-    expect(button.textContent).toBe('Caricamento in corso...')
+    expect(button.textContent).toMatch(/caricamento/i)
 
     await waitFor(() => {
-      expect(screen.getByText('Dati caricati correttamente:')).toBeTruthy()
-      expect(screen.getByText('Inseriti: 5')).toBeTruthy()
-      expect(screen.getByText('Saltati (duplicati): 0')).toBeTruthy()
+      expect(screen.getByText(/dati caricati correttamente/i)).toBeTruthy()
+      expect(screen.getByText(/inseriti: 5/i)).toBeTruthy()
+      expect(screen.getByText(/saltati \(duplicati\): 0/i)).toBeTruthy()
     })
 
     expect(mockFetch).toHaveBeenCalledWith(
@@ -143,7 +143,7 @@ describe('AdminPage', () => {
     })
 
     render(<MemoryRouter><AdminPage /></MemoryRouter>)
-    fireEvent.click(screen.getByText('Carica dati seed'))
+    fireEvent.click(screen.getByRole('button', { name: /carica dati seed/i }))
 
     await waitFor(() => {
       expect(screen.getByText('API Error')).toBeTruthy()

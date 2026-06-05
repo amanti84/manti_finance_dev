@@ -61,8 +61,8 @@ describe('Layout Component', () => {
     renderLayout()
     expect(screen.getByText('Manti')).toBeTruthy()
     expect(screen.getByText('Finance')).toBeTruthy()
-    expect(screen.getByText('Dashboard')).toBeTruthy()
-    expect(screen.getByText('Overview')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /dashboard/i })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /overview/i })).toBeTruthy()
   })
 
   it('toggles sidebar expansion on desktop', () => {
@@ -73,12 +73,12 @@ describe('Layout Component', () => {
     if (!toggleButton) throw new Error('Toggle button not found')
 
     // Initially expanded (should see "Dashboard" label in the sidebar list)
-    expect(screen.getByText('Overview')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /overview/i })).toBeTruthy()
 
     fireEvent.click(toggleButton)
 
     // After collapse, labels like "Overview" should be hidden (or rather the h3 tag)
-    expect(screen.queryByText('Overview')).toBeNull()
+    expect(screen.queryByRole('heading', { name: /overview/i })).toBeNull()
   })
 
   it('toggles dark mode', () => {
@@ -101,16 +101,16 @@ describe('Layout Component', () => {
     if (!userButton) throw new Error('User button not found')
 
     fireEvent.click(userButton)
-    expect(screen.getByText('Logout')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /logout/i })).toBeTruthy()
     expect(screen.getByText('test@example.com')).toBeTruthy()
 
     fireEvent.click(userButton)
-    expect(screen.queryByText('Logout')).toBeNull()
+    expect(screen.queryByRole('button', { name: /logout/i })).toBeNull()
   })
 
   it('shows admin link only for admin user', () => {
     const { rerender } = renderLayout()
-    expect(screen.queryByText('Admin')).toBeNull()
+    expect(screen.queryByRole('link', { name: /admin/i })).toBeNull()
 
     vi.mocked(useAuth).mockReturnValue({
       user: { uid: 'admin-id', email: 'amanti84@gmail.com' } as unknown as User,
@@ -124,6 +124,6 @@ describe('Layout Component', () => {
         <Layout />
       </BrowserRouter>
     )
-    expect(screen.getByText('Admin')).toBeTruthy()
+    expect(screen.getByRole('link', { name: /admin/i })).toBeTruthy()
   })
 })

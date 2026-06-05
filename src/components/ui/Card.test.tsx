@@ -17,7 +17,7 @@ describe('Card Component', () => {
         Body
       </Card>
     )
-    expect(screen.getByText('My Title')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'My Title' })).toBeTruthy()
     expect(screen.getByText('My Description')).toBeTruthy()
     expect(screen.getByText('Body')).toBeTruthy()
   })
@@ -54,7 +54,7 @@ describe('Card Component', () => {
         <CardFooter>Footer</CardFooter>
       </Card>
     )
-    expect(screen.getByText('Title')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Title' })).toBeTruthy()
     expect(screen.getByText('Description')).toBeTruthy()
     expect(screen.getByText('Content')).toBeTruthy()
     expect(screen.getByText('Footer')).toBeTruthy()
