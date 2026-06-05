@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import * as admin from 'firebase-admin'
 import pdfParse from 'pdf-parse'
-import type { ParseDocumentResult, ParsedDocumentType, ParsedField, Month } from '../../src/types'
+import type { ParseDocumentResult, ParsedDocumentType, ParsedField, Month } from './types/shared'
 
 // Inizializza admin se non lo è già
 if (admin.apps.length === 0) {
