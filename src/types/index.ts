@@ -1,7 +1,7 @@
 // ============================================================
 // CORE TYPES - manti_finance_dev
 // Modello dati v3 - allineato alle implementazioni reali
-// Aggiornato 03/06/2026 — merge resolution PR#107 + main
+// Aggiornato 05/06/2026 — conflict resolution src/types/index.ts
 // ============================================================
 
 import type { Timestamp } from 'firebase/firestore'
@@ -430,6 +430,30 @@ export interface InboxBadgeCount {
   requiresReview: number
   // optional per v3
   pending?: number
+}
+
+// --------------------------------------------------------
+// PARSE DOCUMENT (Issue #29)
+// --------------------------------------------------------
+
+export type ParsedDocumentType =
+  | 'cedolino'
+  | 'estratto_conto'
+  | 'conferma_investimento'
+  | 'altro'
+
+export interface ParsedField {
+  fieldName: string
+  extractedValue: string
+  confidence: number
+}
+
+export interface ParseDocumentResult {
+  documentType: ParsedDocumentType
+  month?: number
+  year?: number
+  fields: ParsedField[]
+  rawText: string
 }
 
 // --------------------------------------------------------
