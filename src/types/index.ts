@@ -1,7 +1,7 @@
 // ============================================================
 // CORE TYPES - manti_finance_dev
 // Modello dati v3 - allineato alle implementazioni reali
-// Aggiornato 03/06/2026 — merge resolution PR#107 + main
+// Aggiornato 05/06/2026 — conflict resolution src/types/index.ts
 // ============================================================
 
 import type { Timestamp } from 'firebase/firestore'

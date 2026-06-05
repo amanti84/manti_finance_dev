@@ -2,7 +2,7 @@
 
 ## Obiettivo
 
-Il modulo Kindergarten gestisce un **portafoglio finanziario completamente isolato** per i figli del proprietario dell'account.
+Il modulo Kindergarten gestisce un **portafoglio finanziario completamente isolato** per i figli del proprietario dell'account.  
 L'isolamento è totale: dati, calcoli e UI operano su collection Firestore proprie e non condividono nulla con il portafoglio principale.
 
 ---
