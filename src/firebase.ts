@@ -7,6 +7,7 @@ import { initializeApp, getApps, type FirebaseOptions } from 'firebase/app'
 import { getFirestore, type Firestore } from 'firebase/firestore'
 import { getAuth, type Auth, GoogleAuthProvider } from 'firebase/auth'
 import { getStorage, type FirebaseStorage } from 'firebase/storage'
+import { getFunctions, type Functions } from 'firebase/functions'
 import { getFirebaseConfig } from './utils/config'
 
 // Ottieni e valida la configurazione
@@ -20,4 +21,5 @@ export const auth: Auth = getAuth(app)
 export const googleProvider = new GoogleAuthProvider()
 googleProvider.setCustomParameters({ prompt: 'select_account' })
 export const storage: FirebaseStorage = getStorage(app)
+export const functions: Functions = getFunctions(app)
 export default app

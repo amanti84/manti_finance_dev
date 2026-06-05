@@ -11,6 +11,18 @@ vi.mock('../hooks/useAuth', () => ({
   useAuth: vi.fn()
 }))
 
+vi.mock('../firebase', () => ({
+  functions: {},
+  db: {},
+  auth: {},
+  storage: {}
+}))
+
+vi.mock('firebase/functions', () => ({
+  getFunctions: vi.fn(),
+  httpsCallable: vi.fn(() => vi.fn())
+}))
+
 // Mock fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -33,7 +45,7 @@ interface MockAuthReturn {
 describe('AdminPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.stubEnv('VITE_ALLOWED_EMAILS', 'amanti84@gmail.com')
+    vi.stubEnv('VITE_ALLOWED_EMAILS', 'ant.manti@gmail.com')
   })
 
   it('renders loading state', () => {
@@ -62,7 +74,7 @@ describe('AdminPage', () => {
   it('renders admin panel if user is admin', () => {
     vi.mocked(useAuth).mockReturnValue({
       user: {
-        email: 'amanti84@gmail.com'
+        email: 'ant.manti@gmail.com'
       } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn() as unknown as () => Promise<{ success: boolean; error?: string; }>,
@@ -77,7 +89,7 @@ describe('AdminPage', () => {
 
   it('calls seedUserData function via fetch and shows success message', async () => {
     const mockUser: User = {
-      email: 'amanti84@gmail.com',
+      email: 'ant.manti@gmail.com',
       getIdToken: vi.fn().mockResolvedValue('mock-token'),
     } as unknown as User
 
@@ -122,7 +134,7 @@ describe('AdminPage', () => {
 
   it('shows error message on fetch failure', async () => {
     const mockUser: User = {
-      email: 'amanti84@gmail.com',
+      email: 'ant.manti@gmail.com',
       getIdToken: vi.fn().mockResolvedValue('mock-token'),
     } as unknown as User
 
