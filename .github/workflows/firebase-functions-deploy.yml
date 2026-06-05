@@ -1,0 +1,40 @@
+# Deploy Firebase Cloud Functions — solo trigger manuale
+# Per eseguire: GitHub Actions → "Deploy Firebase Functions" → Run workflow
+# Per disabilitare: GitHub Actions → seleziona workflow → Disable workflow
+
+name: Deploy Firebase Functions
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Motivo del deploy'
+        required: false
+        default: 'Deploy manuale functions'
+
+jobs:
+  deploy_functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install Functions dependencies
+        run: cd functions && npm ci
+
+      - name: Build Functions
+        run: cd functions && npm run build
+
+      - name: Deploy Functions to Firebase
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only functions --project mantifinance
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
