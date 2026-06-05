@@ -3,7 +3,7 @@ import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 import corsLib from "cors";
 
-const ADMIN_EMAIL = "amanti84@gmail.com";
+const ADMIN_EMAIL = "ant.manti@gmail.com";
 
 const cors = corsLib({
   origin: [

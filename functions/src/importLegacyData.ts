@@ -2,7 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { MigrationPayload } from "./types/legacy";
 
-const ADMIN_EMAIL = "amanti84@gmail.com";
+const ADMIN_EMAIL = "ant.manti@gmail.com";
 
 /**
  * Converte una stringa data ISO (o YYYY-MM-DD) in un Timestamp di Firestore

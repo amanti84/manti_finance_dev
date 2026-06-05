@@ -252,7 +252,7 @@ export const Layout: FC = () => {
     }
   }
 
-  const isAdmin = user?.email === 'amanti84@gmail.com'
+  const isAdmin = user?.email === 'ant.manti@gmail.com'
 
   return (
     <div className="flex h-screen bg-bg text-text">

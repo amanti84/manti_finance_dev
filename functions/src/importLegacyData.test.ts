@@ -68,7 +68,7 @@ describe('importLegacyData', () => {
 
   it('should import data correctly for admin', async () => {
     const request = {
-      auth: { token: { email: 'amanti84@gmail.com' }, uid: 'admin123' },
+      auth: { token: { email: 'ant.manti@gmail.com' }, uid: 'admin123' },
       data: {
         pacs: [{ id: 'p1', name: 'PAC 1' }],
         investments: [{ id: 'i1', name: 'Inv 1', quantity: 10 }],
@@ -88,7 +88,7 @@ describe('importLegacyData', () => {
 
   it('should skip existing documents', async () => {
     const request = {
-      auth: { token: { email: 'amanti84@gmail.com' }, uid: 'admin123' },
+      auth: { token: { email: 'ant.manti@gmail.com' }, uid: 'admin123' },
       data: {
         pacs: [{ id: 'p1', name: 'PAC 1' }],
       },
@@ -105,7 +105,7 @@ describe('importLegacyData', () => {
 
   it('should handle dryRun', async () => {
     const request = {
-      auth: { token: { email: 'amanti84@gmail.com' }, uid: 'admin123' },
+      auth: { token: { email: 'ant.manti@gmail.com' }, uid: 'admin123' },
       data: {
         pacs: [{ id: 'p1', name: 'PAC 1' }],
         dryRun: true,

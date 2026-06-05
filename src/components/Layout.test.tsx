@@ -113,7 +113,7 @@ describe('Layout Component', () => {
     expect(screen.queryByRole('link', { name: /admin/i })).toBeNull()
 
     vi.mocked(useAuth).mockReturnValue({
-      user: { uid: 'admin-id', email: 'amanti84@gmail.com' } as unknown as User,
+      user: { uid: 'admin-id', email: 'ant.manti@gmail.com' } as unknown as User,
       loading: false,
       signInWithGoogle: vi.fn(),
       logout: vi.fn(),

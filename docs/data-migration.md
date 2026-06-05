@@ -162,3 +162,35 @@ Dopo l'importazione, i dati vanno verificati almeno su tre livelli:
    - Pagina Kindergarten mostra correttamente:
      - PAC figli, importi mensili, stato attivo, valore attuale.
    - Nessun dato Kindergarten appare nei moduli patrimoniali personali e viceversa.
+
+## 5. Migrazione Cross-Project Automatica (Manti Finance -> Manti Finance Dev)
+
+A partire da Giugno 2026, è disponibile una nuova modalità di migrazione diretta che non richiede l'esportazione manuale di JSON. La Cloud Function `migrateFromLegacy` legge direttamente dal Firestore del vecchio progetto e scrive nel nuovo.
+
+### 5.1 Configurazione IAM (Obbligatoria)
+
+Per permettere al nuovo progetto (`manti-finance-dev`) di leggere dal vecchio (`manti-finance`), l'amministratore deve configurare i permessi IAM sul progetto sorgente:
+
+1.  Apri la console Google Cloud o Firebase per il progetto **vecchio** (`manti-finance`).
+2.  Vai alla sezione **IAM e Amministrazione** -> **IAM**.
+3.  Clicca su **"Aggiungi"** o **"Concedi accesso"**.
+4.  Nel campo "Nuovi membri" (o "Principals"), inserisci il **Service Account** del nuovo progetto:
+    `firebase-adminsdk-XXXXX@manti-finance-dev.iam.gserviceaccount.com`
+    *(Puoi trovare l'indirizzo esatto nelle Impostazioni Progetto -> Account di Servizio del nuovo progetto).*
+5.  Assegna il ruolo: **Visualizzatore Cloud Datastore** (Cloud Datastore Viewer).
+6.  Salva le modifiche.
+
+### 5.2 Utilizzo via UI
+
+Una volta configurati i permessi IAM:
+1.  Accedi alla sezione `/admin` della nuova piattaforma.
+2.  Individua la sezione **"Migrazione da manti-finance"**.
+3.  Usa il pulsante **"Prova a vuoto (dry run)"** per verificare la coerenza dei dati e il report di validazione (confronto totali Σ(avgCost × shares)).
+4.  Clicca su **"Avvia migrazione"** per importare i dati. L'operazione è idempotente: documenti già migrati (verificati tramite l'ID documento che corrisponde al legacy ID) verranno saltati.
+
+### 5.3 Validazione Invarianti
+
+La funzione esegue una validazione rigorosa:
+- Calcola il totale investito (Shares × Costo Medio) sia sul legacy che sul nuovo progetto per Adulti e Kindergarten separatamente.
+- Se la differenza è superiore a **0.01€**, la migrazione viene considerata fallita (se non in dry run) e viene sollevato un errore.
+- Al termine viene prodotto un report dettagliato con conteggi di inserimenti, skip ed eventuali errori per singolo documento.

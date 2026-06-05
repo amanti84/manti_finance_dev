@@ -14,6 +14,7 @@ export interface BaseDocument {
   id: string
   createdAt: Timestamp
   updatedAt: Timestamp
+  legacyId?: string
 }
 
 // --------------------------------------------------------
@@ -275,6 +276,10 @@ export interface PacConfig extends BaseDocument {
   autoUpdate: boolean
   platform?: string
   notes?: string
+  // Metadati per migrazione e calcolo patrimonio
+  shares?: number
+  avgCost?: number
+  currentPrice?: number
 }
 
 // --------------------------------------------------------
