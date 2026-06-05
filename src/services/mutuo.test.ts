@@ -53,14 +53,7 @@ const makeMutuoConfig = (overrides: Partial<MutuoConfig> = {}): MutuoConfig => {
     dataInizio: makeTimestamp(new Date('2023-01-01')),
     dataFine: makeTimestamp(new Date('2048-01-01')),
     isMutuoVariabile: false,
-    // optional backward-compat fields
-    importoIniziale: 200000,
-    saldoResiduo: 200000,
-    rata: 1004.52,
-    tassoAnnuo: 3.5,
-    durataAnni: 25,
     banca: 'Banca Intesa',
-    tipoTasso: 'fisso',
   }
   return { ...base, ...overrides }
 }

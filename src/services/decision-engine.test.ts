@@ -15,7 +15,7 @@ import {
   saveDecisionRecord,
   getDecisionHistory,
 } from './decision-engine';
-import type { DecisionContext } from './decision-engine';
+import type { DecisionContext } from '../types';
 
 // ---------------------------------------------------------------------------
 // MOCK FIREBASE

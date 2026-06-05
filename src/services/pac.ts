@@ -18,59 +18,8 @@ import {
   orderBy,
   Timestamp,
 } from 'firebase/firestore'
-import type { Investment, ApiResult } from '../types'
+import type { Investment, ApiResult, PacPayment, PacSummary, PacProgress, PacAnalytics } from '../types'
 import { logAudit } from './audit'
-
-// ---------------------------------------------------------------------------
-// TYPES
-// ---------------------------------------------------------------------------
-
-export interface PacPayment {
-  id: string
-  investmentId: string
-  investmentName: string
-  data: Timestamp
-  importo: number
-  priceAtPayment: number
-  quantityPurchased: number
-  broker: string
-  createdAt: Timestamp
-  updatedAt: Timestamp
-}
-
-export interface PacSummary {
-  investmentId: string
-  investmentName: string
-  importoMensile: number
-  totaleVersato: number
-  numeroVersamenti: number
-  mediaPrezzoAcquisto: number
-  valoreAttuale: number
-  pnlAssoluto: number
-  pnlPercent: number
-  primoVersamento: Timestamp | Date
-  ultimoVersamento: Timestamp | Date
-}
-
-export interface PacProgress {
-  investmentId: string
-  investmentName: string
-  obiettivo: number | null
-  totaleVersato: number
-  progressoPercent: number
-  mesiRimanenti: number | null
-  importoMensileMedio: number
-  proiezioneCompletamento: Timestamp | Date | null
-}
-
-export interface PacAnalytics {
-  totalePacAttivi: number
-  totaleVersamentiMensili: number
-  totaleCapitaleInvestito: number
-  mediaRitorno: number
-  migliorePerformance: { name: string; pnl: number }
-  peggiorePerformance: { name: string; pnl: number }
-}
 
 // ---------------------------------------------------------------------------
 // HELPER

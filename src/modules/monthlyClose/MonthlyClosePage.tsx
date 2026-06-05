@@ -106,8 +106,12 @@ export const MonthlyClosePage: FC<Props> = ({ uid }) => {
   const handleViewSnapshot = async (item: MonthlyCloseResult) => {
     setLoadingSnapshot(true)
     try {
-      const snap = await getSnapshot(uid, item.year, item.month)
-      setSelectedSnapshot(snap)
+      const res = await getSnapshot(uid, item.year, item.month)
+      if (res.success) {
+        setSelectedSnapshot(res.data)
+      } else {
+        setError(res.error)
+      }
     } catch {
       setError('Errore nel caricamento dello snapshot')
     } finally {

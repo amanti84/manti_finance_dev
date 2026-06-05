@@ -57,7 +57,7 @@ describe('alert service', () => {
         updatedAt: {} as unknown as Timestamp
       } as unknown as Payslip
     })
-    vi.mocked(snapshotService.listSnapshots).mockResolvedValue([])
+    vi.mocked(snapshotService.listSnapshots).mockResolvedValue({ success: true, data: [] })
   })
 
   describe('evaluateAlerts', () => {
@@ -121,7 +121,7 @@ describe('alert service', () => {
             { id: '2026-05', year: 2026, month: 5, patrimonioNetto: 120000 },
             { id: '2026-04', year: 2026, month: 4, patrimonioNetto: 100000 },
         ] as PatrimonioSnapshot[]
-        vi.mocked(snapshotService.listSnapshots).mockResolvedValue(mockSnapshots)
+        vi.mocked(snapshotService.listSnapshots).mockResolvedValue({ success: true, data: mockSnapshots })
         vi.mocked(snapshotService.computeDeltas).mockReturnValue([
             { ...mockSnapshots[0], delta: 20000 },
             { ...mockSnapshots[1], delta: 0 },

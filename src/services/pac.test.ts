@@ -14,8 +14,7 @@ import {
   calculatePacProgress,
   getPacAnalytics,
 } from './pac'
-import type { PacPayment } from './pac'
-import type { Investment } from '../types'
+import type { Investment, PacPayment } from '../types'
 import type { Timestamp } from 'firebase/firestore'
 
 // -----------------------------------------------------------------------

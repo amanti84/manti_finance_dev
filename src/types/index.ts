@@ -26,6 +26,48 @@ export type ApiResult<T> =
   | { success: false; data?: never; error: string }
 
 // --------------------------------------------------------
+// DECISION ENGINE (Issue #12)
+// --------------------------------------------------------
+
+export interface DecisionRule {
+  id: string
+  condition: string
+  action: string
+  priority: number
+  enabled: boolean
+}
+
+export interface DecisionContext {
+  uid: string
+  surplusMensile: number
+  sogliaInvestimento: number
+  debitoResiduoMutuo: number
+  anniResiduiMutuo: number
+  sogliaAnniMutuo: number
+  saldoPensione: number
+  targetPensionePct: number
+  redditoAnnuo: number
+  saldoConto: number
+  bufferSicurezza: number
+}
+
+export interface DecisionResult {
+  recommendation: string
+  motivation: string
+  amount: number | null
+  ruleTriggered: string
+  priority: number
+}
+
+export interface DecisionRecord {
+  id?: string
+  uid: string
+  context: DecisionContext
+  results: DecisionResult[]
+  createdAt: Date
+}
+
+// --------------------------------------------------------
 // WHAT-IF ENGINE (Issue #27)
 // --------------------------------------------------------
 
@@ -176,6 +218,50 @@ export interface Investment extends BaseDocument {
   priceSource?: string
 }
 
+export interface PacPayment extends BaseDocument {
+  investmentId: string
+  investmentName: string
+  data: Timestamp
+  importo: number
+  priceAtPayment: number
+  quantityPurchased: number
+  broker: string
+}
+
+export interface PacSummary {
+  investmentId: string
+  investmentName: string
+  importoMensile: number
+  totaleVersato: number
+  numeroVersamenti: number
+  mediaPrezzoAcquisto: number
+  valoreAttuale: number
+  pnlAssoluto: number
+  pnlPercent: number
+  primoVersamento: Timestamp | Date
+  ultimoVersamento: Timestamp | Date
+}
+
+export interface PacProgress {
+  investmentId: string
+  investmentName: string
+  obiettivo: number | null
+  totaleVersato: number
+  progressoPercent: number
+  mesiRimanenti: number | null
+  importoMensileMedio: number
+  proiezioneCompletamento: Timestamp | Date | null
+}
+
+export interface PacAnalytics {
+  totalePacAttivi: number
+  totaleVersamentiMensili: number
+  totaleCapitaleInvestito: number
+  mediaRitorno: number
+  migliorePerformance: { name: string; pnl: number }
+  peggiorePerformance: { name: string; pnl: number }
+}
+
 export interface PacConfig extends BaseDocument {
   name: string
   isin: string
@@ -278,11 +364,9 @@ export interface MonthlyVariableComponents {
 
 // --------------------------------------------------------
 // MUTUO
-// Plain interface (v3) — required fields from main as optional for backward compat
 // --------------------------------------------------------
 
 export interface MutuoConfig {
-  // v3 canonical fields
   importoOriginale: number
   debitoResiduo: number
   rataMensile: number
@@ -290,14 +374,7 @@ export interface MutuoConfig {
   dataInizio: Timestamp | string
   dataFine: Timestamp | string
   isMutuoVariabile: boolean
-  // main required fields — kept optional for backward compat
-  importoIniziale?: number
-  saldoResiduo?: number
-  rata?: number
-  tassoAnnuo?: number
-  durataAnni?: number
   banca?: string
-  tipoTasso?: 'fisso' | 'variabile' | 'misto'
   notes?: string
 }
 
@@ -578,40 +655,3 @@ export interface PensionFund extends BaseDocument {
   notes?: string
 }
 
-// --------------------------------------------------------
-// KINDERGARTEN (legacy expense model — deprecato in PR#107)
-// Nuovo modello: src/types/kindergarten.ts (investments/PAC)
-// /users/{uid}/kindergartenExpenses/{expenseId}  <- legacy
-// /users/{uid}/config/kindergarten               <- legacy
-// --------------------------------------------------------
-
-export type KindergartenCategory =
-  | 'retta' | 'mensa' | 'attivita_extra' | 'materiale' | 'altro'
-
-export type KindergartenFrequency = 'monthly' | 'once' | 'annual'
-
-export interface KindergartenExpense extends BaseDocument {
-  description: string
-  amount: number
-  year: number
-  month: Month
-  category: KindergartenCategory
-  frequency: KindergartenFrequency
-  note?: string
-}
-
-export interface KindergartenConfig extends BaseDocument {
-  monthlyBudget: number
-  alertOnOverBudget: boolean
-  childName?: string
-}
-
-export interface KindergartenSummary {
-  year: number
-  totalAnnual: number
-  totalMonthly: number
-  byCategory: Record<KindergartenCategory, number>
-  budgetMonthly: number
-  isOverBudget: boolean
-  currentMonthTotal: number
-}

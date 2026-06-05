@@ -57,16 +57,6 @@ const makeSnapshot = (patrimonioNetto: number): PatrimonioSnapshot => ({
 const makeMutuoConfig = () => ({
   success: true as const,
   data: {
-    id: 'mutuo-1',
-    createdAt: fakeTimestamp,
-    updatedAt: fakeTimestamp,
-    importoIniziale: 100000,
-    saldoResiduo: 80000,
-    rata: 500,
-    tassoAnnuo: 2,
-    durataAnni: 20,
-    banca: 'Test Bank',
-    tipoTasso: 'fisso' as const,
     rataMensile: 500,
     importoOriginale: 100000,
     debitoResiduo: 80000,
@@ -74,6 +64,7 @@ const makeMutuoConfig = () => ({
     isMutuoVariabile: false,
     dataInizio: fakeTimestamp,
     dataFine: fakeTimestamp,
+    banca: 'Test Bank',
   },
 })
 
@@ -102,7 +93,7 @@ describe('whatIf service', () => {
         params: { importoEstinzione: 10000 },
       }
 
-      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue({ success: true, data: [makeSnapshot(50000)] })
       vi.spyOn(mutuoService, 'getMutuoConfig').mockResolvedValue(makeMutuoConfig())
       vi.spyOn(mutuoService, 'simulateAnticipatedExtinction').mockReturnValue({
         success: true,
@@ -123,7 +114,6 @@ describe('whatIf service', () => {
         params: { importoInvestimento: 10000, anni: 10, rendimentoAnnuo: 7 },
       }
 
-      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
 
       const result = await simulateScenario(uid, input)
       expect(result.success).toBe(true)
@@ -137,7 +127,9 @@ describe('whatIf service', () => {
         params: { incrementoMensile: 200, anni: 5 },
       }
 
-      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue({ success: true, data: [makeSnapshot(50000)] })
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue({ success: true, data: [makeSnapshot(50000)] })
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue({ success: true, data: [makeSnapshot(50000)] })
 
       const result = await simulateScenario(uid, input)
       expect(result.success).toBe(true)
@@ -152,7 +144,7 @@ describe('whatIf service', () => {
         params: { nuovaRal: 40000 },
       }
 
-      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue({ success: true, data: [makeSnapshot(50000)] })
       vi.spyOn(payrollService, 'getPayslipsByYear').mockResolvedValue({
         success: true,
         data: [{ netSalary: 2000 }] as Payslip[],
@@ -182,7 +174,7 @@ describe('whatIf service', () => {
         params: { importoInvestimento: 10000, anni: 10, rendimentoAnnuo: 7 },
       }
 
-      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue([makeSnapshot(50000)])
+      vi.spyOn(snapshotService, 'listSnapshots').mockResolvedValue({ success: true, data: [makeSnapshot(50000)] })
       await simulateScenario(uid, input)
 
       expect(firestore.addDoc).not.toHaveBeenCalled()
