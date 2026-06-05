@@ -8,12 +8,13 @@ export function formatCurrency(
   currency = 'EUR',
   locale = 'it-IT'
 ): string {
+  const normalizedValue = isNaN(value) ? 0 : value
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency,
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value)
+  }).format(normalizedValue)
 }
 
 /** Formatta un numero come percentuale */

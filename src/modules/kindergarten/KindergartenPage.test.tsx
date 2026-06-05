@@ -93,7 +93,8 @@ describe('KindergartenPage', () => {
 
   it('renders investment and PAC sections', () => {
     render(<KindergartenPage uid="test-uid" />)
-    expect(screen.getByText('Investimenti Diretti')).toBeTruthy()
+    // Use getAllByText because 'Investimenti Diretti' appears in the KPI card header and the section title
+    expect(screen.getAllByText('Investimenti Diretti').length).toBeGreaterThan(0)
     expect(screen.getByText('Piano di Accumulo (PAC)')).toBeTruthy()
   })
 

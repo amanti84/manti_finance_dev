@@ -61,8 +61,17 @@ jobs:
       - name: Install Firebase Tools
         run: npm install -g firebase-tools
 
+      - name: Cache Firebase Emulators
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ runner.os }}
+
+      - name: Build Cloud Functions
+        run: cd functions && npm install && npm run build
+
       - name: Run tests with Emulator
-        run: npx firebase emulators:exec "npm run test"
+        run: npx firebase emulators:exec "npm run test" --project demo-mantifinance
 
   # -----------------------------------------------
   # JOB 3: Build check
