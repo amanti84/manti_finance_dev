@@ -93,9 +93,9 @@ describe('KindergartenPage', () => {
 
   it('renders investment and PAC sections', () => {
     render(<KindergartenPage uid="test-uid" />)
-    // Use getAllByText because 'Investimenti Diretti' appears in the KPI card header and the section title
-    expect(screen.getAllByText('Investimenti Diretti').length).toBeGreaterThan(0)
-    expect(screen.getByText('Piano di Accumulo (PAC)')).toBeTruthy()
+    // Use getByRole for headings with level to avoid ambiguity with KPI card headers
+    expect(screen.getByRole('heading', { name: 'Investimenti Diretti', level: 2 })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Piano di Accumulo (PAC)', level: 2 })).toBeTruthy()
   })
 
   it('renders investment name in table', () => {

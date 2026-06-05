@@ -13,7 +13,7 @@ const AlertBanner: React.FC<AlertBannerProps> = ({ alerts, onRead, onSnooze }) =
   if (criticalAlerts.length === 0) return null;
 
   return (
-    <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+    <div role="alert" className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
       <div className="flex">
         <div className="flex-shrink-0">
           <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">

@@ -18,7 +18,7 @@ describe('Modal Component', () => {
         Modal content
       </Modal>
     )
-    expect(screen.getByText('Test Modal')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Test Modal' })).toBeTruthy()
     expect(screen.getByText('Modal content')).toBeTruthy()
     expect(screen.getByRole('dialog')).toBeTruthy()
   })
@@ -67,6 +67,6 @@ describe('Modal Component', () => {
         Modal content
       </Modal>
     )
-    expect(screen.getByText('Submit')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /submit/i })).toBeTruthy()
   })
 })

@@ -13,7 +13,7 @@ vi.mock('../utils/config', () => ({
   }))
 }));
 
-import { render, screen, configure } from '@testing-library/react';
+import { render, screen, configure, within } from '@testing-library/react';
 
 // Increase default timeout for waitFor
 configure({ asyncUtilTimeout: 10000 });
@@ -145,7 +145,8 @@ describe('DashboardPage', () => {
     expect(await screen.findByText(/Nessun cedolino/i)).toBeTruthy();
     expect(await screen.findByText(/Nessun PAC/i)).toBeTruthy();
     expect(await screen.findByText(/Nessun conto/i)).toBeTruthy();
-    expect(await screen.findByText(/Nessun dato/i)).toBeTruthy(); // Net Worth
+    // Net Worth section
+    expect(await screen.findByText(/nessun dato/i)).toBeTruthy();
   });
 
   it('shows "Dati parziali" badge when some net worth sources fail', async () => {
@@ -179,11 +180,12 @@ describe('DashboardPage', () => {
     expect(bannerText).toBeTruthy();
 
     // Check for the specific alert message in the banner
-    const bannerAlerts = screen.getAllByText(/Attenzione saldo basso/i);
-    expect(bannerAlerts.length).toBeGreaterThan(0);
+    // Alerts appear in both a top banner and a sidebar/list, so we use within or testid
+    const alertBanner = screen.getByRole('alert');
+    expect(within(alertBanner).getByText(/Attenzione saldo basso/i)).toBeTruthy();
 
-    // Check for the alert type in the list
-    const listAlerts = screen.getAllByText(/SALDO SOTTO SOGLIA/i);
-    expect(listAlerts.length).toBeGreaterThan(0);
+    // Check for the alert type in the alerts section
+    const alertsSection = screen.getByRole('heading', { name: /alert recenti/i }).closest('section');
+    expect(within(alertsSection!).getByText(/SALDO SOTTO SOGLIA/i)).toBeTruthy();
   });
 });

@@ -18,14 +18,14 @@ describe('Input Component', () => {
 
   it('shows error message and applies error styles', () => {
     render(<Input label="Username" error="Invalid username" />)
-    expect(screen.getByText('Invalid username')).toBeTruthy()
+    expect(screen.getByText(/invalid username/i)).toBeTruthy()
     const input = screen.getByLabelText('Username')
     expect(input.className).toContain('border-error')
   })
 
   it('shows helper text when no error is present', () => {
     render(<Input label="Username" helperText="Enter your email" />)
-    expect(screen.getByText('Enter your email')).toBeTruthy()
+    expect(screen.getByText(/enter your email/i)).toBeTruthy()
   })
 
   it('renders icons correctly', () => {

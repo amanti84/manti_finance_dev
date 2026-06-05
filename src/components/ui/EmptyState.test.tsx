@@ -10,8 +10,8 @@ describe('EmptyState Component', () => {
         description="Try adjusting your filters"
       />
     )
-    expect(screen.getByText('No items found')).toBeTruthy()
-    expect(screen.getByText('Try adjusting your filters')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /no items found/i })).toBeTruthy()
+    expect(screen.getByText(/try adjusting your filters/i)).toBeTruthy()
   })
 
   it('renders icon when provided', () => {
@@ -32,7 +32,7 @@ describe('EmptyState Component', () => {
         action={{ label: 'Add Item', onClick: handleClick }}
       />
     )
-    const button = screen.getByText('Add Item')
+    const button = screen.getByRole('button', { name: /add item/i })
     fireEvent.click(button)
     expect(handleClick).toHaveBeenCalledTimes(1)
   })

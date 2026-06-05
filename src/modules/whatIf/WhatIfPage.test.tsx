@@ -43,8 +43,8 @@ describe('WhatIfPage', () => {
         <WhatIfPage />
       </BrowserRouter>
     )
-    expect(screen.getByText('What-if Engine')).toBeDefined()
-    expect(screen.getByText('Nuova Simulazione')).toBeDefined()
+    expect(screen.getByRole('heading', { name: /what-if engine/i })).toBeDefined()
+    expect(screen.getByRole('heading', { name: /nuova simulazione/i })).toBeDefined()
   })
 
   it('shows simulation results after clicking Simula', async () => {
@@ -64,7 +64,7 @@ describe('WhatIfPage', () => {
       </BrowserRouter>
     )
 
-    const simButton = screen.getByText('Simula')
+    const simButton = screen.getByRole('button', { name: /simula/i })
     fireEvent.click(simButton)
 
     expect(await screen.findByText('Simulated output')).toBeDefined()
