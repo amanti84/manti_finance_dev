@@ -1,6 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { initializeApp, getApps } from 'firebase-admin/app'
-import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore'
+import { getFirestore, Timestamp } from 'firebase-admin/firestore'
 import {
   LegacyPAC,
   LegacyInvestment,
@@ -13,10 +13,12 @@ interface MigrationReport {
   pacs:                    { inserted: number; skipped: number; errors: string[] }
   investments:             { inserted: number; skipped: number; errors: string[] }
   kindergartenPacs:        { inserted: number; skipped: number; errors: string[] }
-  kindergartenInvestments: { inserted: number; skipped: number; errors: string[] }
+  kindergartenTransactions: { inserted: number; skipped: number; errors: string[] }
+  transactions:            { inserted: number; skipped: number; errors: string[] }
+  sales:                   { inserted: number; skipped: number; errors: string[] }
   validation: {
-    adultTotalInvested_legacy:       number
-    adultTotalInvested_new:          number
+    adultTotalInvested_legacy:        number
+    adultTotalInvested_new:           number
     kindergartenTotalInvested_legacy: number
     kindergartenTotalInvested_new:    number
     passed: boolean
@@ -45,10 +47,12 @@ export const migrateFromLegacy = onCall(async (request) => {
   const dryRun = !!request.data?.dryRun
 
   const report: MigrationReport = {
-    pacs: { inserted: 0, skipped: 0, errors: [] },
-    investments: { inserted: 0, skipped: 0, errors: [] },
-    kindergartenPacs: { inserted: 0, skipped: 0, errors: [] },
-    kindergartenInvestments: { inserted: 0, skipped: 0, errors: [] },
+    pacs:                    { inserted: 0, skipped: 0, errors: [] },
+    investments:             { inserted: 0, skipped: 0, errors: [] },
+    kindergartenPacs:        { inserted: 0, skipped: 0, errors: [] },
+    kindergartenTransactions: { inserted: 0, skipped: 0, errors: [] },
+    transactions:            { inserted: 0, skipped: 0, errors: [] },
+    sales:                   { inserted: 0, skipped: 0, errors: [] },
     validation: {
       adultTotalInvested_legacy: 0,
       adultTotalInvested_new: 0,
@@ -80,27 +84,31 @@ export const migrateFromLegacy = onCall(async (request) => {
     return 'altri'
   }
 
-  // 1. Leggi dal legacy
+  // 1. Leggi dal legacy (tutte le collections sono alla root, non sotto users/{uid}/)
   const [
     pacsLegacySnap,
     investmentsLegacySnap,
     kgPacsLegacySnap,
-    kgInvestmentsLegacySnap
+    kgTransactionsLegacySnap,
+    transactionsLegacySnap,
+    salesLegacySnap
   ] = await Promise.all([
     legacyDb.collection('pacs').get(),
     legacyDb.collection('investments').get(),
     legacyDb.collection('kindergarten_pacs').get(),
-    legacyDb.collection('kindergarten_investments').get()
+    legacyDb.collection('kindergarten_transactions').get(),
+    legacyDb.collection('transactions').get(),
+    legacyDb.collection('sales').get()
   ])
 
-  const pacsLegacy = pacsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyPAC)
-  const investmentsLegacy = investmentsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyInvestment)
-  const kgPacsLegacy = kgPacsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyPAC)
-  const kgInvestmentsLegacy = kgInvestmentsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyKindergartenInvestment)
+  const pacsLegacy           = pacsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyPAC)
+  const investmentsLegacy    = investmentsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyInvestment)
+  const kgPacsLegacy         = kgPacsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyPAC)
+  const kgTransactionsLegacy = kgTransactionsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyKindergartenInvestment)
+  const transactionsLegacy   = transactionsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }))
+  const salesLegacy          = salesLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }))
 
   // Calcolo totali legacy per validazione
-  // Usiamo amountInvested come fonte primaria per gli investimenti se disponibile,
-  // altrimenti ripieghiamo sul calcolo avgCost * shares/quantity
   const getLegacyInvestmentCost = (i: LegacyInvestment | LegacyKindergartenInvestment) => {
     if ('amountInvested' in i && i.amountInvested > 0) return i.amountInvested
     return (i.avgCost || 0) * ((i as any).shares ?? (i as any).quantity ?? 0)
@@ -112,21 +120,23 @@ export const migrateFromLegacy = onCall(async (request) => {
 
   report.validation.kindergartenTotalInvested_legacy =
     kgPacsLegacy.reduce((sum, p) => sum + ((p.avgCost || 0) * (p.shares || 0)), 0) +
-    kgInvestmentsLegacy.reduce((sum, i) => sum + getLegacyInvestmentCost(i), 0)
+    kgTransactionsLegacy.reduce((sum, i) => sum + getLegacyInvestmentCost(i), 0)
 
-  // Processo di migrazione
+  // Migrazione
   const collectionsToMigrate = [
-    { legacyData: pacsLegacy, reportKey: 'pacs' as const, path: `users/${uid}/pacs` },
-    { legacyData: investmentsLegacy, reportKey: 'investments' as const, path: `users/${uid}/investments` },
-    { legacyData: kgPacsLegacy, reportKey: 'kindergartenPacs' as const, path: `users/${uid}/kindergarten_pacs` },
-    { legacyData: kgInvestmentsLegacy, reportKey: 'kindergartenInvestments' as const, path: `users/${uid}/kindergarten_investments` }
+    { legacyData: pacsLegacy,           reportKey: 'pacs' as const,                    destPath: `users/${uid}/pacs` },
+    { legacyData: investmentsLegacy,    reportKey: 'investments' as const,             destPath: `users/${uid}/investments` },
+    { legacyData: kgPacsLegacy,         reportKey: 'kindergartenPacs' as const,        destPath: `users/${uid}/kindergarten_pacs` },
+    { legacyData: kgTransactionsLegacy, reportKey: 'kindergartenTransactions' as const, destPath: `users/${uid}/kindergarten_transactions` },
+    { legacyData: transactionsLegacy,   reportKey: 'transactions' as const,            destPath: `users/${uid}/transactions` },
+    { legacyData: salesLegacy,          reportKey: 'sales' as const,                   destPath: `users/${uid}/sales` },
   ]
 
   for (const coll of collectionsToMigrate) {
-    for (const item of coll.legacyData) {
+    for (const item of coll.legacyData as any[]) {
       try {
         const legacyId = item.id
-        const docRef = newDb.collection(coll.path).doc(legacyId)
+        const docRef = newDb.collection(coll.destPath).doc(legacyId)
         const docSnap = await docRef.get()
 
         if (docSnap.exists) {
@@ -140,57 +150,46 @@ export const migrateFromLegacy = onCall(async (request) => {
         }
 
         let docData: any = {
+          ...item,
+          uid,
           legacyId,
           createdAt: now,
           updatedAt: now,
         }
+        delete docData.id
 
+        // Normalizzazione specifica per pacs/kindergarten_pacs
         if (coll.reportKey === 'pacs' || coll.reportKey === 'kindergartenPacs') {
           const p = item as LegacyPAC
           docData = {
             ...docData,
-            name: p.name,
-            isin: p.isin,
-            ticker: p.ticker || '',
             monthlyAmount: Number(p.monthlyAmount),
-            monthlyDays: p.monthlyDays || [],
-            dayOfMonth: p.dayOfMonth || 1,
-            startDate: p.startDate,
-            endDate: p.endDate || null,
-            active: !!p.active,
-            autoUpdate: !!p.autoUpdate,
-            platform: p.platform || '',
             shares: Number(p.shares || 0),
             avgCost: Number(p.avgCost || 0),
-            currentPrice: Number(p.lastPrice || 0),
-            notes: (p as any).notes || ''
+            currentPrice: Number((p as any).lastPrice || 0),
+            active: !!p.active,
+            autoUpdate: !!p.autoUpdate,
           }
-        } else {
+        }
+
+        // Normalizzazione specifica per investments
+        if (coll.reportKey === 'investments' || coll.reportKey === 'kindergartenTransactions') {
           const i = item as LegacyInvestment | LegacyKindergartenInvestment
           const quantity = Number((i as any).shares ?? (i as any).quantity ?? 0)
-
-          // Calcola avgCost se manca ma abbiamo amountInvested
           let avgCost = Number((i as any).avgCost || 0)
           if (avgCost === 0 && (i as any).amountInvested > 0 && quantity > 0) {
             avgCost = (i as any).amountInvested / quantity
           }
-
-          const currentPrice = Number((i as any).lastPrice || (i as any).currentValue / (quantity || 1) || 0)
-
+          const currentPrice = Number((i as any).lastPrice || 0)
           docData = {
             ...docData,
-            name: i.name,
-            isin: i.isin || '',
-            ticker: i.ticker || '',
             assetClass: mapAssetClass((i as any).type || (i as any).assetClass),
             broker: mapBroker(i.platform),
-            quantity: quantity,
-            avgCost: avgCost,
-            currentPrice: currentPrice,
+            quantity,
+            avgCost,
+            currentPrice,
             currentValue: currentPrice * quantity,
             currency: (i as any).currency || 'EUR',
-            isPac: false,
-            lastPriceUpdate: now
           }
         }
 
@@ -203,57 +202,42 @@ export const migrateFromLegacy = onCall(async (request) => {
     }
   }
 
-  // Validazione finale (anche in dryRun)
-  const [
-    pacsNewSnap,
-    investmentsNewSnap,
-    kgPacsNewSnap,
-    kgInvestmentsNewSnap
-  ] = await Promise.all([
-    newDb.collection(`users/${uid}/pacs`).get(),
-    newDb.collection(`users/${uid}/investments`).get(),
-    newDb.collection(`users/${uid}/kindergarten_pacs`).get(),
-    newDb.collection(`users/${uid}/kindergarten_investments`).get()
-  ])
-
-  // Nota: se dryRun, dobbiamo calcolare basandoci su cosa AVREMMO scritto + quello che già c'è
-  // Ma la richiesta dice di confrontare legacy vs nuovo progetto.
-  // In dryRun, i documenti non sono stati scritti, quindi il confronto diretto con newDb fallirebbe se il db è vuoto.
-  // Tuttavia, l'issue dice: "dryRun mode: se dryRun === true, esegui tutta la logica ma non scrivere su Firestore (ritorna solo il report simulato)"
-  // e "Validazione finale: confronta Σ(avgCost × shares) legacy vs nuovo".
-
-  // Se è un dryRun, simuliamo il calcolo del "nuovo" sommando gli skip (già presenti) e gli inserted (quelli che avremmo inserito)
-  // Per semplicità e precisione, calcoliamo i totali dai dati che abbiamo processato.
-
-  const calculateTotal = (docs: any[]) => docs.reduce((sum, d) => sum + (Number(d.avgCost || 0) * Number(d.shares || d.quantity || 0)), 0)
+  // Validazione finale
+  const calculateTotal = (docs: any[]) =>
+    docs.reduce((sum, d) => sum + (Number(d.avgCost || 0) * Number(d.shares || d.quantity || 0)), 0)
 
   if (dryRun) {
-     // In dry run calcoliamo basandoci sulle collezioni caricate dal legacy, assumendo che verrebbero scritte 1:1
-     report.validation.adultTotalInvested_new = calculateTotal(pacsLegacy) + calculateTotal(investmentsLegacy)
-     report.validation.kindergartenTotalInvested_new = calculateTotal(kgPacsLegacy) + calculateTotal(kgInvestmentsLegacy)
+    report.validation.adultTotalInvested_new = calculateTotal(pacsLegacy) + calculateTotal(investmentsLegacy)
+    report.validation.kindergartenTotalInvested_new = calculateTotal(kgPacsLegacy) + calculateTotal(kgTransactionsLegacy)
   } else {
-     report.validation.adultTotalInvested_new = calculateTotal(pacsNewSnap.docs.map(d => d.data())) + calculateTotal(investmentsNewSnap.docs.map(d => d.data()))
-     report.validation.kindergartenTotalInvested_new = calculateTotal(kgPacsNewSnap.docs.map(d => d.data())) + calculateTotal(kgInvestmentsNewSnap.docs.map(d => d.data()))
+    const [pacsNewSnap, invNewSnap, kgPacsNewSnap, kgTransNewSnap] = await Promise.all([
+      newDb.collection(`users/${uid}/pacs`).get(),
+      newDb.collection(`users/${uid}/investments`).get(),
+      newDb.collection(`users/${uid}/kindergarten_pacs`).get(),
+      newDb.collection(`users/${uid}/kindergarten_transactions`).get()
+    ])
+    report.validation.adultTotalInvested_new = calculateTotal(pacsNewSnap.docs.map(d => d.data())) + calculateTotal(invNewSnap.docs.map(d => d.data()))
+    report.validation.kindergartenTotalInvested_new = calculateTotal(kgPacsNewSnap.docs.map(d => d.data())) + calculateTotal(kgTransNewSnap.docs.map(d => d.data()))
   }
 
   const adultDiff = Math.abs(report.validation.adultTotalInvested_legacy - report.validation.adultTotalInvested_new)
-  const kgDiff = Math.abs(report.validation.kindergartenTotalInvested_legacy - report.validation.kindergartenTotalInvested_new)
-
+  const kgDiff    = Math.abs(report.validation.kindergartenTotalInvested_legacy - report.validation.kindergartenTotalInvested_new)
   report.validation.passed = adultDiff < 0.01 && kgDiff < 0.01
 
   if (!report.validation.passed) {
-    const errorMsg = `Mismatch validazione: adulti legacy=${report.validation.adultTotalInvested_legacy.toFixed(2)} new=${report.validation.adultTotalInvested_new.toFixed(2)} | kg legacy=${report.validation.kindergartenTotalInvested_legacy.toFixed(2)} new=${report.validation.kindergartenTotalInvested_new.toFixed(2)}`
+    const errorMsg = `Mismatch: adulti legacy=${report.validation.adultTotalInvested_legacy.toFixed(2)} new=${report.validation.adultTotalInvested_new.toFixed(2)} | kg legacy=${report.validation.kindergartenTotalInvested_legacy.toFixed(2)} new=${report.validation.kindergartenTotalInvested_new.toFixed(2)}`
     report.validation.mismatchDetails.push(errorMsg)
+    // In dryRun non throware — mostra solo il report
     if (!dryRun) {
       throw new HttpsError('internal', errorMsg)
     }
   }
 
-  // Audit log su successo
-  if (!dryRun && (report.pacs.inserted > 0 || report.investments.inserted > 0 || report.kindergartenPacs.inserted > 0 || report.kindergartenInvestments.inserted > 0)) {
+  // Audit log
+  if (!dryRun && Object.values(report).some((v: any) => v.inserted > 0)) {
     await newDb.collection(`users/${uid}/audit`).add({
-      action: 'LEGACY_IMPORT',
-      entityType: 'investment',
+      action: 'LEGACY_MIGRATION',
+      entityType: 'migration',
       entityId: 'migrateFromLegacy_' + now.toMillis(),
       uid,
       userEmail: email,
@@ -264,8 +248,5 @@ export const migrateFromLegacy = onCall(async (request) => {
     })
   }
 
-  return {
-    success: true,
-    data: report
-  }
+  return { success: true, data: report }
 })
