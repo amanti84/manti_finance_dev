@@ -47,6 +47,6 @@ jobs:
 
       - name: Deploy Functions
         working-directory: ${{ github.workspace }}
-        run: firebase deploy --only functions --project mantifinance
+        run: firebase deploy --only functions --project mantifinance --force
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa_key.json
