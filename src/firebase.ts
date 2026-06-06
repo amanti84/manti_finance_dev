@@ -21,5 +21,6 @@ export const auth: Auth = getAuth(app)
 export const googleProvider = new GoogleAuthProvider()
 googleProvider.setCustomParameters({ prompt: 'select_account' })
 export const storage: FirebaseStorage = getStorage(app)
-export const functions: Functions = getFunctions(app)
+// Specifica la region us-central1 — obbligatorio per Cloud Functions v2
+export const functions: Functions = getFunctions(app, 'us-central1')
 export default app
