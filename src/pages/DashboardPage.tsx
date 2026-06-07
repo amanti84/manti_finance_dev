@@ -89,6 +89,7 @@ const DashboardPage: React.FC = () => {
     };
 
     // Fetch PAC — legge da users/{uid}/investments filtrando isPac=true
+    // Il capitale investito si calcola come avgCost * quantity (campi dell'interfaccia Investment)
     const fetchPac = async () => {
       setPacLoading(true);
       const res = await getAllInvestments(user.uid);
@@ -96,7 +97,7 @@ const DashboardPage: React.FC = () => {
         const pacs = res.data.filter(inv => inv.isPac === true);
         if (pacs.length > 0) {
           const totalInvested = pacs.reduce(
-            (sum, inv) => sum + (inv.totalInvested ?? inv.currentValue ?? 0),
+            (sum, inv) => sum + inv.avgCost * inv.quantity,
             0
           );
           setPacData({ totalInvested, count: pacs.length });
