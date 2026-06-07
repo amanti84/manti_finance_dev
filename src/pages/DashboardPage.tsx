@@ -25,9 +25,8 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
 import { getPayslips } from '../services/payroll';
-import { getAllPacPayments } from '../services/pac';
-import { getAccounts, getRecurringExpenses } from '../services/cashflow';
 import { getAllInvestments } from '../services/investment';
+import { getAccounts, getRecurringExpenses } from '../services/cashflow';
 import { getMutuoConfig } from '../services/mutuo';
 
 const DashboardPage: React.FC = () => {
@@ -89,13 +88,21 @@ const DashboardPage: React.FC = () => {
       setPayslipLoading(false);
     };
 
-    // Fetch PAC
+    // Fetch PAC — legge da users/{uid}/investments filtrando isPac=true
     const fetchPac = async () => {
       setPacLoading(true);
-      const res = await getAllPacPayments(user.uid);
-      if (res.success && res.data && res.data.length > 0) {
-        const totalInvested = res.data.reduce((sum, p) => sum + p.importo, 0);
-        setPacData({ totalInvested, count: res.data.length });
+      const res = await getAllInvestments(user.uid);
+      if (res.success && res.data) {
+        const pacs = res.data.filter(inv => inv.isPac === true);
+        if (pacs.length > 0) {
+          const totalInvested = pacs.reduce(
+            (sum, inv) => sum + (inv.totalInvested ?? inv.currentValue ?? 0),
+            0
+          );
+          setPacData({ totalInvested, count: pacs.length });
+        } else {
+          setPacData(null);
+        }
       } else {
         setPacData(null);
       }
@@ -316,7 +323,7 @@ const DashboardPage: React.FC = () => {
                 {formatCurrency(pacData.totalInvested)}
               </div>
               <div className="text-xs text-text-muted">
-                {pacData.count} versamenti totali eseguiti
+                {pacData.count} {pacData.count === 1 ? 'piano attivo' : 'piani attivi'}
               </div>
             </div>
           )}
