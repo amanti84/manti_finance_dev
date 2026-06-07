@@ -9,11 +9,19 @@ import { formatCurrency } from '../utils/format'
 
 const SEED_FUNCTION_URL = 'https://us-central1-mantifinance.cloudfunctions.net/seeduserdata'
 
+interface MigrationCollectionResult {
+  inserted: number
+  skipped: number
+  errors: string[]
+}
+
 interface MigrationResult {
-  pacs: { inserted: number; skipped: number; errors: string[] }
-  investments: { inserted: number; skipped: number; errors: string[] }
-  kindergartenPacs: { inserted: number; skipped: number; errors: string[] }
-  kindergartenInvestments: { inserted: number; skipped: number; errors: string[] }
+  pacs: MigrationCollectionResult
+  investments: MigrationCollectionResult
+  kindergartenPacs: MigrationCollectionResult
+  kindergartenTransactions: MigrationCollectionResult
+  transactions: MigrationCollectionResult
+  sales: MigrationCollectionResult
   validation: {
     adultTotalInvested_legacy: number
     adultTotalInvested_new: number
@@ -107,6 +115,17 @@ export const AdminPage: FC = () => {
     }
   }
 
+  const allErrors = migrationResult
+    ? [
+        ...migrationResult.pacs.errors,
+        ...migrationResult.investments.errors,
+        ...migrationResult.kindergartenPacs.errors,
+        ...migrationResult.kindergartenTransactions.errors,
+        ...migrationResult.transactions.errors,
+        ...migrationResult.sales.errors,
+      ]
+    : []
+
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-8">
       <h1 className="text-2xl font-bold mb-6">Pannello Amministrazione</h1>
@@ -168,7 +187,11 @@ export const AdminPage: FC = () => {
         )}
 
         {migrationResult && (
-          <div className={`p-4 rounded border ${migrationResult.validation.passed ? 'bg-green-50 border-green-200 text-green-800' : 'bg-yellow-50 border-yellow-200 text-yellow-800'}`}>
+          <div className={`p-4 rounded border ${
+            migrationResult.validation.passed
+              ? 'bg-green-50 border-green-200 text-green-800'
+              : 'bg-yellow-50 border-yellow-200 text-yellow-800'
+          }`}>
             <h3 className="font-bold mb-2">
               {dryRun ? 'Report Simulazione (Dry Run)' : 'Report Migrazione'}
               {migrationResult.validation.passed ? ' ✅' : ' ⚠️'}
@@ -179,32 +202,34 @@ export const AdminPage: FC = () => {
                 <p className="font-semibold border-b border-current/20 pb-1">Portafoglio Adulti</p>
                 <p>PAC: +{migrationResult.pacs.inserted} (skip: {migrationResult.pacs.skipped})</p>
                 <p>Investimenti: +{migrationResult.investments.inserted} (skip: {migrationResult.investments.skipped})</p>
+                <p>Transazioni: +{migrationResult.transactions.inserted} (skip: {migrationResult.transactions.skipped})</p>
+                <p>Vendite: +{migrationResult.sales.inserted} (skip: {migrationResult.sales.skipped})</p>
                 <p className="pt-1">Legacy: {formatCurrency(migrationResult.validation.adultTotalInvested_legacy)}</p>
                 <p>Nuovo: {formatCurrency(migrationResult.validation.adultTotalInvested_new)}</p>
               </div>
               <div className="space-y-1">
                 <p className="font-semibold border-b border-current/20 pb-1">Kindergarten</p>
                 <p>PAC: +{migrationResult.kindergartenPacs.inserted} (skip: {migrationResult.kindergartenPacs.skipped})</p>
-                <p>Investimenti: +{migrationResult.kindergartenInvestments.inserted} (skip: {migrationResult.kindergartenInvestments.skipped})</p>
+                <p>Transazioni: +{migrationResult.kindergartenTransactions.inserted} (skip: {migrationResult.kindergartenTransactions.skipped})</p>
                 <p className="pt-1">Legacy: {formatCurrency(migrationResult.validation.kindergartenTotalInvested_legacy)}</p>
                 <p>Nuovo: {formatCurrency(migrationResult.validation.kindergartenTotalInvested_new)}</p>
               </div>
             </div>
 
-            {!migrationResult.validation.passed && (
+            {!migrationResult.validation.passed && migrationResult.validation.mismatchDetails.length > 0 && (
               <div className="text-xs bg-red-100 p-2 rounded text-red-700 mt-2">
                 <p className="font-bold">Dettagli Mismatch:</p>
                 {migrationResult.validation.mismatchDetails.map((d, i) => <p key={i}>{d}</p>)}
               </div>
             )}
 
-            {(migrationResult.pacs.errors.length > 0 || migrationResult.investments.errors.length > 0) && (
+            {allErrors.length > 0 && (
               <div className="text-xs bg-red-100 p-2 rounded text-red-700 mt-2">
                 <p className="font-bold">Errori parziali:</p>
-                {[...migrationResult.pacs.errors, ...migrationResult.investments.errors].slice(0, 5).map((e, i) => (
+                {allErrors.slice(0, 5).map((e, i) => (
                   <p key={i}>{e}</p>
                 ))}
-                {([...migrationResult.pacs.errors, ...migrationResult.investments.errors].length > 5) && <p>...e altri</p>}
+                {allErrors.length > 5 && <p>...e altri {allErrors.length - 5}</p>}
               </div>
             )}
           </div>
