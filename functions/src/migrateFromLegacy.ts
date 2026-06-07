@@ -31,8 +31,6 @@ export const migrateFromLegacy = onCall(async (request) => {
   const legacyApp = getApps().find(a => a.name === 'legacy') ||
     initializeApp({ projectId: 'manti-finance' }, 'legacy')
   const legacyDb = getFirestore(legacyApp)
-  // Fix: il Firestore di manti-finance è in eur3, occorre forzare il host corretto
-  legacyDb.settings({ host: 'europe-west3-firestore.googleapis.com', ssl: true })
   const newDb = getFirestore()
 
   // 1. Auth check
