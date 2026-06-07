@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
 import { getPayslips } from '../services/payroll';
+import { getAllPacPayments } from '../services/pac';
 import { getAllInvestments } from '../services/investment';
 import { getAccounts, getRecurringExpenses } from '../services/cashflow';
 import { getMutuoConfig } from '../services/mutuo';
@@ -35,7 +36,6 @@ const DashboardPage: React.FC = () => {
   const [alerts, setAlerts] = useState<FinancialAlert[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(true);
 
-  // States for cards
   const [payslipData, setPayslipData] = useState<{ last: Payslip; trend: number | undefined } | null>(null);
   const [payslipLoading, setPayslipLoading] = useState(true);
 
@@ -59,7 +59,6 @@ const DashboardPage: React.FC = () => {
     setAlertsLoading(false);
   }, [user]);
 
-  // Data Fetching Effects
   useEffect(() => {
     void fetchAlerts();
   }, [fetchAlerts]);
@@ -67,12 +66,11 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Fetch Payslips
     const fetchPayslips = async () => {
       setPayslipLoading(true);
       const res = await getPayslips(user.uid);
       if (res.success && res.data && res.data.length > 0) {
-        const sorted = res.data; // Already sorted desc by year/month in service
+        const sorted = res.data;
         const last = sorted[0];
         let trend: number | undefined;
         if (sorted.length > 1) {
@@ -88,46 +86,35 @@ const DashboardPage: React.FC = () => {
       setPayslipLoading(false);
     };
 
-    // Fetch PAC — legge da users/{uid}/investments filtrando isPac=true
-    // Il capitale investito si calcola come avgCost * quantity (campi dell'interfaccia Investment)
+    // Card PAC: totale versato = somma importo da PacPayment
+    // Fonte: getAllPacPayments — riflette i versamenti effettivi registrati
     const fetchPac = async () => {
       setPacLoading(true);
-      const res = await getAllInvestments(user.uid);
-      if (res.success && res.data) {
-        const pacs = res.data.filter(inv => inv.isPac === true);
-        if (pacs.length > 0) {
-          const totalInvested = pacs.reduce(
-            (sum, inv) => sum + inv.avgCost * inv.quantity,
-            0
-          );
-          setPacData({ totalInvested, count: pacs.length });
-        } else {
-          setPacData(null);
-        }
+      const res = await getAllPacPayments(user.uid);
+      if (res.success && res.data && res.data.length > 0) {
+        const totalInvested = res.data.reduce((sum, p) => sum + p.importo, 0);
+        setPacData({ totalInvested, count: res.data.length });
       } else {
         setPacData(null);
       }
       setPacLoading(false);
     };
 
-    // Fetch Cashflow (Available Balance)
     const fetchCashflow = async () => {
       setCashflowLoading(true);
       const [accRes, expRes] = await Promise.all([
         getAccounts(user.uid),
         getRecurringExpenses(user.uid)
       ]);
-
       if (accRes.success && accRes.data && accRes.data.length > 0) {
         const totalBalance = accRes.data.reduce((sum, acc) => sum + acc.currentBalance, 0);
         let monthlyExpenses = 0;
         if (expRes.success && expRes.data) {
           monthlyExpenses = expRes.data.reduce((sum, exp) => {
-            let amount = 0;
-            if (exp.frequency === 'monthly') amount = exp.amount;
-            else if (exp.frequency === 'quarterly') amount = exp.amount / 3;
-            else if (exp.frequency === 'annual') amount = exp.amount / 12;
-            return sum + amount;
+            if (exp.frequency === 'monthly') return sum + exp.amount;
+            if (exp.frequency === 'quarterly') return sum + exp.amount / 3;
+            if (exp.frequency === 'annual') return sum + exp.amount / 12;
+            return sum;
           }, 0);
         }
         setCashflowData({ available: totalBalance - monthlyExpenses });
@@ -137,16 +124,13 @@ const DashboardPage: React.FC = () => {
       setCashflowLoading(false);
     };
 
-    // Fetch Net Worth
     const fetchNetWorth = async () => {
       setNetWorthLoading(true);
-
       const [accRes, invRes, mutuoRes] = await Promise.all([
         getAccounts(user.uid),
         getAllInvestments(user.uid),
         getMutuoConfig(user.uid)
       ]);
-
       let total = 0;
       let isPartial = false;
       let hasAnyData = false;
@@ -324,7 +308,7 @@ const DashboardPage: React.FC = () => {
                 {formatCurrency(pacData.totalInvested)}
               </div>
               <div className="text-xs text-text-muted">
-                {pacData.count} {pacData.count === 1 ? 'piano attivo' : 'piani attivi'}
+                {pacData.count} {pacData.count === 1 ? 'versamento registrato' : 'versamenti registrati'}
               </div>
             </div>
           )}
