@@ -25,7 +25,7 @@ export async function getKindergartenInvestments(
   uid: string
 ): Promise<ApiResult<KindergartenInvestment[]>> {
   try {
-    const q = query(investmentCol(uid), orderBy('purchaseDate', 'desc'))
+    const q = query(investmentCol(uid), orderBy('createdAt', 'desc'))
     const snap = await getDocs(q)
     const data = snap.docs.map(d => ({
       id: d.id,
