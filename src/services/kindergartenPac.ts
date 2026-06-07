@@ -25,7 +25,7 @@ export async function getKindergartenPACs(
   uid: string
 ): Promise<ApiResult<KindergartenPAC[]>> {
   try {
-    const q = query(pacCol(uid), orderBy('startDate', 'desc'))
+    const q = query(pacCol(uid), orderBy('createdAt', 'desc'))
     const snap = await getDocs(q)
     const data = snap.docs.map(d => ({
       id: d.id,
