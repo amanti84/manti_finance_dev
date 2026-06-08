@@ -33,6 +33,7 @@ import { getActiveAlerts } from '../services/alert'
 import { listInboxItems, calculateBadgeCount } from '../services/inbox'
 import { InboxBadge } from '../modules/inbox'
 import type { InboxBadgeCount } from '../types'
+import { Logo } from './Logo'
 
 interface NavItem {
   label: string
@@ -98,37 +99,6 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ]
-
-const Logo: FC<{ collapsed?: boolean }> = ({ collapsed }) => (
-  <div className="flex items-center gap-2 px-2 py-1">
-    <svg
-      width="32"
-      height="32"
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="text-primary"
-    >
-      <rect width="32" height="32" rx="6" fill="currentColor" fillOpacity="0.1" />
-      <path
-        d="M8 24V8H12L16 14L20 8H24V24H20V14L16 20L12 14V24H8Z"
-        fill="currentColor"
-      />
-      <path
-        d="M14 24H18M14 20H22"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        className="hidden"
-      />
-    </svg>
-    {!collapsed && (
-      <span className="text-xl font-bold tracking-tight text-text whitespace-nowrap">
-        Manti<span className="text-primary">Finance</span>
-      </span>
-    )}
-  </div>
-)
 
 interface NavContentProps {
   isSidebarCollapsed: boolean
