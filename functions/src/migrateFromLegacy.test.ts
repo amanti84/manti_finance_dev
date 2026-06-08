@@ -90,13 +90,17 @@ describe('migrateFromLegacy', () => {
     }
 
     // Mock Legacy Data
-    mockLegacyCollection.get.mockResolvedValueOnce({
+    mockLegacyCollection.get.mockResolvedValueOnce({ // pacs
       docs: [{ id: 'p1', data: () => ({ name: 'PAC 1', avgCost: 10, shares: 100, monthlyAmount: 100, startDate: '2023-01-01' }) }]
-    }).mockResolvedValueOnce({
+    }).mockResolvedValueOnce({ // investments
       docs: [{ id: 'i1', data: () => ({ name: 'Inv 1', avgCost: 50, quantity: 20, type: 'ETF', platform: 'Fineco' }) }]
-    }).mockResolvedValueOnce({
+    }).mockResolvedValueOnce({ // kindergarten_pacs
       docs: []
-    }).mockResolvedValueOnce({
+    }).mockResolvedValueOnce({ // kindergarten_transactions
+      docs: []
+    }).mockResolvedValueOnce({ // transactions
+      docs: []
+    }).mockResolvedValueOnce({ // sales
       docs: []
     })
 
@@ -121,6 +125,67 @@ describe('migrateFromLegacy', () => {
     expect(result.data.investments.inserted).toBe(1)
     expect(result.data.validation.passed).toBe(true)
     expect(mockDoc.set).toHaveBeenCalledTimes(2)
+  })
+
+  it('should migrate kindergarten data correctly', async () => {
+    const request = {
+      auth: { token: { email: 'ant.manti@gmail.com' }, uid: 'admin123' },
+      data: { dryRun: false },
+    }
+
+    // Mock Legacy Data: 1 PAC, 1 Investment
+    // The collection name is NOT passed to get(), it's legacyDb.collection(name).get()
+    // and our mockLegacyCollection is what is returned by collection(name).
+    // So we need to mock successive calls to get() on that same object.
+    mockLegacyCollection.get
+      .mockResolvedValueOnce({ docs: [] }) // pacs
+      .mockResolvedValueOnce({ docs: [] }) // investments
+      .mockResolvedValueOnce({ // kindergarten_pacs
+        docs: [{ id: 'kgp1', data: () => ({ name: 'KG PAC', avgCost: 10, shares: 100, monthlyAmount: 100 }) }]
+      })
+      .mockResolvedValueOnce({ // kindergarten_transactions
+        docs: [{ id: 'kgi1', data: () => ({ name: 'KG Inv', avgCost: 50, shares: 20, type: 'ETF' }) }]
+      })
+      .mockResolvedValueOnce({ docs: [] }) // transactions
+      .mockResolvedValueOnce({ docs: [] }) // sales
+
+    // Mock New Data Check
+    mockDoc.get.mockResolvedValue({ exists: false })
+
+    // Mock New Data Snapshots for Validation
+    // Similar to legacy, collection(path).get() returns the same mockCollection.
+    // We need to mock the get() calls on mockCollection.
+    mockCollection.get
+      .mockResolvedValueOnce({ docs: [] }) // pacs
+      .mockResolvedValueOnce({ docs: [] }) // investments
+      .mockResolvedValueOnce({ // kindergarten_pacs
+        docs: [{ data: () => ({ totalInvested: 1000 }) }]
+      })
+      .mockResolvedValueOnce({ // kindergarten_investments
+        docs: [{ data: () => ({ purchasePrice: 50, quantity: 20 }) }]
+      })
+
+    const result = (await (migrateFromLegacy as any)(request as any)) as any
+
+    expect(result.success).toBe(true)
+    expect(result.data.kindergartenPacs.inserted).toBe(1)
+    expect(result.data.kindergartenInvestments.inserted).toBe(1)
+    expect(result.data.validation.passed).toBe(true)
+
+    // Verify mapping for PAC
+    expect(mockDb.collection).toHaveBeenCalledWith('users/admin123/kindergarten_pacs')
+    expect(mockDoc.set).toHaveBeenCalledWith(expect.objectContaining({
+      totalInvested: 1000,
+      targetYears: 18
+    }))
+
+    // Verify mapping for Investment
+    expect(mockDb.collection).toHaveBeenCalledWith('users/admin123/kindergarten_investments')
+    expect(mockDoc.set).toHaveBeenCalledWith(expect.objectContaining({
+      purchasePrice: 50,
+      quantity: 20,
+      category: 'etf'
+    }))
   })
 
   it('should skip existing documents', async () => {
