@@ -7,7 +7,7 @@ import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { auth, googleProvider } from '../firebase'
 
-interface UseAuthReturn {
+export interface UseAuthReturn {
   user: User | null
   loading: boolean
   signInWithGoogle: () => Promise<{ success: boolean; error?: string }>
