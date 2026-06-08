@@ -310,3 +310,130 @@ export const migrateFromLegacy = onCall(async (request) => {
 
   return { success: true, data: report }
 })
+
+export const migrateCollections = onCall(async (request) => {
+  const newDb = getFirestore()
+
+  // 1. Auth check
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', "L'utente deve essere autenticato")
+  }
+
+  const email = request.auth.token.email
+  if (email !== ADMIN_EMAIL) {
+    throw new HttpsError('permission-denied', "Accesso riservato all'amministratore")
+  }
+
+  const targetUid = request.data?.targetUid || request.auth.uid
+  const dryRun = !!request.data?.dryRun
+  const now = Timestamp.now()
+
+  const report = {
+    adultPacs: { moved: 0, skipped: 0, errors: [] as string[] },
+    kindergartenPacs: { moved: 0, skipped: 0, errors: [] as string[] },
+    kindergartenInvestments: { moved: 0, skipped: 0, errors: [] as string[] }
+  }
+
+  // A. Move PACs from investments to pacs and kindergarten_pacs
+  const invSnap = await newDb.collection(`users/${targetUid}/investments`).where('isPac', '==', true).get()
+
+  for (const docSnap of invSnap.docs) {
+    try {
+      const data = docSnap.data()
+      const isKG = !!data.isKindergarten
+      const destColl = isKG ? `users/${targetUid}/kindergarten_pacs` : `users/${targetUid}/pacs`
+      const reportKey = isKG ? 'kindergartenPacs' : 'adultPacs'
+
+      const destRef = newDb.collection(destColl).doc(docSnap.id)
+      const destSnap = await destRef.get()
+
+      if (destSnap.exists) {
+        report[reportKey].skipped++
+        continue
+      }
+
+      if (!dryRun) {
+        // Mapping Investment -> PacConfig / KindergartenPAC
+        const commonData = {
+          name: data.name,
+          isin: data.isin || '',
+          ticker: data.ticker || '',
+          monthlyAmount: Number(data.pacMonthlyAmount || 0),
+          active: true,
+          autoUpdate: !!data.autoUpdate,
+          updatedAt: now,
+          legacyId: data.legacyId || docSnap.id,
+          uid: targetUid
+        }
+
+        let docData: any
+        if (isKG) {
+          docData = {
+            ...commonData,
+            startDate: (data.createdAt as Timestamp)?.toDate().toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+            targetYears: 18,
+            currentValue: Number(data.currentValue || 0),
+            totalInvested: Number(data.avgCost || 0) * Number(data.quantity || 0),
+            createdAt: data.createdAt || now
+          }
+        } else {
+          docData = {
+            ...commonData,
+            startDate: (data.createdAt as Timestamp)?.toDate().toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+            dayOfMonth: 1,
+            shares: Number(data.quantity || 0),
+            avgCost: Number(data.avgCost || 0),
+            currentPrice: Number(data.currentPrice || 0),
+            createdAt: data.createdAt || now
+          }
+        }
+
+        await destRef.set(docData)
+      }
+      report[reportKey].moved++
+    } catch (err) {
+      const isKG = !!docSnap.data().isKindergarten
+      const reportKey = isKG ? 'kindergartenPacs' : 'adultPacs'
+      report[reportKey].errors.push(`ID ${docSnap.id}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  // B. Move KG transactions from transactions to kindergarten_investments
+  const transSnap = await newDb.collection(`users/${targetUid}/transactions`).where('isKindergarten', '==', true).get()
+
+  for (const docSnap of transSnap.docs) {
+    try {
+      const data = docSnap.data()
+      const destRef = newDb.collection(`users/${targetUid}/kindergarten_investments`).doc(docSnap.id)
+      const destSnap = await destRef.get()
+
+      if (destSnap.exists) {
+        report.kindergartenInvestments.skipped++
+        continue
+      }
+
+      if (!dryRun) {
+        // Mapping Transaction -> KindergartenInvestment
+        const docData = {
+          name: data.description || 'Investimento KG',
+          category: 'other',
+          purchaseDate: (data.date as Timestamp)?.toDate().toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+          purchasePrice: Number(data.amount || 0),
+          quantity: 1,
+          currentPrice: Number(data.amount || 0),
+          createdAt: data.createdAt || now,
+          updatedAt: now,
+          legacyId: data.legacyId || docSnap.id,
+          uid: targetUid
+        }
+
+        await destRef.set(docData)
+      }
+      report.kindergartenInvestments.moved++
+    } catch (err) {
+      report.kindergartenInvestments.errors.push(`ID ${docSnap.id}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
+  return { success: true, data: report }
+})
