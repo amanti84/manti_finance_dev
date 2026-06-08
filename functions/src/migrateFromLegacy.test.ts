@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { getFirestore } from 'firebase-admin/firestore'
-import { migrateFromLegacy } from './migrateFromLegacy'
+import { migrateFromLegacy, migrateCollections } from './migrateFromLegacy'
 
 // Mock firebase-functions
 vi.mock('firebase-functions/v2/https', () => ({
@@ -89,30 +89,32 @@ describe('migrateFromLegacy', () => {
       data: { dryRun: false },
     }
 
-    // Mock Legacy Data
-    mockLegacyCollection.get.mockResolvedValueOnce({
-      docs: [{ id: 'p1', data: () => ({ name: 'PAC 1', avgCost: 10, shares: 100, monthlyAmount: 100, startDate: '2023-01-01' }) }]
-    }).mockResolvedValueOnce({
-      docs: [{ id: 'i1', data: () => ({ name: 'Inv 1', avgCost: 50, quantity: 20, type: 'ETF', platform: 'Fineco' }) }]
-    }).mockResolvedValueOnce({
-      docs: []
-    }).mockResolvedValueOnce({
-      docs: []
-    })
+    // Mock Legacy Data (6 collections)
+    mockLegacyCollection.get
+      .mockResolvedValueOnce({
+        docs: [{ id: 'p1', data: () => ({ name: 'PAC 1', avgCost: 10, shares: 100, monthlyAmount: 100, startDate: '2023-01-01' }) }]
+      })
+      .mockResolvedValueOnce({
+        docs: [{ id: 'i1', data: () => ({ name: 'Inv 1', avgCost: 50, quantity: 20, type: 'ETF', platform: 'Fineco' }) }]
+      })
+      .mockResolvedValueOnce({ docs: [] }) // kgPacs
+      .mockResolvedValueOnce({ docs: [] }) // kgTrans
+      .mockResolvedValueOnce({ docs: [] }) // transactions
+      .mockResolvedValueOnce({ docs: [] }) // sales
 
     // Mock New Data Check
     mockDoc.get.mockResolvedValue({ exists: false })
 
-    // Mock New Data Snapshots for Validation (after write)
-    mockCollection.get.mockResolvedValueOnce({
-      docs: [{ data: () => ({ avgCost: 10, shares: 100 }) }]
-    }).mockResolvedValueOnce({
-      docs: [{ data: () => ({ avgCost: 50, quantity: 20 }) }]
-    }).mockResolvedValueOnce({
-      docs: []
-    }).mockResolvedValueOnce({
-      docs: []
-    })
+    // Mock New Data Snapshots for Validation (after write, 4 collections)
+    mockCollection.get
+      .mockResolvedValueOnce({
+        docs: [{ data: () => ({ avgCost: 10, shares: 100 }) }]
+      })
+      .mockResolvedValueOnce({
+        docs: [{ data: () => ({ avgCost: 50, quantity: 20 }) }]
+      })
+      .mockResolvedValueOnce({ docs: [] })
+      .mockResolvedValueOnce({ docs: [] })
 
     const result = (await (migrateFromLegacy as any)(request as any)) as any
 
@@ -173,9 +175,11 @@ describe('migrateFromLegacy', () => {
     }
 
     // Legacy: 1000€
-    mockLegacyCollection.get.mockResolvedValueOnce({
-      docs: [{ id: 'p1', data: () => ({ name: 'PAC 1', avgCost: 10, shares: 100, monthlyAmount: 100, startDate: '2023-01-01' }) }]
-    }).mockResolvedValue({ docs: [] })
+    mockLegacyCollection.get
+      .mockResolvedValueOnce({
+        docs: [{ id: 'p1', data: () => ({ name: 'PAC 1', avgCost: 10, shares: 100, monthlyAmount: 100, startDate: '2023-01-01' }) }]
+      })
+      .mockResolvedValue({ docs: [] })
 
     mockDoc.get.mockResolvedValue({ exists: false })
 
@@ -187,5 +191,126 @@ describe('migrateFromLegacy', () => {
     await expect((migrateFromLegacy as any)(request as any)).rejects.toThrow(
       expect.objectContaining({ code: 'internal' })
     )
+  })
+})
+
+describe('migrateCollections', () => {
+  let mockDb: any
+  let mockDoc: any
+  let mockCollection: any
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    // Mock New DB
+    mockDoc = {
+      get: vi.fn(),
+      set: vi.fn(),
+      delete: vi.fn(),
+    }
+    mockCollection = {
+      doc: vi.fn(() => mockDoc),
+      get: vi.fn(),
+      where: vi.fn().mockReturnThis(),
+    }
+    mockDb = {
+      collection: vi.fn(() => mockCollection),
+    }
+
+    vi.mocked(getFirestore).mockReturnValue(mockDb)
+  })
+
+  it('should migrate collections correctly', async () => {
+    const request = {
+      auth: { token: { email: 'ant.manti@gmail.com' }, uid: 'admin123' },
+      data: { dryRun: false },
+    }
+
+    // Mock Investments Snap (1 Adult PAC, 1 KG PAC)
+    mockCollection.get.mockResolvedValueOnce({
+      docs: [
+        {
+          id: 'pac1',
+          ref: { delete: vi.fn() },
+          data: () => ({ name: 'Adult PAC', isPac: true, isKindergarten: false, pacMonthlyAmount: 100, quantity: 10, avgCost: 10, currentPrice: 10 })
+        },
+        {
+          id: 'kgpac1',
+          ref: { delete: vi.fn() },
+          data: () => ({ name: 'KG PAC', isPac: true, isKindergarten: true, pacMonthlyAmount: 50, quantity: 5, avgCost: 10, currentValue: 55 })
+        }
+      ]
+    })
+
+    // Mock Transactions Snap (1 KG Trans)
+    mockCollection.get.mockResolvedValueOnce({
+      docs: [
+        {
+          id: 'kgtrans1',
+          ref: { delete: vi.fn() },
+          data: () => ({ description: 'KG Invest', isKindergarten: true, amount: 200, date: { toDate: () => new Date() } })
+        }
+      ]
+    })
+
+    // Mock destination checks
+    mockDoc.get.mockResolvedValue({ exists: false })
+
+    const result = (await (migrateCollections as any)(request as any)) as any
+
+    expect(result.success).toBe(true)
+    expect(result.data.adultPacs.moved).toBe(1)
+    expect(result.data.kindergartenPacs.moved).toBe(1)
+    expect(result.data.kindergartenInvestments.moved).toBe(1)
+
+    // Verify copies
+    expect(mockDoc.set).toHaveBeenCalledTimes(3)
+    // Verify deletions
+    expect(mockCollection.get.mock.results[0].value.then).toBeDefined() // promise
+    const invDocs = (await mockCollection.get.mock.results[0].value).docs
+    expect(invDocs[0].ref.delete).toHaveBeenCalled()
+    expect(invDocs[1].ref.delete).toHaveBeenCalled()
+
+    const transDocs = (await mockCollection.get.mock.results[1].value).docs
+    expect(transDocs[0].ref.delete).toHaveBeenCalled()
+  })
+
+  it('should skip existing documents in migrateCollections', async () => {
+    const request = {
+      auth: { token: { email: 'ant.manti@gmail.com' }, uid: 'admin123' },
+      data: { dryRun: false },
+    }
+
+    mockCollection.get.mockResolvedValueOnce({
+      docs: [{ id: 'pac1', data: () => ({ name: 'Adult PAC', isPac: true }) }]
+    }).mockResolvedValueOnce({ docs: [] })
+
+    mockDoc.get.mockResolvedValue({ exists: true })
+
+    const result = (await (migrateCollections as any)(request as any)) as any
+
+    expect(result.data.adultPacs.moved).toBe(0)
+    expect(result.data.adultPacs.skipped).toBe(1)
+    expect(mockDoc.set).not.toHaveBeenCalled()
+  })
+
+  it('should handle dryRun in migrateCollections', async () => {
+    const request = {
+      auth: { token: { email: 'ant.manti@gmail.com' }, uid: 'admin123' },
+      data: { dryRun: true },
+    }
+
+    mockCollection.get.mockResolvedValueOnce({
+      docs: [{ id: 'pac1', ref: { delete: vi.fn() }, data: () => ({ name: 'Adult PAC', isPac: true }) }]
+    }).mockResolvedValueOnce({ docs: [] })
+
+    mockDoc.get.mockResolvedValue({ exists: false })
+
+    const result = (await (migrateCollections as any)(request as any)) as any
+
+    expect(result.data.adultPacs.moved).toBe(1)
+    expect(mockDoc.set).not.toHaveBeenCalled()
+    const invDocs = (await mockCollection.get.mock.results[0].value).docs
+    expect(invDocs[0].ref.delete).not.toHaveBeenCalled()
   })
 })
