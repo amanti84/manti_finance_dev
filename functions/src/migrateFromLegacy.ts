@@ -172,13 +172,6 @@ export const migrateFromLegacy = onCall(async (request) => {
           }
         }
 
-        // Normalizzazione specifica per investments
-        if (coll.reportKey === 'investments' || coll.reportKey === 'kindergartenInvestments') {
-          const i = item as LegacyInvestment | LegacyKindergartenInvestment
-          const quantity = Number((i as any).shares ?? (i as any).quantity ?? 0)
-          let avgCost = Number((i as any).avgCost || 0)
-          if (avgCost === 0 && (i as any).amountInvested > 0 && quantity > 0) {
-            avgCost = (i as any).amountInvested / quantity
         // Normalizzazione specifica per Kindergarten PACs
         if (coll.reportKey === 'kindergartenPacs') {
           const p = item as LegacyPAC

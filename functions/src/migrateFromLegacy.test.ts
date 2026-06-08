@@ -96,7 +96,7 @@ describe('migrateFromLegacy', () => {
       docs: [{ id: 'i1', data: () => ({ name: 'Inv 1', avgCost: 50, quantity: 20, type: 'ETF', platform: 'Fineco' }) }]
     }).mockResolvedValueOnce({ // kindergarten_pacs
       docs: []
-    }).mockResolvedValueOnce({ // kindergarten_investments
+    }).mockResolvedValueOnce({ // kindergarten_transactions
       docs: []
     }).mockResolvedValueOnce({ // transactions
       docs: []
@@ -107,16 +107,16 @@ describe('migrateFromLegacy', () => {
     // Mock New Data Check
     mockDoc.get.mockResolvedValue({ exists: false })
 
-    // Mock New Data Snapshots for Validation (after write, 4 collections)
-    mockCollection.get
-      .mockResolvedValueOnce({
-        docs: [{ data: () => ({ avgCost: 10, shares: 100 }) }]
-      })
-      .mockResolvedValueOnce({
-        docs: [{ data: () => ({ avgCost: 50, quantity: 20 }) }]
-      })
-      .mockResolvedValueOnce({ docs: [] })
-      .mockResolvedValueOnce({ docs: [] })
+    // Mock New Data Snapshots for Validation (after write)
+    mockCollection.get.mockResolvedValueOnce({
+      docs: [{ data: () => ({ avgCost: 10, shares: 100 }) }]
+    }).mockResolvedValueOnce({
+      docs: [{ data: () => ({ avgCost: 50, quantity: 20 }) }]
+    }).mockResolvedValueOnce({
+      docs: []
+    }).mockResolvedValueOnce({
+      docs: []
+    })
 
     const result = (await (migrateFromLegacy as any)(request as any)) as any
 
@@ -238,11 +238,9 @@ describe('migrateFromLegacy', () => {
     }
 
     // Legacy: 1000€
-    mockLegacyCollection.get
-      .mockResolvedValueOnce({
-        docs: [{ id: 'p1', data: () => ({ name: 'PAC 1', avgCost: 10, shares: 100, monthlyAmount: 100, startDate: '2023-01-01' }) }]
-      })
-      .mockResolvedValue({ docs: [] })
+    mockLegacyCollection.get.mockResolvedValueOnce({
+      docs: [{ id: 'p1', data: () => ({ name: 'PAC 1', avgCost: 10, shares: 100, monthlyAmount: 100, startDate: '2023-01-01' }) }]
+    }).mockResolvedValue({ docs: [] })
 
     mockDoc.get.mockResolvedValue({ exists: false })
 
