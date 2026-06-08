@@ -265,14 +265,14 @@ describe('migrateCollections', () => {
 
     // Verify copies
     expect(mockDoc.set).toHaveBeenCalledTimes(3)
-    // Verify deletions
+    // Verify NO deletions (requirement #123 Step 4)
     expect(mockCollection.get.mock.results[0].value.then).toBeDefined() // promise
     const invDocs = (await mockCollection.get.mock.results[0].value).docs
-    expect(invDocs[0].ref.delete).toHaveBeenCalled()
-    expect(invDocs[1].ref.delete).toHaveBeenCalled()
+    expect(invDocs[0].ref.delete).not.toHaveBeenCalled()
+    expect(invDocs[1].ref.delete).not.toHaveBeenCalled()
 
     const transDocs = (await mockCollection.get.mock.results[1].value).docs
-    expect(transDocs[0].ref.delete).toHaveBeenCalled()
+    expect(transDocs[0].ref.delete).not.toHaveBeenCalled()
   })
 
   it('should skip existing documents in migrateCollections', async () => {

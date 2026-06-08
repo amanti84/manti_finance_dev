@@ -329,7 +329,6 @@ export const migrateCollections = onCall(async (request) => {
         }
 
         await destRef.set(docData)
-        await docSnap.ref.delete()
       }
       report[reportKey].moved++
     } catch (err) {
@@ -369,7 +368,6 @@ export const migrateCollections = onCall(async (request) => {
         }
 
         await destRef.set(docData)
-        await docSnap.ref.delete()
       }
       report.kindergartenInvestments.moved++
     } catch (err) {
