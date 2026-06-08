@@ -660,3 +660,13 @@ export interface PensionFund extends BaseDocument {
   notes?: string
 }
 
+export interface PrevidenzaConfig extends BaseDocument {
+  birthYear: number
+  inpsStartYear: number
+  currentRal: number
+  pensionFundBroker?: string
+  pensionFundContributionPct?: number
+  pensionFundEmployerContributionPct?: number
+  expectedReturnPct?: number
+  retirementAgeTarget?: number
+}
