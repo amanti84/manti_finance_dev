@@ -19,7 +19,7 @@ interface MigrationResult {
   pacs: MigrationCollectionResult
   investments: MigrationCollectionResult
   kindergartenPacs: MigrationCollectionResult
-  kindergartenTransactions: MigrationCollectionResult
+  kindergartenInvestments: MigrationCollectionResult
   transactions: MigrationCollectionResult
   sales: MigrationCollectionResult
   validation: {
@@ -120,7 +120,7 @@ export const AdminPage: FC = () => {
         ...migrationResult.pacs.errors,
         ...migrationResult.investments.errors,
         ...migrationResult.kindergartenPacs.errors,
-        ...migrationResult.kindergartenTransactions.errors,
+        ...migrationResult.kindergartenInvestments.errors,
         ...migrationResult.transactions.errors,
         ...migrationResult.sales.errors,
       ]
@@ -210,7 +210,7 @@ export const AdminPage: FC = () => {
               <div className="space-y-1">
                 <p className="font-semibold border-b border-current/20 pb-1">Kindergarten</p>
                 <p>PAC: +{migrationResult.kindergartenPacs.inserted} (skip: {migrationResult.kindergartenPacs.skipped})</p>
-                <p>Transazioni: +{migrationResult.kindergartenTransactions.inserted} (skip: {migrationResult.kindergartenTransactions.skipped})</p>
+                <p>Investimenti: +{migrationResult.kindergartenInvestments.inserted} (skip: {migrationResult.kindergartenInvestments.skipped})</p>
                 <p className="pt-1">Legacy: {formatCurrency(migrationResult.validation.kindergartenTotalInvested_legacy)}</p>
                 <p>Nuovo: {formatCurrency(migrationResult.validation.kindergartenTotalInvested_new)}</p>
               </div>

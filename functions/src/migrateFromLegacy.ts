@@ -89,7 +89,7 @@ export const migrateFromLegacy = onCall(async (request) => {
     pacsLegacySnap,
     investmentsLegacySnap,
     kgPacsLegacySnap,
-    kgTransactionsLegacySnap,
+    kgInvestmentsLegacySnap,
     transactionsLegacySnap,
     salesLegacySnap
   ] = await Promise.all([
@@ -104,7 +104,7 @@ export const migrateFromLegacy = onCall(async (request) => {
   const pacsLegacy           = pacsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyPAC)
   const investmentsLegacy    = investmentsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyInvestment)
   const kgPacsLegacy         = kgPacsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyPAC)
-  const kgTransactionsLegacy = kgTransactionsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyKindergartenInvestment)
+  const kgInvestmentsLegacy  = kgInvestmentsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }) as LegacyKindergartenInvestment)
   const transactionsLegacy   = transactionsLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }))
   const salesLegacy          = salesLegacySnap.docs.map(d => ({ id: d.id, ...d.data() }))
 
@@ -120,14 +120,14 @@ export const migrateFromLegacy = onCall(async (request) => {
 
   report.validation.kindergartenTotalInvested_legacy =
     kgPacsLegacy.reduce((sum, p) => sum + ((p.avgCost || 0) * (p.shares || 0)), 0) +
-    kgTransactionsLegacy.reduce((sum, i) => sum + getLegacyInvestmentCost(i), 0)
+    kgInvestmentsLegacy.reduce((sum, i) => sum + getLegacyInvestmentCost(i), 0)
 
   // Migrazione
   const collectionsToMigrate = [
     { legacyData: pacsLegacy,           reportKey: 'pacs' as const,                    destPath: `users/${uid}/pacs` },
     { legacyData: investmentsLegacy,    reportKey: 'investments' as const,             destPath: `users/${uid}/investments` },
     { legacyData: kgPacsLegacy,         reportKey: 'kindergartenPacs' as const,        destPath: `users/${uid}/kindergarten_pacs` },
-    { legacyData: kgTransactionsLegacy, reportKey: 'kindergartenInvestments' as const,  destPath: `users/${uid}/kindergarten_investments` },
+    { legacyData: kgInvestmentsLegacy,  reportKey: 'kindergartenInvestments' as const, destPath: `users/${uid}/kindergarten_investments` },
     { legacyData: transactionsLegacy,   reportKey: 'transactions' as const,            destPath: `users/${uid}/transactions` },
     { legacyData: salesLegacy,          reportKey: 'sales' as const,                   destPath: `users/${uid}/sales` },
   ]
@@ -158,8 +158,8 @@ export const migrateFromLegacy = onCall(async (request) => {
         }
         delete docData.id
 
-        // Normalizzazione specifica per pacs/kindergarten_pacs
-        if (coll.reportKey === 'pacs' || coll.reportKey === 'kindergartenPacs') {
+        // Normalizzazione specifica per PAC ADULTI
+        if (coll.reportKey === 'pacs') {
           const p = item as LegacyPAC
           docData = {
             ...docData,
@@ -179,8 +179,40 @@ export const migrateFromLegacy = onCall(async (request) => {
           let avgCost = Number((i as any).avgCost || 0)
           if (avgCost === 0 && (i as any).amountInvested > 0 && quantity > 0) {
             avgCost = (i as any).amountInvested / quantity
+        // Normalizzazione specifica per Kindergarten PACs
+        if (coll.reportKey === 'kindergartenPacs') {
+          const p = item as LegacyPAC
+          const shares = Number(p.shares || 0)
+          const avgCost = Number(p.avgCost || 0)
+          const lastPrice = Number((p as any).lastPrice || 0)
+          docData = {
+            ...docData,
+            monthlyAmount: Number(p.monthlyAmount),
+            totalInvested: shares * avgCost,
+            currentValue: shares * lastPrice,
+            targetYears: 18,
+            notes: p.platform ? `Broker: ${p.platform}` : undefined,
           }
-          const currentPrice = Number((i as any).lastPrice || 0)
+          // Remove fields not in KindergartenPAC type
+          delete docData.shares
+          delete docData.avgCost
+          delete docData.lastPrice
+          delete docData.active
+          delete docData.autoUpdate
+          delete docData.platform
+          delete docData.monthlyDays
+          delete docData.dayOfMonth
+        }
+
+        // Normalizzazione specifica per investments ADULTI
+        if (coll.reportKey === 'investments') {
+          const i = item as LegacyInvestment
+          const quantity = Number(i.shares ?? i.quantity ?? 0)
+          let avgCost = Number(i.avgCost || 0)
+          if (avgCost === 0 && i.amountInvested > 0 && quantity > 0) {
+            avgCost = i.amountInvested / quantity
+          }
+          const currentPrice = Number(i.lastPrice || 0)
           docData = {
             ...docData,
             assetClass: mapAssetClass((i as any).type || (i as any).assetClass),
@@ -191,6 +223,36 @@ export const migrateFromLegacy = onCall(async (request) => {
             currentValue: currentPrice * quantity,
             currency: (i as any).currency || 'EUR',
           }
+        }
+
+        // Normalizzazione specifica per Kindergarten Investments
+        if (coll.reportKey === 'kindergartenInvestments') {
+          const i = item as LegacyKindergartenInvestment
+          const quantity = Number(i.shares || 0)
+          const purchasePrice = Number(i.avgCost || 0)
+          const currentPrice = Number(i.lastPrice || 0)
+
+          // Mappatura specifica categorie Kindergarten ('etf' | 'fund' | 'stock' | 'bond' | 'other')
+          const legacyCat = mapAssetClass((i as any).type || (i as any).assetClass || 'etf')
+          let category: any = 'etf'
+          if (legacyCat === 'azioni') category = 'stock'
+          else if (legacyCat === 'obbligazioni') category = 'bond'
+          else if (legacyCat === 'altro' || legacyCat === 'crypto') category = 'other'
+          else category = legacyCat
+
+          docData = {
+            ...docData,
+            category,
+            quantity,
+            purchasePrice,
+            currentPrice,
+            notes: i.platform ? `Broker: ${i.platform}` : undefined,
+          }
+          // Remove fields not in KindergartenInvestment type
+          delete docData.shares
+          delete docData.avgCost
+          delete docData.lastPrice
+          delete docData.platform
         }
 
         await docRef.set(docData)
@@ -204,20 +266,25 @@ export const migrateFromLegacy = onCall(async (request) => {
 
   // Validazione finale
   const calculateTotal = (docs: any[]) =>
-    docs.reduce((sum, d) => sum + (Number(d.avgCost || 0) * Number(d.shares || d.quantity || 0)), 0)
+    docs.reduce((sum, d) => {
+      if (d.totalInvested !== undefined) return sum + Number(d.totalInvested)
+      const price = d.avgCost ?? d.purchasePrice ?? 0
+      const qty = d.shares ?? d.quantity ?? 0
+      return sum + (Number(price) * Number(qty))
+    }, 0)
 
   if (dryRun) {
     report.validation.adultTotalInvested_new = calculateTotal(pacsLegacy) + calculateTotal(investmentsLegacy)
-    report.validation.kindergartenTotalInvested_new = calculateTotal(kgPacsLegacy) + calculateTotal(kgTransactionsLegacy)
+    report.validation.kindergartenTotalInvested_new = calculateTotal(kgPacsLegacy) + calculateTotal(kgInvestmentsLegacy)
   } else {
-    const [pacsNewSnap, invNewSnap, kgPacsNewSnap, kgTransNewSnap] = await Promise.all([
+    const [pacsNewSnap, invNewSnap, kgPacsNewSnap, kgInvNewSnap] = await Promise.all([
       newDb.collection(`users/${uid}/pacs`).get(),
       newDb.collection(`users/${uid}/investments`).get(),
       newDb.collection(`users/${uid}/kindergarten_pacs`).get(),
       newDb.collection(`users/${uid}/kindergarten_investments`).get()
     ])
     report.validation.adultTotalInvested_new = calculateTotal(pacsNewSnap.docs.map(d => d.data())) + calculateTotal(invNewSnap.docs.map(d => d.data()))
-    report.validation.kindergartenTotalInvested_new = calculateTotal(kgPacsNewSnap.docs.map(d => d.data())) + calculateTotal(kgTransNewSnap.docs.map(d => d.data()))
+    report.validation.kindergartenTotalInvested_new = calculateTotal(kgPacsNewSnap.docs.map(d => d.data())) + calculateTotal(kgInvNewSnap.docs.map(d => d.data()))
   }
 
   const adultDiff = Math.abs(report.validation.adultTotalInvested_legacy - report.validation.adultTotalInvested_new)
