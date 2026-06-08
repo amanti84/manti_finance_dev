@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 import { Card, CardHeader, CardTitle, CardContent, Badge } from '../../components/ui'
 import { Umbrella, Calendar, Clock, TrendingUp } from 'lucide-react'
-import { formatCurrency, formatDate } from '../../utils/format'
+import { formatCurrency } from '../../utils/format'
 import type { PensionProjection } from '../../services/previdenza'
 
 interface PrevidenzaSummaryProps {
