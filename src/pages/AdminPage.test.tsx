@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { AdminPage } from './AdminPage'
 import { useAuth } from '../hooks/useAuth'
+import { getMigrationAuditReport } from '../services/migrationAudit'
+import type { ApiResult, MigrationAuditReport } from '../types'
 import { MemoryRouter } from 'react-router-dom'
+import type { Timestamp } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
 import type * as ReactRouterDom from 'react-router-dom'
 
@@ -21,6 +24,10 @@ vi.mock('../firebase', () => ({
 vi.mock('firebase/functions', () => ({
   getFunctions: vi.fn(),
   httpsCallable: vi.fn(() => vi.fn())
+}))
+
+vi.mock('../services/migrationAudit', () => ({
+  getMigrationAuditReport: vi.fn()
 }))
 
 // Mock fetch
@@ -159,6 +166,41 @@ describe('AdminPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('API Error')).toBeTruthy()
+    })
+  })
+
+  it('runs migration audit and displays result', async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { email: 'ant.manti@gmail.com' } as unknown as User,
+      loading: false,
+      signInWithGoogle: vi.fn() as unknown as () => Promise<{ success: boolean; error?: string; }>,
+      logout: vi.fn() as unknown as () => Promise<void>,
+    } satisfies MockAuthReturn)
+
+    const mockAudit: MigrationAuditReport = {
+      pacs: { legacyCount: 10, newCount: 10, mismatch: false },
+      kindergartenPacs: { legacyCount: 5, newCount: 5, mismatch: false },
+      kindergartenInvestments: { legacyCount: 3, newCount: 3, mismatch: false },
+      schemaV3: { totalChecked: 3, valid: 3, invalid: 0, errors: [] },
+      segregation: { passed: true, violations: [] },
+      overallPassed: true,
+      timestamp: { seconds: 0, nanoseconds: 0 } as unknown as Timestamp
+    }
+    const mockAuditResult: ApiResult<MigrationAuditReport> = {
+      success: true,
+      data: mockAudit
+    }
+    vi.mocked(getMigrationAuditReport).mockResolvedValue(mockAuditResult)
+
+    render(<MemoryRouter><AdminPage /></MemoryRouter>)
+
+    const auditButton = screen.getByRole('button', { name: /esegui audit/i })
+    fireEvent.click(auditButton)
+
+    await waitFor(() => {
+      expect(screen.getByText(/stato globale audit:/i)).toBeTruthy()
+      expect(screen.getByText('SUPERATO')).toBeTruthy()
+      expect(screen.getByText('10')).toBeTruthy() // Adult PACs count
     })
   })
 })

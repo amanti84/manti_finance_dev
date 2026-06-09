@@ -9,7 +9,7 @@ import { z } from "zod";
 
 export { seedUserData } from "./seedUserData";
 export { importLegacyData } from "./importLegacyData";
-export { migrateFromLegacy, migrateCollections } from "./migrateFromLegacy";
+export { migrateFromLegacy, migrateCollections, getMigrationAudit } from "./migrateFromLegacy";
 
 // Schema di validazione per una transazione generica
 const TransactionSchema = z.object({

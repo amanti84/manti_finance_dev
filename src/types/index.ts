@@ -597,6 +597,73 @@ export interface FinancialDocument extends BaseDocument {
 }
 
 // --------------------------------------------------------
+// MIGRATION & AUDIT (Issue #131)
+// --------------------------------------------------------
+
+export interface MigrationCollectionResult {
+  inserted: number
+  skipped: number
+  errors: string[]
+}
+
+export interface MigrationResult {
+  pacs: MigrationCollectionResult
+  investments: MigrationCollectionResult
+  kindergartenPacs: MigrationCollectionResult
+  kindergartenInvestments: MigrationCollectionResult
+  transactions: MigrationCollectionResult
+  sales: MigrationCollectionResult
+  validation: {
+    adultTotalInvested_legacy: number
+    adultTotalInvested_new: number
+    kindergartenTotalInvested_legacy: number
+    kindergartenTotalInvested_new: number
+    passed: boolean
+    mismatchDetails: string[]
+  }
+}
+
+export interface CollectionMoveResult {
+  moved: number
+  skipped: number
+  errors: string[]
+}
+
+export interface MigrateCollectionsReport {
+  adultPacs: CollectionMoveResult
+  kindergartenPacs: CollectionMoveResult
+  kindergartenInvestments: CollectionMoveResult
+}
+
+export interface CollectionAudit {
+  legacyCount: number
+  newCount: number
+  mismatch: boolean
+}
+
+export interface SchemaValidation {
+  totalChecked: number
+  valid: number
+  invalid: number
+  errors: string[]
+}
+
+export interface SegregationValidation {
+  passed: boolean
+  violations: string[]
+}
+
+export interface MigrationAuditReport {
+  pacs: CollectionAudit
+  kindergartenPacs: CollectionAudit
+  kindergartenInvestments: CollectionAudit
+  schemaV3: SchemaValidation
+  segregation: SegregationValidation
+  overallPassed: boolean
+  timestamp: Timestamp
+}
+
+// --------------------------------------------------------
 // AUDIT LOG
 // --------------------------------------------------------
 
