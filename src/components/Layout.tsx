@@ -80,6 +80,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Pianificazione',
     items: [
+      { label: 'Allocazione Budget', to: '/monthly-allocation', icon: PieChart },
       { label: 'Previdenza', to: '/previdenza', icon: Umbrella },
       { label: 'Obiettivi', to: '/goals', icon: Target },
       { label: 'What If', to: '/what-if', icon: Zap },

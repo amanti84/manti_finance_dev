@@ -12,6 +12,7 @@ import { MonthlyClosePage } from './modules/monthlyClose'
 import { MutuoPage } from './modules/mutuo'
 import { InvestimentiPage } from './modules/investimenti'
 import { PrevidenzaPage } from './modules/previdenza'
+import { MonthlyAllocationPage } from './modules/monthly-allocation'
 import KindergartenPage from './modules/kindergarten/KindergartenPage'
 import { DocumentiPage } from './modules/documenti'
 import { WhatIfPage } from './modules/whatIf'
@@ -45,6 +46,7 @@ function App(): React.ReactElement {
             <Route path="/cashflow" element={user ? <CashFlowPage uid={user.uid} /> : null} />
             <Route path="/monthly-close" element={user ? <MonthlyClosePage uid={user.uid} /> : null} />
             <Route path="/mutuo" element={<MutuoPage />} />
+            <Route path="/monthly-allocation" element={<MonthlyAllocationPage />} />
             <Route path="/previdenza" element={<PrevidenzaPage />} />
             <Route path="/kindergarten" element={user ? <KindergartenPage uid={user.uid} /> : null} />
             <Route path="/documenti" element={<DocumentiPage />} />
