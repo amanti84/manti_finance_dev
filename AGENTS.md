@@ -1,4 +1,3 @@
-
 # AGENTS.md — Guida per agenti AI su manti_finance_dev
 
 Questo file definisce le regole operative per tutti gli agenti AI (GitHub Copilot, Claude, altri)
@@ -39,6 +38,9 @@ Ogni agente deve quindi:
 5. Aggiungere il label `automerge` se CI è verde e non ci sono ambiguità
 6. NON aspettare input umano per decisioni tecniche standard
 7. In caso di dubbio su logica finanziaria: lasciare commento nella PR, NON bloccare
+8. Se acceptance criteria soddisfatti e CI verde, aprire direttamente la PR senza chiedere conferma
+9. Non inviare messaggi tipo "posso procedere?" o "hai indicazioni particolari?" per commit, push, PR o chiusura task
+10. Warning lint o note stilistiche non bloccanti non devono sospendere l'apertura della PR: sistemarli se rapidi, altrimenti documentarli nella PR
 
 ---
 
@@ -70,6 +72,7 @@ Ogni agente deve quindi:
    - Checklist: [ ] test scritti [ ] ApiResult pattern rispettato [ ] auditService chiamato [ ] tipi in index.ts
 4. Aggiungere label `automerge` se CI verde e nessuna ambiguità finanziaria
 5. Non fare self-merge — la PR viene mergiata da workflow automatico se CI verde + label `automerge`
+6. Non attendere conferma umana prima di creare la PR se il task è completo
 
 ---
 
@@ -114,6 +117,7 @@ export const esempiService = {
 - Creare Firebase Functions in `functions/`
 - Aggiornare `firestore.rules` solo se esplicitamente richiesto dall'issue
 - Aggiungere label `automerge` alle proprie PR se CI verde
+- Aprire direttamente la PR quando il task è completo e i check locali sono soddisfatti
 
 ### Richiede approvazione umana (non fare in autonomia)
 - Modificare la struttura del modello dati Firestore già in produzione
