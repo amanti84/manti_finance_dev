@@ -1,5 +1,11 @@
 # Copilot Instructions — manti_finance_dev
 
+## ⚠️ Lettura obbligatoria prima di qualsiasi operazione
+
+Leggi `AGENTS.md` nella root del repository PRIMA di qualsiasi altra azione.
+Tutte le regole operative, il perimetro Zero Touch, e le istruzioni anti-blocco sono definite lì.
+In particolare: **non chiedere mai conferma prima di aprire una PR, fare push o chiudere un task** se CI è verde e gli acceptance criteria sono soddisfatti.
+
 ## Contesto del progetto
 Piattaforma di Personal Finance Copilot per gestione patrimoniale personale.
 Utente singolo (+ moglie). Stack: React 18 + TypeScript, Firebase, Vite.

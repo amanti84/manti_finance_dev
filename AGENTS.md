@@ -475,3 +475,16 @@ Dal 1° giugno 2026 GitHub Copilot usa un modello a crediti (1 credito = $0.01, 
 - Gap Analysis: `docs/gap-analysis-v1.md`
 - Sprint plan M2: `docs/M2-sprint-plan.md`
 - Stack legacy di riferimento: `amanti84/manti_finance` (repo originale con 277 commit)
+
+---
+
+## Checklist anti-blocco per Jules
+
+I seguenti messaggi/trigger sono PROIBITI (non usarli mai):
+- ❌ `"Posso procedere con la PR?"`
+- ❌ `"Hai indicazioni particolari prima che apra la PR?"`
+- ❌ `"Vuoi che faccia il push?"`
+
+Azioni obbligatorie:
+- ✅ Aprire la PR direttamente se task completo + CI verde
+- ✅ Aggiungere label `automerge` se nessuna ambiguità finanziaria
