@@ -10,6 +10,7 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   getDoc,
@@ -25,6 +26,7 @@ import type {
   FonteData,
   PensionFund,
   PensionContribution,
+  PrevidenzaConfig,
   ApiResult,
 } from '../types'
 import { logAudit } from './audit'
@@ -45,6 +47,8 @@ const ETA_PENSIONE_DEFAULT = 67
 
 const FUNDS_COLLECTION = (uid: string) => `users/${uid}/pension_funds`
 const CONTRIBUTIONS_COLLECTION = (uid: string) => `users/${uid}/pension_contributions`
+const CONFIG_COLLECTION = (uid: string) => `users/${uid}/previdenza`
+const CONFIG_DOC_ID = 'config'
 
 // ---------------------------------------------------------------------------
 // TFR CALCULATION
@@ -356,6 +360,52 @@ export async function createPensionFund(
       updatedAt: Timestamp.now(),
     })
     return { success: true, data: docRef.id }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// CONFIGURATION
+// ---------------------------------------------------------------------------
+
+export async function savePrevidenzaConfig(
+  uid: string,
+  config: Omit<PrevidenzaConfig, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<ApiResult<void>> {
+  try {
+    const docRef = doc(db, CONFIG_COLLECTION(uid), CONFIG_DOC_ID)
+    const existing = await getDoc(docRef)
+    const isUpdate = existing.exists()
+
+    await setDoc(docRef, {
+      ...config,
+      updatedAt: Timestamp.now(),
+      ...(isUpdate ? {} : { createdAt: Timestamp.now() }),
+    }, { merge: true })
+
+    await logAudit({
+      uid,
+      action: isUpdate ? 'update' : 'create',
+      entityType: 'config',
+      entityId: CONFIG_DOC_ID,
+      newValue: config,
+    })
+
+    return { success: true, data: undefined }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+export async function getPrevidenzaConfig(uid: string): Promise<ApiResult<PrevidenzaConfig>> {
+  try {
+    const docRef = doc(db, CONFIG_COLLECTION(uid), CONFIG_DOC_ID)
+    const snap = await getDoc(docRef)
+    if (!snap.exists()) {
+      return { success: false, error: 'Configurazione previdenza non trovata' }
+    }
+    return { success: true, data: { id: snap.id, ...snap.data() } as PrevidenzaConfig }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) }
   }

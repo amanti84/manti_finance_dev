@@ -20,6 +20,8 @@ import {
   getAllPensionFunds,
   recordContribution,
   getContributionsByFund,
+  savePrevidenzaConfig,
+  getPrevidenzaConfig,
 } from './previdenza'
 import type { Payslip, TFRData } from '../types'
 import type { Timestamp } from 'firebase/firestore'
@@ -32,6 +34,7 @@ vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
   doc: vi.fn(),
   addDoc: vi.fn(),
+  setDoc: vi.fn(),
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
   getDoc: vi.fn(),
@@ -166,6 +169,49 @@ describe('calculateTFRCumulativo', () => {
   it('restituisce errore se array vuoto', () => {
     const result = calculateTFRCumulativo([], {})
     expect(result.success).toBe(false)
+  })
+})
+
+// -----------------------------------------------------------------------
+// --- Previdenza Config ---
+// -----------------------------------------------------------------------
+describe('Previdenza Config', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('salva la configurazione con successo', async () => {
+    const { setDoc, getDoc } = await import('firebase/firestore')
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ exists: () => true })
+    ;(setDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined)
+    const result = await savePrevidenzaConfig('user-123', {
+      birthYear: 1990,
+      inpsStartYear: 2015,
+      currentRal: 50000,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('recupera la configurazione con successo', async () => {
+    const { getDoc } = await import('firebase/firestore')
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      exists: () => true,
+      id: 'config',
+      data: () => ({ birthYear: 1990, inpsStartYear: 2015, currentRal: 50000 }),
+    })
+    const result = await getPrevidenzaConfig('user-123')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.birthYear).toBe(1990)
+    }
+  })
+
+  it('gestisce configurazione non trovata', async () => {
+    const { getDoc } = await import('firebase/firestore')
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ exists: () => false })
+    const result = await getPrevidenzaConfig('user-123')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toBe('Configurazione previdenza non trovata')
+    }
   })
 })
 
