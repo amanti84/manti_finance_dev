@@ -18,6 +18,31 @@ export interface BaseDocument {
 }
 
 // --------------------------------------------------------
+// MONTHLY ALLOCATION (Issue #88)
+// --------------------------------------------------------
+
+export interface MonthlyAllocation extends BaseDocument {
+  year: number
+  month: Month
+  netIncome: number
+  allocations: AllocationItem[]
+  totalAllocated: number
+  surplus: number
+  status: 'draft' | 'confirmed'
+  confirmedAt?: Timestamp
+}
+
+export interface AllocationItem {
+  id: string
+  label: string
+  category: 'saving' | 'investment' | 'fixed_expense' | 'variable_expense' | 'emergency'
+  amount: number
+  percentage: number
+  isAutoFilled: boolean
+  linkedServiceId?: string
+}
+
+// --------------------------------------------------------
 // API RESULT
 // --------------------------------------------------------
 
@@ -587,6 +612,7 @@ export type AuditEntityType =
   | 'account' | 'recurringExpense' | 'inboxItem'
   | 'scenario' | 'monthlyClose'
   | 'kindergartenExpense' | 'kindergartenConfig'
+  | 'monthlyAllocation'
 
 export interface AuditLogEntry extends BaseDocument {
   action: AuditAction
