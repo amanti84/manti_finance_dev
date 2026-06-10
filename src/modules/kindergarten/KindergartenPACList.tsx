@@ -103,19 +103,20 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
     e.preventDefault()
     setSaving(true)
     try {
+      // exactOptionalPropertyTypes: omit keys instead of assigning undefined
       const payload: Omit<KindergartenPAC, 'id' | 'createdAt' | 'updatedAt'> = {
         name: form.name,
-        isin: form.isin || undefined,
-        ticker: form.ticker || undefined,
         tickerOnly: form.tickerOnly,
         autoUpdate: form.autoUpdate,
         monthlyAmount: form.monthlyAmount,
-        quantity: form.quantity || undefined,
         startDate: form.startDate,
         targetYears: form.targetYears,
         currentValue: form.currentValue,
         totalInvested: form.totalInvested,
-        notes: form.notes || undefined,
+        ...(form.isin ? { isin: form.isin } : {}),
+        ...(form.ticker ? { ticker: form.ticker } : {}),
+        ...(form.quantity > 0 ? { quantity: form.quantity } : {}),
+        ...(form.notes ? { notes: form.notes } : {}),
       }
       if (editingId) {
         await onUpdate(editingId, payload)
@@ -137,7 +138,6 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
 
   return (
     <div className="space-y-4">
-      {/* Header con bottone Aggiungi */}
       <div className="flex justify-end">
         <button
           onClick={openAdd}
@@ -147,7 +147,6 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
         </button>
       </div>
 
-      {/* Lista vuota */}
       {pacs.length === 0 ? (
         <div className="rounded-md border border-dashed p-8 text-center text-gray-400">
           <p>Nessun PAC nel portafoglio bambini.</p>
@@ -187,20 +186,13 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
                     <td className="px-4 py-3 text-right text-gray-500">{pac.targetYears} anni</td>
                     <td className="px-4 py-3 text-right text-gray-500">{pac.startDate}</td>
                     <td className="px-4 py-3 text-right space-x-3">
-                      <button
-                        onClick={() => openEdit(pac)}
-                        className="text-blue-500 hover:text-blue-700 text-xs"
-                      >
-                        Modifica
-                      </button>
+                      <button onClick={() => openEdit(pac)} className="text-blue-500 hover:text-blue-700 text-xs">Modifica</button>
                       <button
                         onClick={() => void handleDelete(pac.id)}
                         disabled={deletingId === pac.id}
                         className="text-red-500 hover:text-red-700 text-xs disabled:opacity-50"
                         aria-label={`Elimina PAC ${pac.name}`}
-                      >
-                        Elimina
-                      </button>
+                      >Elimina</button>
                     </td>
                   </tr>
                 )
@@ -210,137 +202,82 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
         </div>
       )}
 
-      {/* Modal Form — campi KG-only, zero riferimenti a PAC adulti */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
-              <h3 className="text-lg font-semibold">
-                {editingId ? 'Modifica PAC KG' : 'Nuovo PAC KG'}
-              </h3>
+              <h3 className="text-lg font-semibold">{editingId ? 'Modifica PAC KG' : 'Nuovo PAC KG'}</h3>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
             </div>
-
             <form onSubmit={(e) => { void handleSubmit(e) }} className="px-6 py-4 space-y-4 max-h-[75vh] overflow-y-auto">
-
-              {/* Nome */}
               <div className="space-y-1">
                 <label className="text-sm font-medium">Nome PAC *</label>
-                <input
-                  name="name" value={form.name} onChange={handleChange}
+                <input name="name" value={form.name} onChange={handleChange} required
                   className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="es. Vanguard LifeStrategy 80"
-                  required
-                />
+                  placeholder="es. Vanguard LifeStrategy 80" />
               </div>
-
-              {/* ISIN + Ticker */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-sm font-medium">ISIN</label>
-                  <input
-                    name="isin" value={form.isin} onChange={handleChange}
+                  <input name="isin" value={form.isin} onChange={handleChange}
                     className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="IE00B3XXRP09"
-                  />
+                    placeholder="IE00B3XXRP09" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Ticker</label>
-                  <input
-                    name="ticker" value={form.ticker} onChange={handleChange}
+                  <input name="ticker" value={form.ticker} onChange={handleChange}
                     className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="VNGA80.MI"
-                  />
+                    placeholder="VNGA80.MI" />
                 </div>
               </div>
-
-              {/* Data Inizio + Orizzonte */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Data Inizio *</label>
-                  <input
-                    name="startDate" type="date" value={form.startDate} onChange={handleChange}
-                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    required
-                  />
+                  <input name="startDate" type="date" value={form.startDate} onChange={handleChange} required
+                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Orizzonte (anni) *</label>
-                  <input
-                    name="targetYears" type="number" min="1" max="40"
-                    value={form.targetYears} onChange={handleChange}
-                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    required
-                  />
+                  <input name="targetYears" type="number" min="1" max="40" value={form.targetYears} onChange={handleChange} required
+                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
               </div>
-
-              {/* Importi */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Rata Mensile € *</label>
-                  <input
-                    name="monthlyAmount" type="number" step="any" min="0"
-                    value={form.monthlyAmount} onChange={handleChange}
-                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    required
-                  />
+                  <input name="monthlyAmount" type="number" step="any" min="0" value={form.monthlyAmount} onChange={handleChange} required
+                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Totale Versato €</label>
-                  <input
-                    name="totalInvested" type="number" step="any" min="0"
-                    value={form.totalInvested} onChange={handleChange}
-                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                  <input name="totalInvested" type="number" step="any" min="0" value={form.totalInvested} onChange={handleChange}
+                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Valore Attuale €</label>
-                  <input
-                    name="currentValue" type="number" step="any" min="0"
-                    value={form.currentValue} onChange={handleChange}
-                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                  <input name="currentValue" type="number" step="any" min="0" value={form.currentValue} onChange={handleChange}
+                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
               </div>
-
-              {/* Checkbox opzioni */}
               <div className="flex gap-6 pt-1">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input name="autoUpdate" type="checkbox" checked={form.autoUpdate} onChange={handleChange}
-                    className="w-4 h-4 rounded border-gray-300 text-primary"
-                  />
-                  Aggiornamento automatico prezzi
+                  <input name="autoUpdate" type="checkbox" checked={form.autoUpdate} onChange={handleChange} className="w-4 h-4 rounded border-gray-300 text-primary" />
+                  Aggiornamento automatico
                 </label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input name="tickerOnly" type="checkbox" checked={form.tickerOnly} onChange={handleChange}
-                    className="w-4 h-4 rounded border-gray-300 text-primary"
-                  />
+                  <input name="tickerOnly" type="checkbox" checked={form.tickerOnly} onChange={handleChange} className="w-4 h-4 rounded border-gray-300 text-primary" />
                   Solo Ticker
                 </label>
               </div>
-
-              {/* Note */}
               <div className="space-y-1">
                 <label className="text-sm font-medium">Note</label>
-                <textarea
-                  name="notes" value={form.notes} onChange={handleChange}
-                  rows={2}
+                <textarea name="notes" value={form.notes} onChange={handleChange} rows={2}
                   className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                  placeholder="Note opzionali..."
-                />
+                  placeholder="Note opzionali..." />
               </div>
-
-              {/* Azioni */}
               <div className="flex justify-end gap-3 pt-2 border-t">
-                <button type="button" onClick={closeModal}
-                  className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50"
-                >
-                  Annulla
-                </button>
-                <button type="submit" disabled={saving}
-                  className="px-4 py-2 text-sm rounded-md bg-primary text-white hover:bg-primary/90 disabled:opacity-60"
-                >
+                <button type="button" onClick={closeModal} className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50">Annulla</button>
+                <button type="submit" disabled={saving} className="px-4 py-2 text-sm rounded-md bg-primary text-white hover:bg-primary/90 disabled:opacity-60">
                   {saving ? 'Salvataggio...' : (editingId ? 'Salva Modifiche' : 'Aggiungi')}
                 </button>
               </div>
