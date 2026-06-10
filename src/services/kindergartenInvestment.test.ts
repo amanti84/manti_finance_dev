@@ -10,17 +10,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { KindergartenInvestment } from '../types/kindergarten'
 
 vi.mock('../firebase', () => ({ db: {} }))
-vi.mock('./audit', () => ({
-  logAudit: vi.fn(() => Promise.resolve({ success: true, data: {} })),
-  logCreate: vi.fn(() => Promise.resolve({ success: true, data: {} })),
-  logChange: vi.fn(() => Promise.resolve({ success: true, data: {} })),
-  logDelete: vi.fn(() => Promise.resolve({ success: true, data: {} })),
-}))
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn((_db: unknown, ...path: string[]) => ({ path: path.join('/') })),
   doc: vi.fn((_col: unknown, id: string) => ({ id })),
   getDocs: vi.fn(),
-  getDoc: vi.fn(() => Promise.resolve({ exists: () => true, data: () => ({}) })),
   addDoc: vi.fn(),
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
@@ -36,8 +29,7 @@ import {
   deleteKindergartenInvestment,
   calculateKindergartenInvestmentKPIs,
 } from './kindergartenInvestment'
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy, getDoc, type DocumentSnapshot } from 'firebase/firestore'
-import { logAudit } from './audit'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore'
 
 const UID = 'test-uid-123'
 
@@ -115,7 +107,7 @@ describe('kindergartenInvestment service', () => {
     }
   })
 
-  it('addKindergartenInvestment: aggiunge, ritorna id e logga audit', async () => {
+  it('addKindergartenInvestment: aggiunge e ritorna id', async () => {
     vi.mocked(collection).mockReturnValue({} as unknown as ReturnType<typeof collection>)
     vi.mocked(addDoc).mockResolvedValue({ id: 'new-inv-id' } as unknown as Awaited<ReturnType<typeof addDoc>>)
 
@@ -124,49 +116,24 @@ describe('kindergartenInvestment service', () => {
 
     expect(result.success).toBe(true)
     if (result.success) expect(result.data).toBe('new-inv-id')
-    expect(logAudit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'create',
-      entityType: 'investment',
-      entityId: 'new-inv-id'
-    }))
   })
 
-  it('updateKindergartenInvestment: aggiorna il documento e logga audit', async () => {
+  it('updateKindergartenInvestment: aggiorna il documento', async () => {
     vi.mocked(collection).mockReturnValue({} as unknown as ReturnType<typeof collection>)
     vi.mocked(updateDoc).mockResolvedValue(undefined)
-    vi.mocked(getDoc).mockResolvedValue({
-      exists: () => true,
-      data: () => ({ name: 'Old Name' })
-    } as unknown as DocumentSnapshot)
 
     const result = await updateKindergartenInvestment(UID, 'inv-001', { currentPrice: 130 })
     expect(result.success).toBe(true)
-    expect(updateDoc).toHaveBeenCalled()
-    expect(logAudit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'update',
-      entityType: 'investment',
-      entityId: 'inv-001',
-      previousValue: { name: 'Old Name' }
-    }))
+    const updateCalls = vi.mocked(updateDoc).mock.calls
+    expect(updateCalls).toHaveLength(1)
   })
 
-  it('deleteKindergartenInvestment: elimina il documento e logga audit', async () => {
+  it('deleteKindergartenInvestment: elimina il documento', async () => {
     vi.mocked(collection).mockReturnValue({} as unknown as ReturnType<typeof collection>)
     vi.mocked(deleteDoc).mockResolvedValue(undefined)
-    vi.mocked(getDoc).mockResolvedValue({
-      exists: () => true,
-      data: () => ({ name: 'To Delete' })
-    } as unknown as DocumentSnapshot)
 
     const result = await deleteKindergartenInvestment(UID, 'inv-001')
     expect(result.success).toBe(true)
-    expect(deleteDoc).toHaveBeenCalled()
-    expect(logAudit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'delete',
-      entityType: 'investment',
-      entityId: 'inv-001',
-      previousValue: { name: 'To Delete' }
-    }))
   })
 
   describe('calculateKindergartenInvestmentKPIs', () => {

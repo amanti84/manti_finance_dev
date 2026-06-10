@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
 import type { FC } from 'react'
-import { Plus, Search, Filter } from 'lucide-react'
+import { Plus, Search, Filter, RefreshCw } from 'lucide-react'
 import { useInvestments } from '../../hooks/useInvestments'
+import { updateInvestmentPrice, updateAllPrices } from '../../services/priceUpdate'
+import { useAuth } from '../../hooks/useAuth'
 import { InvestmentKPIs } from './InvestmentKPIs'
 import { InvestmentTable } from './InvestmentTable'
 import { InvestmentFormModal } from './InvestmentFormModal'
@@ -14,6 +16,7 @@ type SortField = 'name' | 'currentValue' | 'pnlPct'
 type SortOrder = 'asc' | 'desc'
 
 export const InvestimentiPage: FC = () => {
+  const { user } = useAuth()
   const {
     investments,
     loading,
@@ -21,7 +24,8 @@ export const InvestimentiPage: FC = () => {
     summary,
     addInvestment,
     editInvestment,
-    removeInvestment
+    removeInvestment,
+    refresh
   } = useInvestments()
 
   // State
@@ -38,6 +42,12 @@ export const InvestimentiPage: FC = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isSellModalOpen, setIsSellModalOpen] = useState(false)
+
+  // Update State
+  const [isUpdatingAll, setIsUpdatingAll] = useState(false)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [progress, setProgress] = useState<{ current: number; total: number; name: string } | null>(null)
+  const [updateResult, setUpdateResult] = useState<{ success: number; fail: number; total: number } | null>(null)
 
   // Derived Data
   const filteredInvestments = useMemo(() => {
@@ -78,6 +88,38 @@ export const InvestimentiPage: FC = () => {
   const brokers = useMemo(() => Array.from(new Set(investments.map(i => i.broker))), [investments])
 
   // Handlers
+  const handleUpdatePrice = async (inv: Investment) => {
+    if (!user?.uid) return
+    setUpdatingId(inv.id)
+    const res = await updateInvestmentPrice(user.uid, inv)
+    if (res.success) {
+      await refresh()
+    }
+    setUpdatingId(null)
+  }
+
+  const handleUpdateAll = async () => {
+    if (!user?.uid || investments.length === 0) return
+    setIsUpdatingAll(true)
+    setUpdateResult(null)
+
+    const res = await updateAllPrices(user.uid, investments, {
+      onProgress: (current, total, name) => setProgress({ current, total, name })
+    })
+
+    if (res.success) {
+      setUpdateResult({
+        success: res.data.successCount,
+        fail: res.data.failCount,
+        total: res.data.total
+      })
+      await refresh()
+    }
+
+    setProgress(null)
+    setIsUpdatingAll(false)
+  }
+
   const handleAddSubmit = async (data: Omit<Investment, 'id' | 'createdAt' | 'updatedAt' | 'currentValue'>) => {
     await addInvestment(data)
   }
@@ -129,10 +171,58 @@ export const InvestimentiPage: FC = () => {
           <h1 className="text-3xl font-bold text-text">Portafoglio Investimenti</h1>
           <p className="text-text-muted">Monitora le performance e gestisci i tuoi asset.</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)} className="gap-2 self-start md:self-center">
-          <Plus size={20} /> Aggiungi Investimento
-        </Button>
+        <div className="flex gap-2 self-start md:self-center">
+          <Button
+            variant="ghost"
+            onClick={() => { void handleUpdateAll() }}
+            disabled={isUpdatingAll || loading || investments.length === 0}
+            className="gap-2"
+            isLoading={isUpdatingAll}
+            leftIcon={!isUpdatingAll ? <RefreshCw size={20} /> : undefined}
+          >
+            {isUpdatingAll ? 'Aggiornamento...' : 'Aggiorna Prezzi'}
+          </Button>
+          <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
+            <Plus size={20} /> Aggiungi Investimento
+          </Button>
+        </div>
       </div>
+
+      {progress && (
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 animate-in fade-in slide-in-from-top-2">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-primary">
+              Aggiornamento in corso: {progress.name}
+            </span>
+            <span className="text-xs text-text-muted">
+              {progress.current} di {progress.total}
+            </span>
+          </div>
+          <div className="w-full bg-bg rounded-full h-1.5 overflow-hidden">
+            <div
+              className="bg-primary h-full transition-all duration-300"
+              style={{ width: `${(progress.current / progress.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {updateResult && (
+        <div className="bg-surface border border-border rounded-lg p-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-full ${updateResult.fail === 0 ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+              <RefreshCw size={20} />
+            </div>
+            <div>
+              <div className="font-semibold text-text">Aggiornamento completato</div>
+              <div className="text-sm text-text-muted">
+                {updateResult.success} successi, {updateResult.fail} fallimenti su {updateResult.total} totali.
+              </div>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setUpdateResult(null)}>Chiudi</Button>
+        </div>
+      )}
 
       <InvestmentKPIs summary={summary} loading={loading} />
 
@@ -246,6 +336,8 @@ export const InvestimentiPage: FC = () => {
         <InvestmentTable
           investments={filteredInvestments}
           onRowClick={openDetail}
+          onUpdatePrice={handleUpdatePrice}
+          updatingId={updatingId}
         />
       )}
 

@@ -18,5 +18,3 @@ export type { EmptyStateProps } from './EmptyState'
 
 export { Skeleton } from './Skeleton'
 export type { SkeletonProps, SkeletonVariant } from './Skeleton'
-
-export { ISINPickerField } from './ISINPickerField'

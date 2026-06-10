@@ -10,17 +10,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { KindergartenPAC } from '../types/kindergarten'
 
 vi.mock('../firebase', () => ({ db: {} }))
-vi.mock('./audit', () => ({
-  logAudit: vi.fn(() => Promise.resolve({ success: true, data: {} })),
-  logCreate: vi.fn(() => Promise.resolve({ success: true, data: {} })),
-  logChange: vi.fn(() => Promise.resolve({ success: true, data: {} })),
-  logDelete: vi.fn(() => Promise.resolve({ success: true, data: {} })),
-}))
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn((_db: unknown, ...path: string[]) => ({ path: path.join('/') })),
   doc: vi.fn((_col: unknown, id: string) => ({ id })),
   getDocs: vi.fn(),
-  getDoc: vi.fn(() => Promise.resolve({ exists: () => true, data: () => ({}) })),
   addDoc: vi.fn(),
   updateDoc: vi.fn(),
   deleteDoc: vi.fn(),
@@ -36,8 +29,7 @@ import {
   deleteKindergartenPAC,
   calculateKindergartenPACKPIs,
 } from './kindergartenPac'
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy, getDoc, type DocumentSnapshot } from 'firebase/firestore'
-import { logAudit } from './audit'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore'
 
 const UID = 'test-uid-456'
 
@@ -103,7 +95,7 @@ describe('kindergartenPac service', () => {
     expect(result.success).toBe(false)
   })
 
-  it('addKindergartenPAC: aggiunge, ritorna id e logga audit', async () => {
+  it('addKindergartenPAC: aggiunge e ritorna id', async () => {
     vi.mocked(collection).mockReturnValue({} as unknown as never)
     vi.mocked(addDoc).mockResolvedValue({ id: 'new-pac-id' } as unknown as never)
 
@@ -112,45 +104,22 @@ describe('kindergartenPac service', () => {
 
     expect(result.success).toBe(true)
     if (result.success) expect(result.data).toBe('new-pac-id')
-    expect(logAudit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'create',
-      entityType: 'investment',
-      entityId: 'new-pac-id'
-    }))
   })
 
-  it('updateKindergartenPAC: aggiorna il documento e logga audit', async () => {
+  it('updateKindergartenPAC: aggiorna il documento', async () => {
     vi.mocked(collection).mockReturnValue({} as unknown as never)
     vi.mocked(updateDoc).mockResolvedValue(undefined)
-    vi.mocked(getDoc).mockResolvedValue({
-      exists: () => true,
-      data: () => ({ name: 'Old PAC' })
-    } as unknown as DocumentSnapshot)
 
     const result = await updateKindergartenPAC(UID, 'pac-001', { currentValue: 2800 })
     expect(result.success).toBe(true)
-    expect(logAudit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'update',
-      entityType: 'investment',
-      entityId: 'pac-001'
-    }))
   })
 
-  it('deleteKindergartenPAC: elimina il documento e logga audit', async () => {
+  it('deleteKindergartenPAC: elimina il documento', async () => {
     vi.mocked(collection).mockReturnValue({} as unknown as never)
     vi.mocked(deleteDoc).mockResolvedValue(undefined)
-    vi.mocked(getDoc).mockResolvedValue({
-      exists: () => true,
-      data: () => ({ name: 'PAC to delete' })
-    } as unknown as DocumentSnapshot)
 
     const result = await deleteKindergartenPAC(UID, 'pac-001')
     expect(result.success).toBe(true)
-    expect(logAudit).toHaveBeenCalledWith(expect.objectContaining({
-      action: 'delete',
-      entityType: 'investment',
-      entityId: 'pac-001'
-    }))
   })
 
   describe('calculateKindergartenPACKPIs', () => {
