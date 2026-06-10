@@ -14,15 +14,18 @@ export async function getPriceByISIN(
   }
 
   try {
-    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined
-    if (!projectId) {
-      return { success: false, error: 'VITE_FIREBASE_PROJECT_ID non configurato' }
-    }
-
-    // URL CF: costruita dinamicamente per supportare dev/prod
     const env = import.meta.env as unknown as Record<string, string | undefined>
-    const region = env.VITE_FIREBASE_REGION ?? 'us-central1'
-    const cfUrl = `https://${region}-${projectId}.cloudfunctions.net/getPriceByISIN`
+
+    // Preferisce URL esplicito (Gen2 Cloud Run), fallback a Gen1
+    let cfUrl = env.VITE_PRICE_FUNCTION_URL
+    if (!cfUrl) {
+      const projectId = env.VITE_FIREBASE_PROJECT_ID
+      if (!projectId) {
+        return { success: false, error: 'VITE_FIREBASE_PROJECT_ID non configurato' }
+      }
+      const region = env.VITE_FIREBASE_REGION ?? 'us-central1'
+      cfUrl = `https://${region}-${projectId}.cloudfunctions.net/getPriceByISIN`
+    }
 
     const params = new URLSearchParams()
     if (tickerOnly && ticker) {
@@ -91,51 +94,29 @@ export async function getPriceByISIN(
   }
 }
 
-/**
- * Valida un codice ISIN tramite regex.
- */
 export function isValidISIN(isin: string): boolean {
   const regex = /^[A-Z]{2}[A-Z0-9]{9}[0-9]$/
   return regex.test(isin)
 }
 
-/**
- * Formatta l'ISIN (trim + uppercase).
- */
 export function formatISIN(isin: string): string {
   return isin.trim().toUpperCase()
 }
 
-/**
- * Classifica l'asset in base al prefisso ISIN.
- */
 export function getAssetType(isin: string): AssetISINType {
   const prefix = isin.substring(0, 2).toUpperCase()
-  if (['IE', 'GB', 'DE', 'FR', 'NL'].includes(prefix)) {
-    return 'etf'
-  }
-  if (prefix === 'IT') {
-    return 'fund-it'
-  }
-  if (prefix === 'LU') {
-    return 'fund-lu'
-  }
+  if (['IE', 'GB', 'DE', 'FR', 'NL'].includes(prefix)) return 'etf'
+  if (prefix === 'IT') return 'fund-it'
+  if (prefix === 'LU') return 'fund-lu'
   return 'other'
 }
 
-/**
- * Ritorna la frequenza di aggiornamento in base all'asset type.
- */
 export function getUpdateFrequency(isin: string): string {
   const type = getAssetType(isin)
   switch (type) {
-    case 'etf':
-      return 'Tempo reale (ogni 30 minuti)'
-    case 'fund-it':
-      return 'Giornaliero (NAV ore 18:00)'
-    case 'fund-lu':
-      return 'Giornaliero (NAV fine giornata)'
-    default:
-      return 'Variabile'
+    case 'etf':      return 'Tempo reale (ogni 30 minuti)'
+    case 'fund-it':  return 'Giornaliero (NAV ore 18:00)'
+    case 'fund-lu':  return 'Giornaliero (NAV fine giornata)'
+    default:         return 'Variabile'
   }
 }
