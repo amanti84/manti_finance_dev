@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { FC } from 'react'
-import { Modal, Input, Button } from '../../components/ui'
+import { Modal, Input, Button, ISINPickerField } from '../../components/ui'
 import type { Investment, AssetClass, Broker, Currency } from '../../types'
 import { Timestamp } from 'firebase/firestore'
 
@@ -27,6 +27,7 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
     name: '',
     isin: '',
     ticker: '',
+    tickerOnly: false,
     assetClass: 'etf' as AssetClass,
     broker: 'fineco' as Broker,
     quantity: 0,
@@ -45,6 +46,7 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
         name: initialData.name,
         isin: initialData.isin ?? '',
         ticker: initialData.ticker ?? '',
+        tickerOnly: initialData.tickerOnly ?? false,
         assetClass: initialData.assetClass,
         broker: initialData.broker,
         quantity: initialData.quantity,
@@ -59,6 +61,7 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
         name: '',
         isin: '',
         ticker: '',
+        tickerOnly: false,
         assetClass: 'etf',
         broker: 'fineco',
         quantity: 0,
@@ -80,6 +83,15 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
       [name]: type === 'checkbox' ? checked : (type === 'number' ? parseFloat(value) || 0 : value)
     }))
   }
+
+  const handlePriceResolved = useCallback((price: number, currency: string, name: string) => {
+    setFormData(prev => ({
+      ...prev,
+      currentPrice: price,
+      currency: currency as Currency,
+      name: prev.name || name
+    }))
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,26 +143,16 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-sm font-medium">ISIN</label>
-            <Input
-              name="isin"
-              value={formData.isin}
-              onChange={handleChange}
-              placeholder="IE00B3XXRP09"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Ticker</label>
-            <Input
-              name="ticker"
-              value={formData.ticker}
-              onChange={handleChange}
-              placeholder="VUSA.L"
-            />
-          </div>
-        </div>
+        <ISINPickerField
+          isin={formData.isin}
+          ticker={formData.ticker}
+          tickerOnly={formData.tickerOnly}
+          onISINChange={(isin) => setFormData(prev => ({ ...prev, isin }))}
+          onTickerChange={(ticker) => setFormData(prev => ({ ...prev, ticker }))}
+          onTickerOnlyChange={(tickerOnly) => setFormData(prev => ({ ...prev, tickerOnly }))}
+          onPriceResolved={handlePriceResolved}
+          disabled={loading}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
