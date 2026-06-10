@@ -5,16 +5,16 @@ import type { ApiResult, PriceData, AssetISINType } from '../types'
  */
 export async function getPriceByISIN(
   isin: string | null,
-  shares: number = 0,
+  shares = 0,
   ticker: string | null = null,
-  tickerOnly: boolean = false
+  tickerOnly = false
 ): Promise<ApiResult<PriceData>> {
   if (!isin && !ticker) {
     return { success: false, error: 'Necessario ISIN o ticker' }
   }
 
   try {
-    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID
+    const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined
     if (!projectId) {
       return { success: false, error: 'VITE_FIREBASE_PROJECT_ID non configurato' }
     }
@@ -34,24 +34,42 @@ export async function getPriceByISIN(
 
     const response = await fetch(`${cfUrl}?${params.toString()}`)
 
+    interface CfErrorResponse {
+      success: false
+      error?: string
+    }
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
+      const errorData = (await response.json().catch(() => ({}))) as CfErrorResponse
       return {
         success: false,
-        error: errorData.error || `Errore CF: ${response.status} ${response.statusText}`
+        error: errorData.error ?? `Errore CF: ${response.status} ${response.statusText}`
       }
     }
 
-    const data = await response.json()
+    interface CfSuccessResponse {
+      success: true
+      data: {
+        isin: string
+        price: number
+        currency: string
+        source: string
+        fetchedAt: { _seconds: number; _nanoseconds: number }
+        symbol?: string
+        name?: string
+      }
+    }
+
+    const data = (await response.json()) as CfSuccessResponse | CfErrorResponse
     if (data.success === false) {
-      return { success: false, error: data.error || 'Errore sconosciuto dalla Cloud Function' }
+      return { success: false, error: data.error ?? 'Errore sconosciuto dalla Cloud Function' }
     }
 
     const result = data.data
     const priceData: PriceData = {
-      isin: result.isin || isin,
-      ticker: result.symbol || ticker || '',
-      name: result.name || result.symbol || result.isin || '',
+      isin: result.isin ?? isin,
+      ticker: result.symbol ?? ticker ?? '',
+      name: result.name ?? result.symbol ?? result.isin ?? '',
       price: result.price,
       currency: result.currency,
       currentValue: shares > 0 ? result.price * shares : result.price,

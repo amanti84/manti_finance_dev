@@ -91,8 +91,8 @@ describe('ISIN Service', () => {
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockPriceResult,
-      } as any)
+        json: () => Promise.resolve(mockPriceResult),
+      } as Response)
 
       const result = await getPriceByISIN('IE00BYX2JD69', 10)
 
@@ -121,8 +121,8 @@ describe('ISIN Service', () => {
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockPriceResult,
-      } as any)
+        json: () => Promise.resolve(mockPriceResult),
+      } as Response)
 
       const result = await getPriceByISIN(null, 0.5, 'BTC', true)
 
@@ -141,8 +141,8 @@ describe('ISIN Service', () => {
 
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockErrorResponse,
-      } as any)
+        json: () => Promise.resolve(mockErrorResponse),
+      } as Response)
 
       const result = await getPriceByISIN('INVALID')
       expect(result.success).toBe(false)
