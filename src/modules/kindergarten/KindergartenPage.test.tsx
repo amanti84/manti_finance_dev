@@ -101,12 +101,12 @@ describe('KindergartenPage', () => {
       error: 'Errore di connessione a Firestore',
     })
     render(<KindergartenPage uid="test-uid" />)
-    expect(screen.getByText('Errore di connessione a Firestore')).toBeTruthy()
+    // La Page renderizza: <p>Errore: {error}</p> — usiamo regex per match parziale
+    expect(screen.getByText(/Errore di connessione a Firestore/i)).toBeTruthy()
   })
 
   it('renders tab buttons for investments and PAC', () => {
     render(<KindergartenPage uid="test-uid" />)
-    // La Page usa tab buttons — non h2 separati per sezione
     expect(screen.getByRole('button', { name: /Investimenti/i })).toBeTruthy()
     expect(screen.getByRole('button', { name: /PAC/i })).toBeTruthy()
   })
@@ -116,12 +116,14 @@ describe('KindergartenPage', () => {
     expect(screen.getByText('Vanguard FTSE All-World')).toBeTruthy()
   })
 
-  it('renders PAC name after switching to PAC tab', async () => {
+  it('renders PAC name in PAC tab table', async () => {
     render(<KindergartenPage uid="test-uid" />)
-    const pacTab = screen.getByRole('button', { name: /PAC/i })
+    // Clicca il tab PAC per mostrare KindergartenPACList
+    const pacTab = screen.getByRole('button', { name: /^PAC/i })
     act(() => { fireEvent.click(pacTab) })
     await waitFor(() => {
-      expect(screen.getByText('PAC Futuro')).toBeTruthy()
+      // getAllByText: PAC Futuro appare in KPICard + PACList — verifichiamo almeno 1 occorrenza
+      expect(screen.getAllByText('PAC Futuro').length).toBeGreaterThan(0)
     })
   })
 
