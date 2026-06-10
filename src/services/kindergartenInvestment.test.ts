@@ -29,7 +29,7 @@ import {
   deleteKindergartenInvestment,
   calculateKindergartenInvestmentKPIs,
 } from './kindergartenInvestment'
-import { collection, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore'
 
 const UID = 'test-uid-123'
 
@@ -71,6 +71,15 @@ describe('kindergartenInvestment service', () => {
 
     const callArgs = vi.mocked(collection).mock.calls[0]
     expect(callArgs).toContain(UID)
+  })
+
+  it('usa orderBy purchaseDate asc e createdAt desc per stabilità', async () => {
+    vi.mocked(getDocs).mockResolvedValue({ docs: [] } as unknown as Awaited<ReturnType<typeof getDocs>>)
+
+    await getKindergartenInvestments(UID)
+
+    expect(orderBy).toHaveBeenCalledWith('purchaseDate', 'asc')
+    expect(orderBy).toHaveBeenCalledWith('createdAt', 'desc')
   })
 
   it('getKindergartenInvestments: ritorna lista investimenti', async () => {

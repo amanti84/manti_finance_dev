@@ -39,10 +39,18 @@ jobs:
           VITE_APP_ENV: production
           VITE_ALLOWED_EMAILS: ${{ secrets.VITE_ALLOWED_EMAILS }}
 
-      - name: Deploy to Firebase Hosting
+      - name: Deploy to Firebase Hosting and Firestore Indexes
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
           projectId: mantifinance
+
+      - name: Write service account key to file
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa_key.json
+
+      - name: Deploy Firestore Indexes
+        run: npx firebase deploy --only firestore:indexes --project mantifinance
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa_key.json

@@ -29,7 +29,7 @@ import {
   deleteKindergartenPAC,
   calculateKindergartenPACKPIs,
 } from './kindergartenPac'
-import { collection, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore'
 
 const UID = 'test-uid-456'
 
@@ -61,6 +61,16 @@ describe('kindergartenPac service', () => {
     const callArgs = mockCol.mock.calls[0]
     expect(callArgs).toContain('kindergarten_pacs')
     expect(callArgs).not.toContain('pacs')
+  })
+
+  it('getKindergartenPACs: usa ordinamento corretto e stabile', async () => {
+    vi.mocked(collection).mockReturnValue({} as unknown as never)
+    vi.mocked(getDocs).mockResolvedValue({ docs: [] } as unknown as never)
+
+    await getKindergartenPACs(UID)
+
+    expect(orderBy).toHaveBeenCalledWith('startDate', 'asc')
+    expect(orderBy).toHaveBeenCalledWith('createdAt', 'desc')
   })
 
   it('getKindergartenPACs: ritorna lista PAC', async () => {
