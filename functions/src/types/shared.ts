@@ -25,3 +25,35 @@ export interface ParseDocumentResult {
 }
 
 export type Month = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12
+
+export type ApiResult<T> =
+  | { success: true; data: T; error?: never }
+  | { success: false; data?: never; error: string }
+
+export interface CollectionAudit {
+  legacyCount: number
+  newCount: number
+  mismatch: boolean
+}
+
+export interface SchemaValidation {
+  totalChecked: number
+  valid: number
+  invalid: number
+  errors: string[]
+}
+
+export interface SegregationValidation {
+  passed: boolean
+  violations: string[]
+}
+
+export interface MigrationAuditReport {
+  pacs: CollectionAudit
+  kindergartenPacs: CollectionAudit
+  kindergartenInvestments: CollectionAudit
+  schemaV3: SchemaValidation
+  segregation: SegregationValidation
+  overallPassed: boolean
+  timestamp: any // Use any or specific Timestamp type from admin if needed
+}
