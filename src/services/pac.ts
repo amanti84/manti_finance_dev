@@ -18,8 +18,17 @@ import {
   orderBy,
   Timestamp,
 } from 'firebase/firestore'
-import type { Investment, ApiResult, PacPayment, PacSummary, PacProgress, PacAnalytics } from '../types'
+import type {
+  Investment,
+  ApiResult,
+  PacPayment,
+  PacSummary,
+  PacProgress,
+  PacAnalytics,
+  PACReturnData,
+} from '../types'
 import { getPendingDates, calcNextScheduledDate } from '../types/pacFrequency'
+import { getInvestment } from './investment'
 import { logAudit } from './audit'
 
 // ---------------------------------------------------------------------------
@@ -114,8 +123,78 @@ export async function getPacPaymentsByInvestment(
     )
     const snapshot = await getDocs(q)
     const payments: PacPayment[] = []
-    snapshot.forEach((d) => { payments.push({ id: d.id, ...d.data() } as PacPayment) })
+    snapshot.forEach((d) => {
+      payments.push({ id: d.id, ...d.data() } as PacPayment)
+    })
     return { success: true, data: payments }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+/**
+ * Recupera lo storico completo dei versamenti per un PAC.
+ * Alias di getPacPaymentsByInvestment per conformità a issue #152.
+ */
+export async function getPaymentHistory(
+  uid: string,
+  pacId: string
+): Promise<ApiResult<PacPayment[]>> {
+  return getPacPaymentsByInvestment(uid, pacId)
+}
+
+/**
+ * Calcola il rendimento di un PAC.
+ * Differenza tra valore attuale (quote × prezzo corrente) e totale versato storico.
+ */
+export async function calculatePACReturn(
+  uid: string,
+  pacId: string
+): Promise<ApiResult<PACReturnData>> {
+  try {
+    // 1. Recupera l'investimento (per avere il prezzo corrente)
+    const invRes = await getInvestment(uid, pacId)
+    if (!invRes.success) return { success: false, error: invRes.error }
+    const investment = invRes.data
+
+    // 2. Recupera tutti i versamenti
+    const paymentsRes = await getPacPaymentsByInvestment(uid, pacId)
+    if (!paymentsRes.success) return { success: false, error: paymentsRes.error }
+    const payments = paymentsRes.data
+
+    if (payments.length === 0) {
+      return {
+        success: true,
+        data: {
+          totalInvested: 0,
+          currentValue: 0,
+          gainLoss: 0,
+          gainLossPercent: 0,
+          lastPaymentDate: null,
+        },
+      }
+    }
+
+    // 3. Calcoli
+    const totalInvested = payments.reduce((sum, p) => sum + p.importo, 0)
+    const totalQuantity = payments.reduce((sum, p) => sum + p.quantityPurchased, 0)
+    const currentValue = totalQuantity * investment.currentPrice
+    const gainLoss = currentValue - totalInvested
+    const gainLossPercent = totalInvested > 0 ? (gainLoss / totalInvested) * 100 : 0
+
+    // I pagamenti sono ordinati per data desc, quindi il primo è il più recente
+    const lastPaymentDate = payments[0].data
+
+    return {
+      success: true,
+      data: {
+        totalInvested: Math.round(totalInvested * 100) / 100,
+        currentValue: Math.round(currentValue * 100) / 100,
+        gainLoss: Math.round(gainLoss * 100) / 100,
+        gainLossPercent: Math.round(gainLossPercent * 100) / 100,
+        lastPaymentDate,
+      },
+    }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
