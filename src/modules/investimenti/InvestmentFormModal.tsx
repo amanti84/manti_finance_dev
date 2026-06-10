@@ -34,7 +34,9 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
     currentPrice: 0,
     currency: 'EUR' as Currency,
     isPac: false,
-    pacMonthlyAmount: 0
+    pacMonthlyAmount: 0,
+    tickerOnly: false,
+    autoUpdate: true
   })
 
   const [loading, setLoading] = useState(false)
@@ -52,7 +54,9 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
         currentPrice: initialData.currentPrice,
         currency: initialData.currency,
         isPac: initialData.isPac,
-        pacMonthlyAmount: initialData.pacMonthlyAmount ?? 0
+        pacMonthlyAmount: initialData.pacMonthlyAmount ?? 0,
+        tickerOnly: initialData.tickerOnly ?? false,
+        autoUpdate: initialData.autoUpdate ?? true
       })
     } else {
       setFormData({
@@ -66,7 +70,9 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
         currentPrice: 0,
         currency: 'EUR',
         isPac: false,
-        pacMonthlyAmount: 0
+        pacMonthlyAmount: 0,
+        tickerOnly: false,
+        autoUpdate: true
       })
     }
   }, [initialData, isOpen])
@@ -133,7 +139,12 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-sm font-medium">ISIN</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">ISIN</label>
+              {!formData.tickerOnly && (
+                <span className="text-[10px] text-text-muted uppercase">Obbligatorio per auto-update</span>
+              )}
+            </div>
             <Input
               name="isin"
               value={formData.isin}
@@ -177,7 +188,67 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-border/50">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                id="autoUpdate"
+                name="autoUpdate"
+                type="checkbox"
+                checked={formData.autoUpdate}
+                onChange={handleChange}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <label htmlFor="autoUpdate" className="text-sm font-medium cursor-pointer">
+                Aggiornamento automatico prezzi
+              </label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="tickerOnly"
+                name="tickerOnly"
+                type="checkbox"
+                checked={formData.tickerOnly}
+                onChange={handleChange}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <label htmlFor="tickerOnly" className="text-sm font-medium cursor-pointer">
+                Usa solo Ticker (es. Crypto/No ISIN)
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <input
+                id="isPac"
+                name="isPac"
+                type="checkbox"
+                checked={formData.isPac}
+                onChange={handleChange}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <label htmlFor="isPac" className="text-sm font-medium cursor-pointer">
+                È un Piano di Accumulo (PAC)?
+              </label>
+            </div>
+
+            {formData.isPac && (
+              <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
+                <label className="text-sm font-medium">Importo Mensile PAC</label>
+                <Input
+                  name="pacMonthlyAmount"
+                  type="number"
+                  value={formData.pacMonthlyAmount}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-border/50">
           <div className="space-y-1">
             <label className="text-sm font-medium">Quantità *</label>
             <Input
@@ -213,34 +284,6 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
           </div>
         </div>
 
-        <div className="space-y-3 pt-2">
-          <div className="flex items-center gap-2">
-            <input
-              id="isPac"
-              name="isPac"
-              type="checkbox"
-              checked={formData.isPac}
-              onChange={handleChange}
-              className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-            />
-            <label htmlFor="isPac" className="text-sm font-medium cursor-pointer">
-              È un Piano di Accumulo (PAC)?
-            </label>
-          </div>
-
-          {formData.isPac && (
-            <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-200">
-              <label className="text-sm font-medium">Importo Mensile PAC</label>
-              <Input
-                name="pacMonthlyAmount"
-                type="number"
-                value={formData.pacMonthlyAmount}
-                onChange={handleChange}
-                placeholder="0.00"
-              />
-            </div>
-          )}
-        </div>
 
         <div className="flex justify-end gap-3 pt-6 border-t border-border">
           <Button type="button" variant="ghost" onClick={onClose} disabled={loading}>

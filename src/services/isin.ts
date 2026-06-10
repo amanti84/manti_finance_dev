@@ -20,11 +20,13 @@ export async function getPriceByISIN(
     }
 
     // URL CF: costruita dinamicamente per supportare dev/prod
-    const cfUrl = `https://us-central1-${projectId}.cloudfunctions.net/getPriceByISIN`
+    const region = import.meta.env.VITE_FIREBASE_REGION ?? 'us-central1'
+    const cfUrl = `https://${region}-${projectId}.cloudfunctions.net/getPriceByISIN`
 
     const params = new URLSearchParams()
     if (tickerOnly && ticker) {
       params.append('ticker', ticker)
+      params.append('tickerOnly', 'true')
     } else if (isin) {
       params.append('isin', isin)
     }
