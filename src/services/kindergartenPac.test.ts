@@ -36,7 +36,7 @@ import {
   deleteKindergartenPAC,
   calculateKindergartenPACKPIs,
 } from './kindergartenPac'
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy, getDoc } from 'firebase/firestore'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy, getDoc, type DocumentSnapshot } from 'firebase/firestore'
 import { logAudit } from './audit'
 
 const UID = 'test-uid-456'
@@ -125,7 +125,7 @@ describe('kindergartenPac service', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => ({ name: 'Old PAC' })
-    } as any)
+    } as unknown as DocumentSnapshot)
 
     const result = await updateKindergartenPAC(UID, 'pac-001', { currentValue: 2800 })
     expect(result.success).toBe(true)
@@ -142,7 +142,7 @@ describe('kindergartenPac service', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => ({ name: 'PAC to delete' })
-    } as any)
+    } as unknown as DocumentSnapshot)
 
     const result = await deleteKindergartenPAC(UID, 'pac-001')
     expect(result.success).toBe(true)

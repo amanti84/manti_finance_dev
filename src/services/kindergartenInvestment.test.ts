@@ -36,7 +36,7 @@ import {
   deleteKindergartenInvestment,
   calculateKindergartenInvestmentKPIs,
 } from './kindergartenInvestment'
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy, getDoc } from 'firebase/firestore'
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, orderBy, getDoc, type DocumentSnapshot } from 'firebase/firestore'
 import { logAudit } from './audit'
 
 const UID = 'test-uid-123'
@@ -137,7 +137,7 @@ describe('kindergartenInvestment service', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => ({ name: 'Old Name' })
-    } as any)
+    } as unknown as DocumentSnapshot)
 
     const result = await updateKindergartenInvestment(UID, 'inv-001', { currentPrice: 130 })
     expect(result.success).toBe(true)
@@ -156,7 +156,7 @@ describe('kindergartenInvestment service', () => {
     vi.mocked(getDoc).mockResolvedValue({
       exists: () => true,
       data: () => ({ name: 'To Delete' })
-    } as any)
+    } as unknown as DocumentSnapshot)
 
     const result = await deleteKindergartenInvestment(UID, 'inv-001')
     expect(result.success).toBe(true)
