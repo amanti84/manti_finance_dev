@@ -20,7 +20,8 @@ export async function getPriceByISIN(
     }
 
     // URL CF: costruita dinamicamente per supportare dev/prod
-    const region = import.meta.env.VITE_FIREBASE_REGION ?? 'us-central1'
+    const env = import.meta.env as unknown as Record<string, string | undefined>
+    const region = env.VITE_FIREBASE_REGION ?? 'us-central1'
     const cfUrl = `https://${region}-${projectId}.cloudfunctions.net/getPriceByISIN`
 
     const params = new URLSearchParams()

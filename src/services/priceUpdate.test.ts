@@ -4,7 +4,7 @@ import { getPriceByISIN } from './isin'
 import { updateInvestment } from './investment'
 import { logAudit } from './audit'
 import { Timestamp } from 'firebase/firestore'
-import type { Investment } from '../types'
+import { type Investment, type ApiResult, type PriceData } from '../types'
 
 // Mock services
 vi.mock('./isin')
@@ -71,7 +71,7 @@ describe('Price Update Service', () => {
     })
 
     it('should return error if currency is not EUR', async () => {
-      vi.mocked(getPriceByISIN).mockResolvedValueOnce({
+      const usdResponse: ApiResult<PriceData> = {
         success: true,
         data: {
           isin: 'IE00B1234567',
@@ -83,22 +83,28 @@ describe('Price Update Service', () => {
           timestamp: new Date().toISOString(),
           source: 'Yahoo Finance'
         }
-      })
+      }
+      vi.mocked(getPriceByISIN).mockResolvedValueOnce(usdResponse)
 
       const result = await updateInvestmentPrice(uid, mockInvestment)
 
       expect(result.success).toBe(false)
       expect(result.error).toContain('EUR ammesso')
-      expect(updateInvestment).toHaveBeenCalledWith(uid, 'inv-1', expect.objectContaining({
-        lastUpdateError: expect.stringContaining('USD')
-      }))
+
+      // Check that updateInvestment was called with an error containing USD
+      const calls = vi.mocked(updateInvestment).mock.calls
+      const inv1Call = calls.find(call => call[1] === 'inv-1')
+      expect(inv1Call).toBeDefined()
+      const updateData = inv1Call![2] as Partial<Investment>
+      expect(updateData.lastUpdateError).toContain('USD')
     })
 
     it('should handle API failure', async () => {
-      vi.mocked(getPriceByISIN).mockResolvedValueOnce({
+      const errorResponse: ApiResult<PriceData> = {
         success: false,
         error: 'API Error'
-      })
+      }
+      vi.mocked(getPriceByISIN).mockResolvedValueOnce(errorResponse)
 
       const result = await updateInvestmentPrice(uid, mockInvestment)
 
@@ -110,8 +116,8 @@ describe('Price Update Service', () => {
     })
 
     it('should return error if no ISIN and not tickerOnly', async () => {
-      const invNoIsin = { ...mockInvestment, isin: undefined, tickerOnly: false } as unknown as Investment
-      const result = await updateInvestmentPrice(uid, invNoIsin)
+      const invNoIsin = { ...mockInvestment, isin: undefined, tickerOnly: false }
+      const result = await updateInvestmentPrice(uid, invNoIsin as unknown as Investment)
       expect(result.success).toBe(false)
       expect(result.error).toContain('Necessario ISIN o ticker')
     })
@@ -124,13 +130,16 @@ describe('Price Update Service', () => {
         { ...mockInvestment, id: 'inv-2', name: 'Test 2' }
       ]
 
-      vi.mocked(getPriceByISIN).mockResolvedValue({
+      const successResponse: ApiResult<PriceData> = {
         success: true,
         data: {
           isin: 'ISIN', ticker: 'T', name: 'N', price: 100, currency: 'EUR', currentValue: 1000, timestamp: '', source: ''
         }
-      })
-      vi.mocked(updateInvestment).mockResolvedValue({ success: true, data: undefined })
+      }
+      vi.mocked(getPriceByISIN).mockResolvedValue(successResponse)
+
+      const voidResponse: ApiResult<void> = { success: true, data: undefined }
+      vi.mocked(updateInvestment).mockResolvedValue(voidResponse)
 
       const onProgress = vi.fn()
 
@@ -154,13 +163,16 @@ describe('Price Update Service', () => {
         { ...mockInvestment, id: 'inv-2', autoUpdate: false }
       ]
 
-      vi.mocked(getPriceByISIN).mockResolvedValue({
+      const successResponse: ApiResult<PriceData> = {
         success: true,
         data: {
           isin: 'ISIN', ticker: 'T', name: 'N', price: 100, currency: 'EUR', currentValue: 1000, timestamp: '', source: ''
         }
-      })
-      vi.mocked(updateInvestment).mockResolvedValue({ success: true, data: undefined })
+      }
+      vi.mocked(getPriceByISIN).mockResolvedValue(successResponse)
+
+      const voidResponse: ApiResult<void> = { success: true, data: undefined }
+      vi.mocked(updateInvestment).mockResolvedValue(voidResponse)
 
       const result = await updateAllPrices(uid, investments, { autoUpdateOnly: true })
 

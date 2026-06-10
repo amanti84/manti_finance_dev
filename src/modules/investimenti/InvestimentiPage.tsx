@@ -174,12 +174,12 @@ export const InvestimentiPage: FC = () => {
         <div className="flex gap-2 self-start md:self-center">
           <Button
             variant="ghost"
-            onClick={handleUpdateAll}
+            onClick={() => { void handleUpdateAll() }}
             disabled={isUpdatingAll || loading || investments.length === 0}
             className="gap-2"
             isLoading={isUpdatingAll}
+            leftIcon={!isUpdatingAll ? <RefreshCw size={20} /> : undefined}
           >
-            <RefreshCw size={20} className={isUpdatingAll ? 'animate-spin' : ''} />
             {isUpdatingAll ? 'Aggiornamento...' : 'Aggiorna Prezzi'}
           </Button>
           <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
