@@ -7,6 +7,7 @@ import {
   collection,
   doc,
   getDocs,
+  getDoc,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -17,6 +18,7 @@ import {
 import { db } from '../firebase'
 import type { KindergartenPAC } from '../types/kindergarten'
 import type { ApiResult } from '../types'
+import { logAudit } from './audit'
 
 const pacCol = (uid: string) =>
   collection(db, 'users', uid, 'kindergarten_pacs')
@@ -51,6 +53,15 @@ export async function addKindergartenPAC(
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })
+
+    await logAudit({
+      uid,
+      action: 'create',
+      entityType: 'investment',
+      entityId: docRef.id,
+      newValue: { ...pac, isKindergarten: true },
+    })
+
     return { success: true, data: docRef.id }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Errore aggiunta PAC kindergarten' }
@@ -63,10 +74,24 @@ export async function updateKindergartenPAC(
   data: Partial<Omit<KindergartenPAC, 'id' | 'createdAt' | 'updatedAt'>>
 ): Promise<ApiResult<void>> {
   try {
-    await updateDoc(doc(pacCol(uid), id), {
+    const docRef = doc(pacCol(uid), id)
+    const snap = await getDoc(docRef)
+    const previousValue = snap.exists() ? snap.data() : undefined
+
+    await updateDoc(docRef, {
       ...data,
       updatedAt: serverTimestamp(),
     })
+
+    await logAudit({
+      uid,
+      action: 'update',
+      entityType: 'investment',
+      entityId: id,
+      previousValue: previousValue as Record<string, unknown>,
+      newValue: { ...data, isKindergarten: true },
+    })
+
     return { success: true, data: undefined }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Errore aggiornamento PAC kindergarten' }
@@ -78,7 +103,20 @@ export async function deleteKindergartenPAC(
   id: string
 ): Promise<ApiResult<void>> {
   try {
-    await deleteDoc(doc(pacCol(uid), id))
+    const docRef = doc(pacCol(uid), id)
+    const snap = await getDoc(docRef)
+    const previousValue = snap.exists() ? snap.data() : undefined
+
+    await deleteDoc(docRef)
+
+    await logAudit({
+      uid,
+      action: 'delete',
+      entityType: 'investment',
+      entityId: id,
+      previousValue: previousValue as Record<string, unknown>,
+    })
+
     return { success: true, data: undefined }
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : 'Errore eliminazione PAC kindergarten' }
