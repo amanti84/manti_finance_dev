@@ -54,3 +54,6 @@ export const validateAndProcessTransaction = onCall((request) => {
 });
 
 export { parseDocument } from "./parseDocument";
+export { getPriceByISIN } from "./getPriceByISIN";
+export { processDailyPACs, processPACsManually } from "./processPACs";
+export { manageISINCache } from "./manageISINCache";

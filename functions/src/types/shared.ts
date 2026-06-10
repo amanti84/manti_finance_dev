@@ -3,6 +3,37 @@
  * Questa è la copia locale per le functions — non importare da ../../src/types
  * per evitare dipendenze da firebase/firestore client-side.
  */
+import { Timestamp } from "firebase-admin/firestore";
+
+export interface PACDocument {
+  name: string
+  isin?: string
+  ticker?: string
+  monthlyAmount: number
+  active?: boolean
+  autoUpdate?: boolean
+  shares?: number
+  avgCost?: number
+  lastPaymentDate?: Timestamp
+  monthlyDays?: number[]
+  totalInvested?: number
+  currentPrice?: number
+  platform?: string
+  broker?: string
+}
+
+export interface InvestmentDocument {
+  name: string
+  isin?: string
+  ticker?: string
+  quantity: number
+  avgCost?: number
+  purchasePrice?: number
+  currentPrice: number
+  currentValue: number
+  updatedAt: Timestamp
+  lastPriceUpdate: Timestamp
+}
 
 export type ParsedDocumentType =
   | 'cedolino'
@@ -55,5 +86,27 @@ export interface MigrationAuditReport {
   schemaV3: SchemaValidation
   segregation: SegregationValidation
   overallPassed: boolean
-  timestamp: any // Use any or specific Timestamp type from admin if needed
+  timestamp: Timestamp
+}
+
+export interface PriceResult {
+  isin: string
+  price: number
+  currency: string
+  source: string
+  fetchedAt: Timestamp
+  symbol?: string
+}
+
+export interface ISINCacheEntry extends PriceResult {
+  expiresAt: Timestamp
+}
+
+export interface PACProcessingResult {
+  pacId: string
+  name: string
+  success: boolean
+  price?: number
+  sharesPurchased?: number
+  error?: string
 }
