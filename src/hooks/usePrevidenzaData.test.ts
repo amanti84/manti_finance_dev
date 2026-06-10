@@ -37,6 +37,13 @@ describe('usePrevidenzaData', () => {
   const mockPayslips = [
     { id: 'p1', year: 2025, month: 1, grossSalary: 4000, netSalary: 2800, tfr: 300, fondoPensione: 100 }
   ]
+  const mockBaseline = {
+    id: 'baseline',
+    tfrAccumulato: 15000,
+    montanteFondoPensione: 5000,
+    anniContributiINPS: 10,
+    annoInizioLavoro: 2014
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -45,6 +52,7 @@ describe('usePrevidenzaData', () => {
 
   it('should fetch all data correctly (happy path)', async () => {
     vi.mocked(previdenzaService.getPrevidenzaConfig).mockResolvedValue({ success: true, data: mockConfig } as any)
+    vi.mocked(previdenzaService.getPrevidenzaBaseline).mockResolvedValue({ success: true, data: mockBaseline } as any)
     vi.mocked(previdenzaService.getAllPensionFunds).mockResolvedValue({ success: true, data: mockFunds } as any)
     vi.mocked(previdenzaService.getContributionsByFund).mockResolvedValue({ success: true, data: mockContributions } as any)
     vi.mocked(payrollService.getPayslips).mockResolvedValue({ success: true, data: mockPayslips } as any)
@@ -64,6 +72,7 @@ describe('usePrevidenzaData', () => {
     })
 
     expect(result.current.config).toEqual(mockConfig)
+    expect(result.current.baseline).toEqual(mockBaseline)
     expect(result.current.funds).toEqual(mockFunds)
     expect(result.current.tfrHistory.length).toBeGreaterThan(0)
     expect(result.current.pensionProjection).not.toBeNull()
@@ -71,6 +80,7 @@ describe('usePrevidenzaData', () => {
 
   it('should handle missing configuration (edge case)', async () => {
     vi.mocked(previdenzaService.getPrevidenzaConfig).mockResolvedValue({ success: false, error: 'Not found' } as any)
+    vi.mocked(previdenzaService.getPrevidenzaBaseline).mockResolvedValue({ success: true, data: null } as any)
     vi.mocked(previdenzaService.getAllPensionFunds).mockResolvedValue({ success: true, data: [] } as any)
     vi.mocked(payrollService.getPayslips).mockResolvedValue({ success: true, data: [] } as any)
 
@@ -86,6 +96,7 @@ describe('usePrevidenzaData', () => {
 
   it('should handle errors during fetch', async () => {
     vi.mocked(previdenzaService.getPrevidenzaConfig).mockResolvedValue({ success: true, data: mockConfig } as any)
+    vi.mocked(previdenzaService.getPrevidenzaBaseline).mockResolvedValue({ success: true, data: null } as any)
     vi.mocked(previdenzaService.getAllPensionFunds).mockResolvedValue({ success: false, error: 'Database error' } as any)
     vi.mocked(payrollService.getPayslips).mockResolvedValue({ success: true, data: [] } as any)
 

@@ -791,3 +791,11 @@ export interface PrevidenzaConfig extends BaseDocument {
   expectedReturnPct?: number
   retirementAgeTarget?: number
 }
+
+export interface PrevidenzaBaseline extends BaseDocument {
+  tfrAccumulato: number
+  montanteFondoPensione: number
+  anniContributiINPS: number
+  annoInizioLavoro: number
+  retribuzioneAnnuaLorda?: number
+}
