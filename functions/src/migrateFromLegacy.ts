@@ -1,6 +1,7 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https'
+import { onCall, HttpsError, CallableRequest } from 'firebase-functions/v2/https'
 import { initializeApp, getApps } from 'firebase-admin/app'
 import { getFirestore, Timestamp } from 'firebase-admin/firestore'
+import { ApiResult, MigrationAuditReport } from './types/shared'
 import {
   LegacyPAC,
   LegacyInvestment,
@@ -311,7 +312,7 @@ export const migrateFromLegacy = onCall(async (request) => {
   return { success: true, data: report }
 })
 
-export const getMigrationAudit = onCall(async (request) => {
+export const getMigrationAudit = onCall(async (request: CallableRequest): Promise<ApiResult<MigrationAuditReport>> => {
   const legacyApp = getApps().find(a => a.name === 'legacy') ||
     initializeApp({ projectId: 'manti-finance' }, 'legacy')
   const legacyDb = getFirestore(legacyApp)

@@ -73,18 +73,18 @@ describe('getMigrationAudit Cloud Function', () => {
   })
 
   it('fails if unauthenticated', async () => {
-    await expect(getMigrationAudit({ auth: null } as any))
+    await expect((getMigrationAudit as any)({ auth: null }, {}))
       .rejects.toThrow("L'utente deve essere autenticato")
   })
 
   it('fails if not admin', async () => {
     const nonAdminAuth = { ...mockAuth, token: { email: 'user@example.com' } }
-    await expect(getMigrationAudit({ auth: nonAdminAuth } as any))
+    await expect((getMigrationAudit as any)({ auth: nonAdminAuth }, {}))
       .rejects.toThrow("Accesso riservato all'amministratore")
   })
 
   it('returns successful audit report when counts match and schema is valid', async () => {
-    const result = await getMigrationAudit({ auth: mockAuth, data: { targetUid: 'admin-uid' } } as any)
+    const result = await (getMigrationAudit as any)({ auth: mockAuth, data: { targetUid: 'admin-uid' } }, {})
 
     expect(result.success).toBe(true)
     expect(result.data.overallPassed).toBe(true)
