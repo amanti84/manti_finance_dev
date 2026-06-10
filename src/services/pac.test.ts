@@ -14,6 +14,8 @@ import {
   calculatePacProgress,
   getPacAnalytics,
   processPacAutoPayments,
+  getPaymentHistory,
+  calculatePACReturn,
 } from './pac'
 import type { Investment, PacPayment } from '../types'
 import type { Timestamp } from 'firebase/firestore'
@@ -44,7 +46,9 @@ vi.mock('firebase/firestore', () => ({
 }))
 
 vi.mock('../firebase', () => ({ db: {} }))
-vi.mock('./audit', () => ({ logAudit: vi.fn().mockResolvedValue({ success: true, data: {} }).mockResolvedValue({ success: true, data: undefined }) }))
+vi.mock('./audit', () => ({
+  logAudit: vi.fn().mockResolvedValue({ success: true, data: undefined }),
+}))
 
 // -----------------------------------------------------------------------
 // HELPERS
@@ -400,6 +404,124 @@ describe('getPacAnalytics', () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.totalePacAttivi).toBe(0)
+    }
+  })
+})
+
+// -----------------------------------------------------------------------
+// --- getPaymentHistory ---
+// -----------------------------------------------------------------------
+describe('getPaymentHistory', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('restituisce lo storico versamenti correttamente (happy path)', async () => {
+    const { getDocs, query } = await import('firebase/firestore')
+    ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
+    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce(makeSnapshot([makePayment()]))
+    const result = await getPaymentHistory('user-123', 'inv-001')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.length).toBe(1)
+      expect(result.data[0].id).toBe('pac-001')
+    }
+  })
+
+  it('restituisce lista vuota se non ci sono versamenti (edge case)', async () => {
+    const { getDocs, query } = await import('firebase/firestore')
+    ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
+    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce(makeSnapshot([]))
+    const result = await getPaymentHistory('user-123', 'inv-001')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.length).toBe(0)
+    }
+  })
+
+  it('restituisce errore se la query fallisce (errore)', async () => {
+    const { getDocs, query } = await import('firebase/firestore')
+    ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
+    ;(getDocs as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firestore error'))
+    const result = await getPaymentHistory('user-123', 'inv-001')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toBe('Firestore error')
+    }
+  })
+})
+
+// -----------------------------------------------------------------------
+// --- calculatePACReturn ---
+// -----------------------------------------------------------------------
+describe('calculatePACReturn', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('calcola il rendimento correttamente (happy path)', async () => {
+    const { getDoc, getDocs, query } = await import('firebase/firestore')
+
+    // Mock getInvestment
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      exists: () => true,
+      id: 'inv-001',
+      data: () =>
+        makeInvestment({
+          currentPrice: 100,
+        }),
+    })
+
+    // Mock getPacPaymentsByInvestment
+    ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
+    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      makeSnapshot([
+        makePayment({ importo: 100, quantityPurchased: 1.25 }), // Costo medio 80
+      ])
+    )
+
+    const result = await calculatePACReturn('user-123', 'inv-001')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.totalInvested).toBe(100)
+      expect(result.data.currentValue).toBe(125)
+      expect(result.data.gainLoss).toBe(25)
+      expect(result.data.gainLossPercent).toBe(25)
+    }
+  })
+
+  it('gestisce PAC senza versamenti (edge case)', async () => {
+    const { getDoc, getDocs, query } = await import('firebase/firestore')
+
+    // Mock getInvestment
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      exists: () => true,
+      id: 'inv-001',
+      data: () => makeInvestment(),
+    })
+
+    // Mock getPacPaymentsByInvestment
+    ;(query as ReturnType<typeof vi.fn>).mockReturnValue({})
+    ;(getDocs as ReturnType<typeof vi.fn>).mockResolvedValueOnce(makeSnapshot([]))
+
+    const result = await calculatePACReturn('user-123', 'inv-001')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.totalInvested).toBe(0)
+      expect(result.data.currentValue).toBe(0)
+    }
+  })
+
+  it('restituisce errore se investimento non trovato (errore)', async () => {
+    const { getDoc } = await import('firebase/firestore')
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      exists: () => false,
+    })
+
+    const result = await calculatePACReturn('user-123', 'inv-non-esistente')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toBe('Investimento non trovato')
     }
   })
 })

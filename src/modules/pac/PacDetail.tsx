@@ -1,7 +1,7 @@
 import type { FC } from 'react'
 import { useEffect, useState, useCallback } from 'react'
-import type { Investment, PacPayment, PacSummary } from '../../types'
-import { getPacPaymentsByInvestment, getPacSummary } from '../../services/pac'
+import type { Investment, PacPayment, PACReturnData } from '../../types'
+import { getPaymentHistory, calculatePACReturn } from '../../services/pac'
 
 interface PacDetailProps {
   uid: string
@@ -20,7 +20,7 @@ const DEFAULT_EXPECTED_RATE = 7
 
 export const PacDetail: FC<PacDetailProps> = ({ uid, investment, onBack, onError }) => {
   const [payments, setPayments] = useState<PacPayment[]>([])
-  const [summary, setSummary] = useState<PacSummary | null>(null)
+  const [performance, setPerformance] = useState<PACReturnData | null>(null)
   const [loading, setLoading] = useState(true)
   const [expectedRate, setExpectedRate] = useState(DEFAULT_EXPECTED_RATE)
   const [projectionYears, setProjectionYears] = useState(10)
@@ -29,17 +29,17 @@ export const PacDetail: FC<PacDetailProps> = ({ uid, investment, onBack, onError
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const paymentsResult = await getPacPaymentsByInvestment(uid, investment.id)
-      if (!paymentsResult.success) {
-        onError(paymentsResult.error)
+      const historyResult = await getPaymentHistory(uid, investment.id)
+      if (!historyResult.success) {
+        onError(historyResult.error)
         setLoading(false)
         return
       }
-      setPayments(paymentsResult.data)
+      setPayments(historyResult.data)
 
-      const summaryResult = await getPacSummary(uid, investment)
-      if (summaryResult.success) {
-        setSummary(summaryResult.data)
+      const performanceResult = await calculatePACReturn(uid, investment.id)
+      if (performanceResult.success) {
+        setPerformance(performanceResult.data)
       }
     } catch (err) {
       onError(err instanceof Error ? err.message : 'Errore nel caricamento')
@@ -53,10 +53,10 @@ export const PacDetail: FC<PacDetailProps> = ({ uid, investment, onBack, onError
   }, [loadData])
 
   useEffect(() => {
-    if (!summary) return
+    if (!performance) return
 
-    const monthlyAmount = summary.importoMensile
-    const currentTotal = summary.totaleVersato
+    const monthlyAmount = investment.pacMonthlyAmount ?? 0
+    const currentTotal = performance.totalInvested
     const rate = expectedRate / 100
     const monthlyRate = rate / 12
 
@@ -82,7 +82,7 @@ export const PacDetail: FC<PacDetailProps> = ({ uid, investment, onBack, onError
     }
 
     setProjections(newProjections)
-  }, [summary, expectedRate, projectionYears])
+  }, [performance, expectedRate, projectionYears, investment.pacMonthlyAmount])
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value)
@@ -117,7 +117,7 @@ export const PacDetail: FC<PacDetailProps> = ({ uid, investment, onBack, onError
         {investment.isin && <span style={{ color: '#666' }}>({investment.isin})</span>}
       </div>
 
-      {summary && (
+      {performance && (
         <div
           style={{
             display: 'grid',
@@ -130,15 +130,17 @@ export const PacDetail: FC<PacDetailProps> = ({ uid, investment, onBack, onError
         >
           <div>
             <div style={{ fontSize: '0.85em', color: '#666' }}>Importo Mensile</div>
-            <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{formatCurrency(summary.importoMensile)}</div>
+            <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>
+              {formatCurrency(investment.pacMonthlyAmount ?? 0)}
+            </div>
           </div>
           <div>
             <div style={{ fontSize: '0.85em', color: '#666' }}>Totale Versato</div>
-            <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{formatCurrency(summary.totaleVersato)}</div>
+            <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{formatCurrency(performance.totalInvested)}</div>
           </div>
           <div>
             <div style={{ fontSize: '0.85em', color: '#666' }}>Valore Attuale</div>
-            <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{formatCurrency(summary.valoreAttuale)}</div>
+            <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{formatCurrency(performance.currentValue)}</div>
           </div>
           <div>
             <div style={{ fontSize: '0.85em', color: '#666' }}>Rendimento</div>
@@ -146,20 +148,20 @@ export const PacDetail: FC<PacDetailProps> = ({ uid, investment, onBack, onError
               style={{
                 fontSize: '1.2em',
                 fontWeight: 'bold',
-                color: summary.pnlPercent >= 0 ? 'green' : 'red',
+                color: performance.gainLoss >= 0 ? 'green' : 'red',
               }}
             >
-              {summary.pnlPercent >= 0 ? '+' : ''}
-              {summary.pnlPercent.toFixed(2)}% ({formatCurrency(summary.pnlAssoluto)})
+              {performance.gainLoss >= 0 ? '+' : ''}
+              {performance.gainLossPercent.toFixed(2)}% ({formatCurrency(performance.gainLoss)})
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '0.85em', color: '#666' }}>Prezzo Medio Acquisto</div>
-            <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{formatCurrency(summary.mediaPrezzoAcquisto)}</div>
+            <div style={{ fontSize: '0.85em', color: '#666' }}>Prezzo Corrente</div>
+            <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{formatCurrency(investment.currentPrice)}</div>
           </div>
           <div>
             <div style={{ fontSize: '0.85em', color: '#666' }}>Numero Versamenti</div>
-            <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{summary.numeroVersamenti}</div>
+            <div style={{ fontSize: '1.2em', fontWeight: 'bold' }}>{payments.length}</div>
           </div>
         </div>
       )}

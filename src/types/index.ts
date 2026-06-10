@@ -293,6 +293,14 @@ export interface PacAnalytics {
   peggiorePerformance: { name: string; pnl: number }
 }
 
+export interface PACReturnData {
+  totalInvested: number
+  currentValue: number
+  gainLoss: number
+  gainLossPercent: number
+  lastPaymentDate: Timestamp | null
+}
+
 export interface PacConfig extends BaseDocument {
   name: string
   isin: string
