@@ -38,6 +38,11 @@ export function PACScheduleEditor({ value, onChange }: Props) {
     set({ weekdays: next })
   }
 
+  const showPreview =
+    (value.type === 'interval' && (value.intervalValue ?? 0) > 0) ||
+    (value.type === 'specific_days' && (value.daysOfMonth ?? []).length > 0) ||
+    (value.type === 'weekdays' && (value.weekdays ?? []).length > 0)
+
   return (
     <div className="space-y-3 rounded-lg border border-gray-200 p-4 bg-gray-50">
       {/* Tipo */}
@@ -172,9 +177,7 @@ export function PACScheduleEditor({ value, onChange }: Props) {
       )}
 
       {/* Preview */}
-      {((value.type === 'interval' && value.intervalValue) ||
-        (value.type === 'specific_days' && (value.daysOfMonth ?? []).length > 0) ||
-        (value.type === 'weekdays' && (value.weekdays ?? []).length > 0)) && (
+      {showPreview && (
         <div className="rounded-md bg-primary/5 border border-primary/20 px-3 py-2 text-xs text-primary font-medium">
           📅 {scheduleSummary(value)}
         </div>
