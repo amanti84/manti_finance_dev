@@ -7,8 +7,8 @@ import { useKindergartenInvestments } from './useKindergartenInvestments'
 import { useKindergartenPacs } from './useKindergartenPacs'
 import KindergartenInvestmentList from './KindergartenInvestmentList'
 import KindergartenPACList from './KindergartenPACList'
-import { KindergartenSummaryCard } from './KindergartenSummaryCard'
-import { KindergartenKPICard } from './KindergartenKPICard'
+import KindergartenSummaryCard from './KindergartenSummaryCard'
+import KindergartenKPICard from './KindergartenKPICard'
 
 interface Props {
   uid: string
@@ -22,6 +22,7 @@ export default function KindergartenPage({ uid }: Props) {
 
   const {
     investments,
+    kpis: invKpis,
     loading: invLoading,
     error: invError,
     addInvestment,
@@ -76,6 +77,14 @@ export default function KindergartenPage({ uid }: Props) {
     )
   }
 
+  // Derived grand-total KPIs for SummaryCard
+  const grandTotalInvested = (invKpis?.totalInvested ?? 0) + (pacKpis?.totalPACInvested ?? 0)
+  const grandTotalValue = (invKpis?.currentValue ?? 0) + (pacKpis?.totalPACValue ?? 0)
+  const grandTotalGainLoss = grandTotalValue - grandTotalInvested
+  const grandTotalGainLossPercent = grandTotalInvested > 0
+    ? (grandTotalGainLoss / grandTotalInvested) * 100
+    : 0
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -94,7 +103,26 @@ export default function KindergartenPage({ uid }: Props) {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <KindergartenSummaryCard investments={investments} />
+        <KindergartenSummaryCard
+          invKPIs={{
+            totalInvested: invKpis?.totalInvested ?? 0,
+            currentValue: invKpis?.currentValue ?? 0,
+            gainLoss: invKpis?.gainLoss ?? 0,
+            gainLossPercent: invKpis?.gainLossPercent ?? 0,
+          }}
+          pacKPIs={{
+            totalPACInvested: pacKpis?.totalPACInvested ?? 0,
+            totalPACValue: pacKpis?.totalPACValue ?? 0,
+            totalPACGainLoss: pacKpis?.pacGainLoss ?? 0,
+            totalPACGainLossPercent: pacKpis?.pacGainLossPercent ?? 0,
+          }}
+          grandKPIs={{
+            grandTotalInvested,
+            grandTotalValue,
+            grandTotalGainLoss,
+            grandTotalGainLossPercent,
+          }}
+        />
         <KindergartenKPICard pacs={pacs} kpis={pacKpis} />
       </div>
 
