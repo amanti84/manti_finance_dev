@@ -102,6 +102,10 @@ export type ScenarioType =
   | 'INVESTIMENTO_ETF'
   | 'AUMENTO_PAC'
   | 'VARIAZIONE_RAL'
+  | 'ANTICIPO_MUTUO'
+  | 'VARIAZIONE_PAC'
+  | 'RIBILANCIAMENTO'
+  | 'PENSIONE_ANTICIPATA'
 
 export interface ScenarioInput {
   type: ScenarioType
