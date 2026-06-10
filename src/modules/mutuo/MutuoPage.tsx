@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FC } from 'react'
-import { Edit2, RefreshCw } from 'lucide-react'
+import { Edit2, RefreshCw, Trash2 } from 'lucide-react'
 import { useMutuo } from '../../hooks/useMutuo'
 import { MutuoKPIs } from './MutuoKPIs'
 import { MutuoAmmortamentoTable } from './MutuoAmmortamentoTable'
@@ -18,15 +18,29 @@ export const MutuoPage: FC = () => {
     loading,
     error,
     saveConfig,
+    deleteMutuo,
+    applyPartialRepayment,
     refresh
   } = useMutuo()
 
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleFormSubmit = async (data: MutuoConfig) => {
     const res = await saveConfig(data)
     if (res.success) {
       setIsFormOpen(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (window.confirm('Sei sicuro? Questa azione è irreversibile e cancellerà tutta la configurazione del mutuo.')) {
+      setIsDeleting(true)
+      const res = await deleteMutuo()
+      if (!res.success) {
+        alert(`Errore durante l'eliminazione: ${res.error}`)
+      }
+      setIsDeleting(false)
     }
   }
 
@@ -88,6 +102,9 @@ export const MutuoPage: FC = () => {
           <Button variant="secondary" onClick={() => setIsFormOpen(true)} className="gap-2">
             <Edit2 size={18} /> Modifica
           </Button>
+          <Button variant="ghost" onClick={() => { void handleDelete() }} className="gap-2 text-error hover:text-error hover:bg-error/10" isLoading={isDeleting}>
+            <Trash2 size={18} /> Elimina
+          </Button>
         </div>
       </header>
 
@@ -100,7 +117,13 @@ export const MutuoPage: FC = () => {
         </div>
 
         <div className="space-y-8">
-          <MutuoSimulator config={config} />
+          <MutuoSimulator
+            config={config}
+            onApplyOverpayment={async (amount) => {
+              const res = await applyPartialRepayment(amount)
+              return res.success
+            }}
+          />
 
           <div className="bg-surface p-6 rounded-lg border border-border space-y-4">
             <h3 className="font-semibold flex items-center gap-2">

@@ -10,9 +10,10 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
 } from 'firebase/firestore'
 import type { Timestamp } from 'firebase/firestore'
-import type { MutuoConfig, ApiResult } from '../types'
+import type { MutuoConfig, ApiResult, OverpaymentSimulation } from '../types'
 import { logAudit } from './audit'
 
 export interface RataDettaglio {
@@ -315,7 +316,7 @@ export function simulateAnticipatedExtinction(
 export function simulateExtraPayment(
   config: MutuoConfig,
   importoExtra: number
-): ApiResult<{ rateRisparmiate: number; interessiRisparmiati: number; nuovaScadenza: Timestamp | Date }> {
+): ApiResult<OverpaymentSimulation> {
   try {
     const nuovoDebito = Math.max(0, config.debitoResiduo - importoExtra)
     const configRidotto: MutuoConfig = {
@@ -353,8 +354,94 @@ export function simulateExtraPayment(
         rateRisparmiate,
         interessiRisparmiati,
         nuovaScadenza: ultimaRata.data,
+        risparmioTotale: interessiRisparmiati,
       },
     }
+  } catch (error: unknown) {
+    return { success: false, error: (error as Error).message }
+  }
+}
+
+/**
+ * Alias per simulateExtraPayment allineato a issue #153
+ */
+export function simulateOverpayment(
+  config: MutuoConfig,
+  extraAmount: number
+): ApiResult<OverpaymentSimulation> {
+  return simulateExtraPayment(config, extraAmount)
+}
+
+/**
+ * Aggiorna la configurazione del mutuo (surroga/rinegoziazione)
+ */
+export async function updateMutuo(
+  uid: string,
+  _mutuoId: string,
+  updates: Partial<MutuoConfig>
+): Promise<ApiResult<void>> {
+  try {
+    const db = getFirestore()
+    const docRef = doc(db, COLLECTION(uid), MUTUO_DOC_ID)
+
+    await updateDoc(docRef, updates)
+
+    await logAudit({
+      uid,
+      action: 'update',
+      entityType: 'config',
+      entityId: MUTUO_DOC_ID,
+      newValue: updates,
+    })
+
+    return { success: true, data: undefined }
+  } catch (error: unknown) {
+    return { success: false, error: (error as Error).message }
+  }
+}
+
+/**
+ * Elimina la configurazione del mutuo
+ */
+export async function deleteMutuo(
+  uid: string,
+  _mutuoId: string
+): Promise<ApiResult<void>> {
+  try {
+    const db = getFirestore()
+    const docRef = doc(db, COLLECTION(uid), MUTUO_DOC_ID)
+
+    await deleteDoc(docRef)
+
+    await logAudit({
+      uid,
+      action: 'delete',
+      entityType: 'config',
+      entityId: MUTUO_DOC_ID,
+    })
+
+    return { success: true, data: undefined }
+  } catch (error: unknown) {
+    return { success: false, error: (error as Error).message }
+  }
+}
+
+/**
+ * Registra un pagamento anticipato parziale
+ */
+export async function applyPartialRepayment(
+  uid: string,
+  mutuoId: string,
+  amount: number
+): Promise<ApiResult<void>> {
+  try {
+    const configRes = await getMutuoConfig(uid)
+    if (!configRes.success) return configRes
+
+    const config = configRes.data
+    const nuovoDebito = Math.max(0, Math.round((config.debitoResiduo - amount) * 100) / 100)
+
+    return updateMutuo(uid, mutuoId, { debitoResiduo: nuovoDebito })
   } catch (error: unknown) {
     return { success: false, error: (error as Error).message }
   }
