@@ -5,6 +5,8 @@
  */
 import type { Timestamp } from 'firebase/firestore'
 
+export type KGPACFrequency = 'daily' | 'biweekly' | 'monthly'
+
 export interface KindergartenInvestment {
   id: string
   name: string
@@ -34,13 +36,18 @@ export interface KindergartenPAC {
   ticker?: string
   tickerOnly?: boolean
   autoUpdate?: boolean
-  monthlyAmount: number       // EUR — rata mensile
-  quantity?: number           // Added to support currentPrice * quantity = currentValue
+  // --- Frequenza versamenti ---
+  frequency: KGPACFrequency   // 'daily' | 'biweekly' | 'monthly'
+  dayOfMonth?: number         // 1-28 — usato solo se frequency === 'monthly'
+  // --- Importi ---
+  monthlyAmount: number       // EUR — rata per periodo
+  quantity?: number
   startDate: string           // ISO date
   targetYears: number
   currentValue: number        // EUR — valore attuale
-  totalInvested: number       // EUR — totale versato
-  lastPaymentDate?: string | Timestamp
+  totalInvested: number       // EUR — totale versato (aggregato, aggiornato ad ogni payment)
+  lastPaymentDate?: string    // ISO date — data ultimo versamento effettivo
+  nextPaymentDate?: string    // ISO date — calcolata automaticamente
   notes?: string
   lastPriceUpdate?: Timestamp | string
   lastUpdateError?: string | null
@@ -49,6 +56,20 @@ export interface KindergartenPAC {
   yahooSymbol?: string
   createdAt: string | Timestamp
   updatedAt: string | Timestamp
+}
+
+export interface KindergartenPACPayment {
+  id: string
+  pacId: string
+  pacName: string
+  date: string                // ISO date
+  amount: number              // EUR
+  priceAtPayment: number      // EUR — prezzo quota al momento del versamento
+  quantityPurchased: number   // calcolato: amount / priceAtPayment
+  auto: boolean               // true se registrato automaticamente
+  notes?: string
+  createdAt: Timestamp
+  updatedAt: Timestamp
 }
 
 export interface KindergartenMovement {

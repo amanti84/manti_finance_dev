@@ -1,17 +1,23 @@
 /**
  * KindergartenPACList — lista + form PAC del portafoglio bambini.
+ * Supporta frequency (daily/biweekly/monthly) + dayOfMonth.
  * Props-driven: riceve dati e callbacks da KindergartenPage.
- * ⚠️ ZERO import da pac.ts o tipi PAC adulti.
- *    Dominio COMPLETAMENTE SEPARATO dal portafoglio personale.
  */
 import { useState } from 'react'
-import type { KindergartenPAC } from '../../types/kindergarten'
+import type { KindergartenPAC, KGPACFrequency } from '../../types/kindergarten'
+import { calcNextPaymentDate } from '../../services/kindergartenPacPayments'
 
 interface Props {
   pacs: KindergartenPAC[]
   onAdd: (pac: Omit<KindergartenPAC, 'id' | 'createdAt' | 'updatedAt'>) => Promise<unknown>
   onUpdate: (id: string, data: Partial<Omit<KindergartenPAC, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<unknown>
   onDelete: (id: string) => Promise<unknown>
+}
+
+const FREQ_LABEL: Record<KGPACFrequency, string> = {
+  monthly: 'Mensile',
+  biweekly: 'Quindicinale',
+  daily: 'Giornaliero',
 }
 
 function fmt(n: number) {
@@ -24,12 +30,15 @@ interface FormData {
   ticker: string
   tickerOnly: boolean
   autoUpdate: boolean
+  frequency: KGPACFrequency
+  dayOfMonth: number
   monthlyAmount: number
   quantity: number
   startDate: string
   targetYears: number
   currentValue: number
   totalInvested: number
+  lastPaymentDate: string
   notes: string
 }
 
@@ -39,12 +48,15 @@ const EMPTY_FORM: FormData = {
   ticker: '',
   tickerOnly: false,
   autoUpdate: true,
+  frequency: 'monthly',
+  dayOfMonth: 1,
   monthlyAmount: 0,
   quantity: 0,
   startDate: new Date().toISOString().slice(0, 10),
   targetYears: 18,
   currentValue: 0,
   totalInvested: 0,
+  lastPaymentDate: '',
   notes: '',
 }
 
@@ -55,12 +67,15 @@ function formFromPAC(pac: KindergartenPAC): FormData {
     ticker: pac.ticker ?? '',
     tickerOnly: pac.tickerOnly ?? false,
     autoUpdate: pac.autoUpdate ?? true,
+    frequency: pac.frequency ?? 'monthly',
+    dayOfMonth: pac.dayOfMonth ?? 1,
     monthlyAmount: pac.monthlyAmount,
     quantity: pac.quantity ?? 0,
     startDate: pac.startDate,
     targetYears: pac.targetYears,
     currentValue: pac.currentValue,
     totalInvested: pac.totalInvested,
+    lastPaymentDate: pac.lastPaymentDate ?? '',
     notes: pac.notes ?? '',
   }
 }
@@ -90,7 +105,7 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
     setForm(EMPTY_FORM)
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
     const checked = (e.target as HTMLInputElement).checked
     setForm(prev => ({
@@ -103,18 +118,25 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
     e.preventDefault()
     setSaving(true)
     try {
+      const startRef = form.lastPaymentDate || form.startDate
+      const nextPaymentDate = calcNextPaymentDate(startRef, form.frequency, form.dayOfMonth || undefined)
+
       const payload: Omit<KindergartenPAC, 'id' | 'createdAt' | 'updatedAt'> = {
         name: form.name,
         tickerOnly: form.tickerOnly,
         autoUpdate: form.autoUpdate,
+        frequency: form.frequency,
         monthlyAmount: form.monthlyAmount,
         startDate: form.startDate,
         targetYears: form.targetYears,
         currentValue: form.currentValue,
         totalInvested: form.totalInvested,
+        nextPaymentDate,
         ...(form.isin ? { isin: form.isin } : {}),
         ...(form.ticker ? { ticker: form.ticker } : {}),
         ...(form.quantity > 0 ? { quantity: form.quantity } : {}),
+        ...(form.dayOfMonth > 0 && form.frequency === 'monthly' ? { dayOfMonth: form.dayOfMonth } : {}),
+        ...(form.lastPaymentDate ? { lastPaymentDate: form.lastPaymentDate } : {}),
         ...(form.notes ? { notes: form.notes } : {}),
       }
       if (editingId) {
@@ -157,12 +179,13 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left font-medium text-gray-500">Nome PAC</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">Rata mensile</th>
+                <th className="px-4 py-3 text-left font-medium text-gray-500">Frequenza</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-500">Rata</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-500">Totale Versato</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-500">Valore Attuale</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-500">G/P</th>
+                <th className="px-4 py-3 text-right font-medium text-gray-500">Pross. Versamento</th>
                 <th className="px-4 py-3 text-right font-medium text-gray-500">Orizzonte</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">Inizio</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -170,20 +193,26 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
               {pacs.map(pac => {
                 const gp = pac.currentValue - pac.totalInvested
                 const gpPct = pac.totalInvested > 0 ? (gp / pac.totalInvested) * 100 : 0
+                const nextDue = pac.nextPaymentDate
+                const today = new Date().toISOString().slice(0, 10)
+                const isOverdue = nextDue ? nextDue < today : false
                 return (
                   <tr key={pac.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium">
                       {pac.name}
                       {pac.ticker ? <span className="ml-1 text-xs text-gray-400">{pac.ticker}</span> : null}
                     </td>
+                    <td className="px-4 py-3 text-gray-500">{FREQ_LABEL[pac.frequency ?? 'monthly']}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{fmt(pac.monthlyAmount)}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{fmt(pac.totalInvested)}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-medium">{fmt(pac.currentValue)}</td>
                     <td className={`px-4 py-3 text-right tabular-nums font-medium ${gp >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {fmt(gp)} ({gp >= 0 ? '+' : ''}{gpPct.toFixed(2)}%)
                     </td>
+                    <td className={`px-4 py-3 text-right text-xs ${isOverdue ? 'text-red-500 font-semibold' : 'text-gray-500'}`}>
+                      {nextDue ?? '—'}{isOverdue ? ' ⚠' : ''}
+                    </td>
                     <td className="px-4 py-3 text-right text-gray-500">{pac.targetYears} anni</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{pac.startDate}</td>
                     <td className="px-4 py-3 text-right space-x-3">
                       <button onClick={() => openEdit(pac)} className="text-blue-500 hover:text-blue-700 text-xs">Modifica</button>
                       <button
@@ -229,6 +258,27 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
                     placeholder="VNGA80.MI" />
                 </div>
               </div>
+
+              {/* Frequenza */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Frequenza *</label>
+                  <select name="frequency" value={form.frequency} onChange={handleChange}
+                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+                    <option value="monthly">Mensile</option>
+                    <option value="biweekly">Quindicinale (14gg)</option>
+                    <option value="daily">Giornaliero</option>
+                  </select>
+                </div>
+                {form.frequency === 'monthly' && (
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Giorno del mese</label>
+                    <input name="dayOfMonth" type="number" min="1" max="28" value={form.dayOfMonth} onChange={handleChange}
+                      className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Data Inizio *</label>
@@ -236,17 +286,26 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
                     className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div className="space-y-1">
+                  <label className="text-sm font-medium">Ultimo Versamento</label>
+                  <input name="lastPaymentDate" type="date" value={form.lastPaymentDate} onChange={handleChange}
+                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
                   <label className="text-sm font-medium">Orizzonte (anni) *</label>
                   <input name="targetYears" type="number" min="1" max="40" value={form.targetYears} onChange={handleChange} required
                     className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Rata Mensile € *</label>
+                  <label className="text-sm font-medium">Rata {FREQ_LABEL[form.frequency]} €*</label>
                   <input name="monthlyAmount" type="number" step="any" min="0" value={form.monthlyAmount} onChange={handleChange} required
                     className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <label className="text-sm font-medium">Totale Versato €</label>
                   <input name="totalInvested" type="number" step="any" min="0" value={form.totalInvested} onChange={handleChange}
@@ -257,7 +316,13 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
                   <input name="currentValue" type="number" step="any" min="0" value={form.currentValue} onChange={handleChange}
                     className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
+                <div className="space-y-1">
+                  <label className="text-sm font-medium">Quantità quote</label>
+                  <input name="quantity" type="number" step="any" min="0" value={form.quantity} onChange={handleChange}
+                    className="w-full h-10 px-3 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                </div>
               </div>
+
               <div className="flex gap-6 pt-1">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input name="autoUpdate" type="checkbox" checked={form.autoUpdate} onChange={handleChange} className="w-4 h-4 rounded border-gray-300 text-primary" />
@@ -268,12 +333,14 @@ export default function KindergartenPACList({ pacs, onAdd, onUpdate, onDelete }:
                   Solo Ticker
                 </label>
               </div>
+
               <div className="space-y-1">
                 <label className="text-sm font-medium">Note</label>
                 <textarea name="notes" value={form.notes} onChange={handleChange} rows={2}
                   className="w-full px-3 py-2 rounded-md border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
                   placeholder="Note opzionali..." />
               </div>
+
               <div className="flex justify-end gap-3 pt-2 border-t">
                 <button type="button" onClick={closeModal} className="px-4 py-2 text-sm rounded-md border border-gray-300 hover:bg-gray-50">Annulla</button>
                 <button type="submit" disabled={saving} className="px-4 py-2 text-sm rounded-md bg-primary text-white hover:bg-primary/90 disabled:opacity-60">

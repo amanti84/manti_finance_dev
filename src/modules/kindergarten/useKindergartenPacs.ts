@@ -2,6 +2,7 @@
  * Hook: useKindergartenPacs
  * Gestisce SOLO i PAC del portafoglio bambini.
  * Collection: users/{uid}/kindergarten_pacs
+ * Al mount esegue auto-payment check.
  */
 import { useState, useEffect, useCallback } from 'react'
 import type { KindergartenPAC } from '../../types/kindergarten'
@@ -12,11 +13,36 @@ import {
   deleteKindergartenPAC,
   calculateKindergartenPACKPIs,
 } from '../../services/kindergartenPac'
+import {
+  processKGPACAutoPayments,
+  type AutoPaymentResult,
+} from '../../services/kindergartenPacPayments'
 
-export function useKindergartenPacs(uid: string) {
+export interface UseKindergartenPacsReturn {
+  pacs: KindergartenPAC[]
+  kpis: ReturnType<typeof calculateKindergartenPACKPIs>
+  loading: boolean
+  error: string | null
+  autoPaymentResults: AutoPaymentResult[]
+  addPAC: (pac: Omit<KindergartenPAC, 'id' | 'createdAt' | 'updatedAt'>) => Promise<unknown>
+  updatePAC: (id: string, data: Partial<Omit<KindergartenPAC, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<unknown>
+  deletePAC: (id: string) => Promise<unknown>
+  refresh: () => Promise<void>
+  clearAutoPaymentResults: () => void
+}
+
+export function useKindergartenPacs(uid: string): UseKindergartenPacsReturn {
   const [pacs, setPacs] = useState<KindergartenPAC[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [autoPaymentResults, setAutoPaymentResults] = useState<AutoPaymentResult[]>([])
+
+  const updatePAC = useCallback(async (
+    id: string,
+    data: Partial<Omit<KindergartenPAC, 'id' | 'createdAt' | 'updatedAt'>>
+  ) => {
+    return updateKindergartenPAC(uid, id, data)
+  }, [uid])
 
   const fetchPACs = useCallback(async () => {
     setLoading(true)
@@ -25,6 +51,14 @@ export function useKindergartenPacs(uid: string) {
       const res = await getKindergartenPACs(uid)
       if (res.success) {
         setPacs(res.data)
+        // Auto-payment check dopo il fetch
+        const results = await processKGPACAutoPayments(uid, res.data, updatePAC)
+        if (results.length > 0) {
+          setAutoPaymentResults(results)
+          // Ri-fetch per aggiornare totalInvested e nextPaymentDate
+          const refreshed = await getKindergartenPACs(uid)
+          if (refreshed.success) setPacs(refreshed.data)
+        }
       } else {
         setError(res.error)
       }
@@ -33,7 +67,7 @@ export function useKindergartenPacs(uid: string) {
     } finally {
       setLoading(false)
     }
-  }, [uid])
+  }, [uid, updatePAC])
 
   useEffect(() => {
     void fetchPACs()
@@ -47,7 +81,7 @@ export function useKindergartenPacs(uid: string) {
     return res
   }
 
-  const updatePAC = async (
+  const updatePACAndRefresh = async (
     id: string,
     data: Partial<Omit<KindergartenPAC, 'id' | 'createdAt' | 'updatedAt'>>
   ) => {
@@ -69,9 +103,11 @@ export function useKindergartenPacs(uid: string) {
     kpis,
     loading,
     error,
+    autoPaymentResults,
     addPAC,
-    updatePAC,
+    updatePAC: updatePACAndRefresh,
     deletePAC,
     refresh: fetchPACs,
+    clearAutoPaymentResults: () => setAutoPaymentResults([]),
   }
 }
