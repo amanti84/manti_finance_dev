@@ -12,387 +12,443 @@ const cors = corsLib({
   ],
 });
 
-const CACHE_COLLECTION = "isin_cache";
+const CACHE_COLLECTION = "isin_mappings";
 const CACHE_VALIDITY_DAYS = 7;
 const ALPHA_VANTAGE_KEY = process.env.ALPHA_VANTAGE_KEY;
 
-// EUR exchange suffixes to try in order (most common European exchanges)
-const EUR_SUFFIXES = [".MI", ".AS", ".PA", ".DE", ".F", ".L", ".MC", ".SW", ""];
-
 /**
- * Fetch EUR/XXX rate from ECB for currency conversion fallback
+ * Maps OpenFIGI exchange codes to Yahoo Finance ticker suffixes.
+ * Only EUR-denominated exchanges are listed - if exchange is not here,
+ * we skip it rather than risk getting a non-EUR price.
  */
-async function getECBRate(fromCurrency: string): Promise<number | null> {
-  if (fromCurrency === "EUR") return 1;
+const EXCHANGE_TO_YAHOO_SUFFIX: Record<string, string> = {
+  XETRA: ".DE",
+  MIL:   ".MI",
+  PAR:   ".PA",
+  AMS:   ".AS",
+  BME:   ".MC",
+  HEL:   ".HE",
+  LIS:   ".LS",
+  VIE:   ".VI",
+  ATH:   ".AT",
+  BRU:   ".BR",
+  // LSE and SIX intentionally excluded: GBP and CHF
+};
+
+// ============================================================
+// CACHE
+// ============================================================
+
+interface CachedMapping {
+  isin?: string;
+  ticker?: string;
+  name?: string;
+  source?: string;
+  lastPrice?: number;
+  currency?: string;
+  lastVerified?: Timestamp;
+  failureCount?: number;
+}
+
+async function getFromCache(key: string): Promise<CachedMapping | null> {
   try {
-    const url = `https://data-api.ecb.europa.eu/service/data/EXR/D.${fromCurrency}.EUR.SP00.A?lastNObservations=1&format=jsondata`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (!response.ok) return null;
-    const data = await response.json();
-    const obs = data?.dataSets?.[0]?.series?.["0:0:0:0:0"]?.observations;
-    if (!obs) return null;
-    const keys = Object.keys(obs).sort();
-    const rate = obs[keys[keys.length - 1]]?.[0];
-    return rate ? parseFloat(rate) : null;
-  } catch {
+    const db = getFirestore();
+    const doc = await db.collection(CACHE_COLLECTION).doc(key).get();
+    if (!doc.exists) return null;
+    const data = doc.data() as CachedMapping;
+    const lastVerified = data.lastVerified as Timestamp | undefined;
+    if (!lastVerified) return data;
+    const ageMs = Date.now() - lastVerified.toMillis();
+    const validMs = CACHE_VALIDITY_DAYS * 24 * 60 * 60 * 1000;
+    if (ageMs < validMs) {
+      console.log(`Cache hit for ${key} (age: ${Math.round(ageMs / 3600000)}h)`);
+      return data;
+    }
+    console.log(`Cache expired for ${key}`);
+    return null;
+  } catch (e) {
+    console.error("Cache read error:", e);
     return null;
   }
 }
 
-/**
- * Try fetching price for a specific ticker from Yahoo Finance
- * Returns PriceResult with actual currency (not forced to EUR)
- */
+async function saveToCache(key: string, priceData: PriceResult, ticker?: string): Promise<void> {
+  if (priceData.currency !== "EUR") {
+    console.log(`Not caching non-EUR price (${priceData.currency})`);
+    return;
+  }
+  try {
+    const db = getFirestore();
+    await db.collection(CACHE_COLLECTION).doc(key).set(
+      {
+        isin: key,
+        ticker: ticker || priceData.symbol || null,
+        name: priceData.name || null,
+        source: priceData.source,
+        lastVerified: Timestamp.now(),
+        lastPrice: priceData.price,
+        currency: priceData.currency,
+        failureCount: 0,
+      },
+      { merge: true }
+    );
+    console.log(`Cache saved for ${key}`);
+  } catch (e) {
+    console.error("Cache write error:", e);
+  }
+}
+
+// ============================================================
+// OPENFIGI - official ISIN -> ticker resolution
+// ============================================================
+
+interface FIGIResult {
+  ticker: string;
+  exchCode: string;
+  name?: string;
+}
+
+async function findTickerViaOpenFIGI(isin: string): Promise<FIGIResult | null> {
+  try {
+    const response = await fetch("https://api.openfigi.com/v3/mapping", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify([{ idType: "ID_ISIN", idValue: isin }]),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const results: FIGIResult[] = data?.[0]?.data;
+    if (!results?.length) return null;
+
+    // Prefer a result whose exchange has a known EUR suffix
+    const eurResult = results.find((r) => EXCHANGE_TO_YAHOO_SUFFIX[r.exchCode] !== undefined);
+    return eurResult || results[0];
+  } catch (e) {
+    console.error("OpenFIGI error:", e);
+    return null;
+  }
+}
+
+// ============================================================
+// YAHOO FINANCE
+// ============================================================
+
 async function tryYahooTicker(ticker: string, isin: string): Promise<PriceResult | null> {
   try {
-    if (!ticker) return null;
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}`;
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`;
     const response = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0" },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(10000),
     });
     if (!response.ok) return null;
     const data = await response.json();
     const result = data.chart?.result?.[0];
-    if (result?.meta) {
-      const price = result.meta.regularMarketPrice;
-      const currency = result.meta.currency;
-      const name = result.meta.longName || result.meta.shortName || ticker;
-      if (price && currency) {
-        return {
-          isin,
-          symbol: ticker,
-          price,
-          currency,
-          name,
-          source: "Yahoo Finance",
-          fetchedAt: Timestamp.now(),
-        };
-      }
-    }
-    return null;
+    const meta = result?.meta;
+    const closes = result?.indicators?.quote?.[0]?.close?.filter((p: number | null) => p !== null);
+    if (!meta) return null;
+    const price = (closes?.length ? closes[closes.length - 1] : null) ?? meta.regularMarketPrice;
+    const currency: string = meta.currency;
+    if (!price || !currency) return null;
+    return {
+      isin,
+      symbol: ticker,
+      price,
+      currency,
+      name: meta.longName || meta.shortName || undefined,
+      source: "Yahoo Finance",
+      fetchedAt: Timestamp.now(),
+    };
   } catch {
     return null;
   }
 }
 
-/**
- * Auto-discover ticker from ISIN via Yahoo Finance Search
- * Returns the best EUR-listed ticker found, or the first result as fallback
- */
-async function findTickerFromISIN(isin: string): Promise<string | null> {
+async function fetchFromYahooByISIN(isin: string, cachedTicker?: string): Promise<PriceResult | null> {
+  let ticker = cachedTicker || null;
+
+  if (!ticker) {
+    const figi = await findTickerViaOpenFIGI(isin);
+    if (figi) {
+      const suffix = EXCHANGE_TO_YAHOO_SUFFIX[figi.exchCode] ?? "";
+      ticker = `${figi.ticker}${suffix}`;
+      console.log(`OpenFIGI: ${isin} -> ${ticker} (${figi.exchCode})`);
+    }
+  }
+
+  if (!ticker) {
+    console.log(`No ticker found for ${isin}`);
+    return null;
+  }
+
+  const result = await tryYahooTicker(ticker, isin);
+  if (result?.currency === "EUR") return result;
+
+  // Try other EUR exchange suffixes on the base symbol
+  const base = ticker.split(".")[0];
+  for (const suffix of Object.values(EXCHANGE_TO_YAHOO_SUFFIX)) {
+    if (ticker.endsWith(suffix)) continue;
+    const candidate = `${base}${suffix}`;
+    const r = await tryYahooTicker(candidate, isin);
+    if (r?.currency === "EUR") {
+      console.log(`Yahoo EUR found at ${candidate}`);
+      return r;
+    }
+  }
+
+  if (result) {
+    console.log(`Yahoo found ${ticker} but currency is ${result.currency} (not EUR) - rejected`);
+  }
+  return null;
+}
+
+async function fetchFromYahooByTicker(ticker: string): Promise<PriceResult | null> {
+  const result = await tryYahooTicker(ticker, ticker);
+  if (result?.currency === "EUR") {
+    console.log(`Yahoo (ticker-only): ${ticker} -> ${result.price} EUR`);
+    return result;
+  }
+  if (result) {
+    console.log(`Yahoo: ${ticker} found but currency ${result.currency} != EUR - rejected`);
+  }
+  return null;
+}
+
+// ============================================================
+// FINANCIAL TIMES
+// ============================================================
+
+async function fetchFromFinancialTimes(isin: string): Promise<PriceResult | null> {
   try {
-    const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(isin)}&quotesCount=10&newsCount=0`;
+    const url = `https://markets.ft.com/data/funds/tearsheet/summary?s=${isin}:EUR`;
     const response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-      signal: AbortSignal.timeout(8000),
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        Accept: "text/html",
+      },
+      signal: AbortSignal.timeout(10000),
     });
     if (!response.ok) return null;
-    const data = await response.json();
-    const quotes = data.quotes || [];
-    if (quotes.length === 0) return null;
+    const html = await response.text();
 
-    // Prefer EUR-denominated exchanges
-    const eurExchanges = ["MIL", "AMS", "PAR", "GER", "FRA", "LSE", "SWX", "MCE"];
-    const eurQuote = quotes.find((q: { exchange?: string; symbol?: string }) =>
-      eurExchanges.some(ex => q.exchange?.toUpperCase().includes(ex))
-    );
-    return (eurQuote?.symbol || quotes[0]?.symbol) ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Fetch price from Yahoo Finance for a given ISIN
- * Strategy:
- * 1. Try auto-discovery via Yahoo Search to find the best ticker
- * 2. Try all EUR suffixes on the discovered ticker
- * 3. If price is not in EUR, attempt ECB conversion
- */
-async function fetchFromYahoo(isin: string): Promise<PriceResult | null> {
-  try {
-    const discoveredTicker = await findTickerFromISIN(isin);
-    if (!discoveredTicker) return null;
-
-    // Try the discovered ticker as-is first
-    const directResult = await tryYahooTicker(discoveredTicker, isin);
-    if (directResult?.currency === "EUR") return directResult;
-
-    // Try EUR exchange suffixes on the base symbol (strip existing suffix)
-    const baseTicker = discoveredTicker.includes(".")
-      ? discoveredTicker.split(".")[0]
-      : discoveredTicker;
-
-    for (const suffix of EUR_SUFFIXES) {
-      if (suffix === "" && discoveredTicker.includes(".")) continue; // already tried
-      const candidate = `${baseTicker}${suffix}`;
-      const result = await tryYahooTicker(candidate, isin);
-      if (result?.currency === "EUR") return result;
-    }
-
-    // Last resort: use best result found and try ECB conversion
-    if (directResult) {
-      const rate = await getECBRate(directResult.currency);
-      if (rate) {
-        return {
-          ...directResult,
-          price: parseFloat((directResult.price * rate).toFixed(6)),
-          currency: "EUR",
-          source: `Yahoo Finance (converted from ${directResult.currency} via ECB)`,
-        };
+    const patterns = [
+      /mod-ui-data-list__value"?>([\\d,.]+)<\/span>/i,
+      /Price \(EUR\)[^>]*>([\\d,.]+)</i,
+      /<span[^>]*class="[^"]*mod-ui-data-list__value[^"]*"[^>]*>([\\d,.]+)<\/span>/i,
+      /"lastPrice":"([\\d,.]+)"/i,
+    ];
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (match) {
+        const price = parseFloat(match[1].replace(",", ""));
+        if (price > 0 && price < 100000) {
+          const nameMatch =
+            html.match(/<h1[^>]*class="[^"]*mod-ui-page-title[^"]*"[^>]*>([^<]+)<\/h1>/i) ||
+            html.match(/<title>([^<]+)<\/title>/i);
+          const name = nameMatch ? nameMatch[1].replace(" | FT Markets Data", "").trim() : undefined;
+          console.log(`Financial Times: ${isin} -> ${price} EUR`);
+          return { isin, price, currency: "EUR", name, source: "Financial Times", fetchedAt: Timestamp.now() };
+        }
       }
     }
-
     return null;
   } catch (e) {
-    console.error("Yahoo fetch error:", e);
+    console.error("FT error:", e);
     return null;
   }
 }
 
-/**
- * Fetch price directly for a ticker (tickerOnly mode: crypto, stocks without ISIN)
- * No ISIN lookup needed — ticker is used directly
- */
-async function fetchByTicker(ticker: string): Promise<PriceResult | null> {
-  try {
-    // Try direct ticker first
-    const direct = await tryYahooTicker(ticker, ticker);
-    if (direct?.currency === "EUR") return direct;
+// ============================================================
+// ALPHA VANTAGE
+// ============================================================
 
-    // For non-EUR (e.g. USD crypto), try ECB conversion
-    if (direct) {
-      const rate = await getECBRate(direct.currency);
-      if (rate) {
-        return {
-          ...direct,
-          isin: ticker,
-          price: parseFloat((direct.price * rate).toFixed(6)),
-          currency: "EUR",
-          source: `Yahoo Finance (converted from ${direct.currency} via ECB)`,
-        };
-      }
-      // Return as-is if no conversion available (rare edge case)
-      return { ...direct, isin: ticker };
-    }
-
-    return null;
-  } catch (e) {
-    console.error("fetchByTicker error:", e);
-    return null;
-  }
-}
-
-/**
- * Fetch price from Alpha Vantage (fallback for ISIN-based lookup)
- */
 async function fetchFromAlphaVantage(isin: string): Promise<PriceResult | null> {
   if (!ALPHA_VANTAGE_KEY) return null;
   try {
     const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${isin}&apikey=${ALPHA_VANTAGE_KEY}`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
     if (!response.ok) return null;
     const data = await response.json();
     const quote = data["Global Quote"];
     if (quote?.["05. price"]) {
-      const price = parseFloat(quote["05. price"]);
-      return {
-        isin,
-        price,
-        currency: "EUR",
-        source: "Alpha Vantage",
-        fetchedAt: Timestamp.now(),
-      };
+      // Alpha Vantage does not reliably return currency - reject until confirmed EUR
+      console.log(`Alpha Vantage: price found but currency unconfirmed - skipped`);
     }
     return null;
   } catch (e) {
-    console.error("Alpha Vantage fetch error:", e);
+    console.error("Alpha Vantage error:", e);
     return null;
   }
 }
 
-/**
- * Fetch price from Financial Times (fallback for ISIN-based lookup)
- */
-async function fetchFromFinancialTimes(isin: string): Promise<PriceResult | null> {
-  try {
-    const url = `https://markets.ft.com/data/etfs/tearsheet/summary?s=${isin}`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!response.ok) return null;
-    const text = await response.text();
-    const priceMatch = text.match(/<span class="mod-ui-data-list__value">([0-9,.]+)<\/span>/);
-    const currencyMatch = text.match(/<span class="mod-ui-data-list__label">Price \(([A-Z]{3})\)<\/span>/);
-    if (priceMatch && currencyMatch) {
-      const price = parseFloat(priceMatch[1].replace(",", ""));
-      const currency = currencyMatch[1];
-      if (currency === "EUR") {
-        return {
-          isin,
-          price,
-          currency,
-          source: "Financial Times",
-          fetchedAt: Timestamp.now(),
-        };
-      }
-    }
-    return null;
-  } catch (e) {
-    console.error("FT fetch error:", e);
-    return null;
-  }
-}
+// ============================================================
+// CORE INTERNAL LOGIC
+// ============================================================
 
-/**
- * Core internal logic for ISIN-based price fetching
- * Cascade: Cache → FT → Alpha Vantage → Yahoo (auto-discovery) → Expired Cache fallback
- */
-export async function fetchPriceInternal(isin: string): Promise<ISINCacheEntry | null> {
+export async function fetchPriceInternal(isin: string): Promise<PriceResult | null> {
   const db = getFirestore();
-  const now = Timestamp.now();
-  const cacheKey = isin.toUpperCase();
+  const key = isin.toUpperCase();
 
-  // 1. Check valid cache
-  const cacheDoc = await db.collection(CACHE_COLLECTION).doc(cacheKey).get();
-  if (cacheDoc.exists) {
-    const cacheData = cacheDoc.data() as ISINCacheEntry;
-    const expiresAt = cacheData.expiresAt as Timestamp;
-    if (expiresAt.toMillis() > now.toMillis()) {
-      console.log(`📦 Cache hit for ${cacheKey}`);
-      return cacheData;
-    }
-    console.log(`⏰ Cache expired for ${cacheKey}, refreshing...`);
+  // 1. Valid cache
+  const cached = await getFromCache(key);
+  if (cached?.lastPrice && cached.currency === "EUR") {
+    return {
+      isin: key,
+      symbol: cached.ticker || undefined,
+      price: cached.lastPrice,
+      currency: "EUR",
+      name: cached.name || undefined,
+      source: cached.source || "cache",
+      fetchedAt: cached.lastVerified || Timestamp.now(),
+    };
   }
 
-  // 2. Live fetch cascade
-  let result: PriceResult | null = null;
+  // Stale doc for fallback + cached ticker hint
+  const staleDoc = await db.collection(CACHE_COLLECTION).doc(key).get();
+  const staleData: CachedMapping | null = staleDoc.exists ? (staleDoc.data() as CachedMapping) : null;
+  const cachedTicker = staleData?.ticker || undefined;
 
-  result = await fetchFromFinancialTimes(isin);
-  if (!result) result = await fetchFromAlphaVantage(isin);
-  if (!result) result = await fetchFromYahoo(isin);
+  // 2. Financial Times
+  let result: PriceResult | null = await fetchFromFinancialTimes(key);
+
+  // 3. Alpha Vantage
+  if (!result) result = await fetchFromAlphaVantage(key);
+
+  // 4. Yahoo Finance via OpenFIGI
+  if (!result) result = await fetchFromYahooByISIN(key, cachedTicker);
 
   if (result) {
-    const cacheEntry: ISINCacheEntry = {
-      ...result,
-      fetchedAt: now,
-      expiresAt: new Timestamp(now.seconds + CACHE_VALIDITY_DAYS * 24 * 60 * 60, 0),
-    };
-    await db.collection(CACHE_COLLECTION).doc(cacheKey).set(cacheEntry);
-    console.log(`✅ Price fetched and cached for ${cacheKey}: ${result.price} ${result.currency} (${result.source})`);
-    return cacheEntry;
+    await saveToCache(key, result, result.symbol);
+    return result;
   }
 
-  // 3. Fallback to expired cache rather than returning null
-  if (cacheDoc.exists) {
-    console.warn(`⚠️ All sources failed for ${cacheKey}, using expired cache as fallback`);
-    return cacheDoc.data() as ISINCacheEntry;
+  // 5. Expired cache fallback
+  if (staleData?.lastPrice && staleData.currency === "EUR") {
+    console.warn(`All sources failed for ${key} - using expired cache`);
+    return {
+      isin: key,
+      symbol: staleData.ticker || undefined,
+      price: staleData.lastPrice,
+      currency: "EUR",
+      name: staleData.name || undefined,
+      source: "cache (expired fallback)",
+      fetchedAt: staleData.lastVerified || Timestamp.now(),
+    };
   }
 
   return null;
 }
 
-/**
- * Core internal logic for ticker-only price fetching (crypto, stocks without ISIN)
- * Cache key = ticker. Same cascade but skips ISIN-discovery step.
- */
-export async function fetchPriceByTickerInternal(ticker: string): Promise<ISINCacheEntry | null> {
+export async function fetchPriceByTickerInternal(ticker: string): Promise<PriceResult | null> {
   const db = getFirestore();
-  const now = Timestamp.now();
-  const cacheKey = `ticker:${ticker.toUpperCase()}`;
+  const key = `ticker:${ticker.toUpperCase()}`;
 
-  // 1. Check valid cache
-  const cacheDoc = await db.collection(CACHE_COLLECTION).doc(cacheKey).get();
-  if (cacheDoc.exists) {
-    const cacheData = cacheDoc.data() as ISINCacheEntry;
-    const expiresAt = cacheData.expiresAt as Timestamp;
-    if (expiresAt.toMillis() > now.toMillis()) {
-      console.log(`📦 Cache hit for ticker ${ticker}`);
-      return cacheData;
-    }
-    console.log(`⏰ Cache expired for ticker ${ticker}, refreshing...`);
+  // 1. Valid cache
+  const cached = await getFromCache(key);
+  if (cached?.lastPrice && cached.currency === "EUR") {
+    return {
+      isin: ticker,
+      symbol: ticker,
+      price: cached.lastPrice,
+      currency: "EUR",
+      name: cached.name || undefined,
+      source: cached.source || "cache",
+      fetchedAt: cached.lastVerified || Timestamp.now(),
+    };
   }
 
-  // 2. Live fetch
-  const result = await fetchByTicker(ticker);
+  const staleDoc = await db.collection(CACHE_COLLECTION).doc(key).get();
+  const staleData: CachedMapping | null = staleDoc.exists ? (staleDoc.data() as CachedMapping) : null;
+
+  // 2. Yahoo direct
+  const result = await fetchFromYahooByTicker(ticker);
 
   if (result) {
-    const cacheEntry: ISINCacheEntry = {
-      ...result,
-      fetchedAt: now,
-      expiresAt: new Timestamp(now.seconds + CACHE_VALIDITY_DAYS * 24 * 60 * 60, 0),
-    };
-    await db.collection(CACHE_COLLECTION).doc(cacheKey).set(cacheEntry);
-    console.log(`✅ Price fetched and cached for ticker ${ticker}: ${result.price} ${result.currency} (${result.source})`);
-    return cacheEntry;
+    await saveToCache(key, result, ticker);
+    return result;
   }
 
-  // 3. Fallback to expired cache
-  if (cacheDoc.exists) {
-    console.warn(`⚠️ All sources failed for ticker ${ticker}, using expired cache as fallback`);
-    return cacheDoc.data() as ISINCacheEntry;
+  // 3. Expired cache fallback
+  if (staleData?.lastPrice && staleData.currency === "EUR") {
+    console.warn(`Yahoo failed for ticker ${ticker} - using expired cache`);
+    return {
+      isin: ticker,
+      symbol: ticker,
+      price: staleData.lastPrice,
+      currency: "EUR",
+      name: staleData.name || undefined,
+      source: "cache (expired fallback)",
+      fetchedAt: staleData.lastVerified || Timestamp.now(),
+    };
   }
 
   return null;
 }
 
+// ============================================================
+// HTTP ENDPOINT
+// ============================================================
+
 /**
- * getPriceByISIN — Cloud Function HTTP endpoint
+ * getPriceByISIN - Cloud Function HTTP endpoint
  *
- * Supports two modes:
- *   1. ISIN mode:       GET ?isin=IE00B4L5Y983&shares=10
- *   2. TickerOnly mode: GET ?ticker=BTC-EUR&tickerOnly=true&shares=0.5
+ * Mode 1 (ISIN):       GET ?isin=IE00B4L5Y983&shares=10
+ * Mode 2 (tickerOnly): GET ?ticker=BTC-EUR&tickerOnly=true&shares=0.5
  *
- * Auto-discovers ticker from ISIN via Yahoo Search on first call.
- * Results are cached in Firestore (isin_cache collection) for 7 days.
- * No hardcoded ticker map — fully dynamic, works with any new asset.
+ * - Auto-discovers official ticker via OpenFIGI on first call for any ISIN
+ * - Results cached in Firestore (isin_mappings) for 7 days
+ * - Only accepts EUR prices - no conversions
+ * - Zero hardcoded tickers - add any new asset without deploy
  */
 export const getPriceByISIN = onRequest(async (req, res) => {
   await new Promise((resolve) => cors(req, res, resolve));
 
-  const isin = (req.query.isin as string || req.body?.isin as string)?.toUpperCase()?.trim();
-  const ticker = (req.query.ticker as string || req.body?.ticker as string)?.trim();
+  const isin      = (req.query.isin    as string | undefined || req.body?.isin)?.toUpperCase()?.trim();
+  const ticker    = (req.query.ticker  as string | undefined || req.body?.ticker)?.trim();
   const tickerOnly = req.query.tickerOnly === "true" || req.body?.tickerOnly === true;
-  const sharesParam = parseFloat((req.query.shares as string) || (req.body?.shares as string) || "1");
-  const shares = isNaN(sharesParam) ? 1 : sharesParam;
+  const sharesRaw  = req.query.shares as string | undefined || req.body?.shares;
+  const shares     = parseFloat(sharesRaw || "1") || 1;
 
-  // Validate input
   if (!isin && !ticker) {
-    res.status(400).send({ success: false, error: "ISIN or ticker is required" });
+    res.status(400).send({ success: false, error: "ISIN o ticker obbligatorio" });
     return;
   }
-
   if (tickerOnly && !ticker) {
-    res.status(400).send({ success: false, error: "ticker is required when tickerOnly=true" });
+    res.status(400).send({ success: false, error: "ticker obbligatorio quando tickerOnly=true" });
     return;
   }
 
   try {
-    let result: ISINCacheEntry | null = null;
+    let result: PriceResult | null = null;
 
     if (tickerOnly && ticker) {
-      // TickerOnly mode: crypto, stocks without ISIN
       result = await fetchPriceByTickerInternal(ticker);
     } else if (isin) {
-      // ISIN mode: standard ETF, funds, stocks
       result = await fetchPriceInternal(isin);
     }
 
-    if (result) {
-      const currentValue = shares > 0 ? parseFloat((result.price * shares).toFixed(6)) : result.price;
-      res.status(200).send({
-        success: true,
-        data: {
-          ...result,
-          shares,
-          currentValue,
-          lastUpdateTime: result.fetchedAt,
-        },
-      });
+    if (!result) {
+      const id = tickerOnly ? `ticker ${ticker}` : `ISIN ${isin}`;
+      res.status(404).send({ success: false, error: `Prezzo non trovato per ${id}` });
       return;
     }
 
-    const identifier = tickerOnly ? `ticker ${ticker}` : `ISIN ${isin}`;
-    res.status(404).send({ success: false, error: `Price not found for ${identifier}` });
+    const currentValue = parseFloat((result.price * shares).toFixed(6));
+
+    res.status(200).send({
+      success: true,
+      isin:   isin   || null,
+      ticker: ticker || result.symbol || null,
+      price:  result.price,
+      currency: result.currency,
+      name:   result.name   || null,
+      source: result.source,
+      shares,
+      currentValue,
+      timestamp:      result.fetchedAt,
+      lastUpdateTime: result.fetchedAt,
+      data: result,
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("getPriceByISIN error:", error);
