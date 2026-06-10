@@ -231,12 +231,14 @@ async function fetchFromFinancialTimes(isin: string): Promise<PriceResult | null
     if (!response.ok) return null;
     const html = await response.text();
 
+    // NOTE: use RegExp constructor to avoid TypeScript double-escaping \d in regex literals
     const patterns = [
-      /mod-ui-data-list__value"?>([\\d,.]+)<\/span>/i,
-      /Price \(EUR\)[^>]*>([\\d,.]+)</i,
-      /<span[^>]*class="[^"]*mod-ui-data-list__value[^"]*"[^>]*>([\\d,.]+)<\/span>/i,
-      /"lastPrice":"([\\d,.]+)"/i,
+      new RegExp('mod-ui-data-list__value"?>([\\d,.]+)<\\/span>', "i"),
+      new RegExp("Price \\(EUR\\)[^>]*>([\\d,.]+)<", "i"),
+      new RegExp('<span[^>]*class="[^"]*mod-ui-data-list__value[^"]*"[^>]*>([\\d,.]+)<\\/span>', "i"),
+      new RegExp('"lastPrice":"([\\d,.]+)"', "i"),
     ];
+
     for (const pattern of patterns) {
       const match = html.match(pattern);
       if (match) {
@@ -251,6 +253,7 @@ async function fetchFromFinancialTimes(isin: string): Promise<PriceResult | null
         }
       }
     }
+    console.log(`Financial Times: no price found in HTML for ${isin}`);
     return null;
   } catch (e) {
     console.error("FT error:", e);
@@ -308,13 +311,13 @@ export async function fetchPriceInternal(isin: string): Promise<PriceResult | nu
   const staleData: CachedMapping | null = staleDoc.exists ? (staleDoc.data() as CachedMapping) : null;
   const cachedTicker = staleData?.ticker || undefined;
 
-  // 2. Financial Times
+  // 2. Financial Times (works natively with ISIN for LU/IT funds)
   let result: PriceResult | null = await fetchFromFinancialTimes(key);
 
   // 3. Alpha Vantage
   if (!result) result = await fetchFromAlphaVantage(key);
 
-  // 4. Yahoo Finance via OpenFIGI
+  // 4. Yahoo Finance via OpenFIGI (works well for IE/DE/FR ETFs)
   if (!result) result = await fetchFromYahooByISIN(key, cachedTicker);
 
   if (result) {
@@ -395,7 +398,8 @@ export async function fetchPriceByTickerInternal(ticker: string): Promise<PriceR
  * Mode 1 (ISIN):       GET ?isin=IE00B4L5Y983&shares=10
  * Mode 2 (tickerOnly): GET ?ticker=BTC-EUR&tickerOnly=true&shares=0.5
  *
- * - Auto-discovers official ticker via OpenFIGI on first call for any ISIN
+ * - Financial Times handles LU/IT funds natively via ISIN (no ticker needed)
+ * - Yahoo Finance + OpenFIGI handles IE/DE/FR ETFs
  * - Results cached in Firestore (isin_mappings) for 7 days
  * - Only accepts EUR prices - no conversions
  * - Zero hardcoded tickers - add any new asset without deploy
