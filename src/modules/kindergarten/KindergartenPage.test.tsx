@@ -1,5 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+
+// Mock Firebase per evitare inizializzazione con chiavi vuote in CI
+vi.mock('../../firebase', () => ({
+  db: {},
+  auth: {
+    onAuthStateChanged: vi.fn(() => vi.fn()),
+  },
+  storage: {},
+  default: {},
+}))
+
 import KindergartenPage from './KindergartenPage'
 import { useKindergartenInvestments } from './useKindergartenInvestments'
 import { useKindergartenPacs } from './useKindergartenPacs'

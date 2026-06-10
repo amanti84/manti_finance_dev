@@ -106,18 +106,19 @@ export default function KindergartenPage({ uid }: Props) {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Kindergarten</h1>
+          <h1 className="text-3xl font-bold text-text">Kindergarten</h1>
           <p className="text-text-muted">Portafoglio investimenti per il futuro dei bambini.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex gap-2 self-start md:self-center">
           <Button
-            variant="secondary"
+            variant="ghost"
             onClick={() => { void handleUpdateAll() }}
             disabled={isUpdatingAll || loading || (investments.length === 0 && pacs.length === 0)}
+            className="gap-2"
             isLoading={isUpdatingAll}
-            leftIcon={!isUpdatingAll ? <RefreshCw size={18} /> : undefined}
+            leftIcon={!isUpdatingAll ? <RefreshCw size={20} /> : undefined}
           >
-            {isUpdatingAll ? 'Aggiornamento...' : 'Aggiorna prezzi KG'}
+            {isUpdatingAll ? 'Aggiornamento...' : 'Aggiorna Prezzi'}
           </Button>
         </div>
       </div>
