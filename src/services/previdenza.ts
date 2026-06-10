@@ -27,6 +27,7 @@ import type {
   PensionFund,
   PensionContribution,
   PrevidenzaConfig,
+  PrevidenzaBaseline,
   ApiResult,
 } from '../types'
 import { logAudit } from './audit'
@@ -49,6 +50,7 @@ const FUNDS_COLLECTION = (uid: string) => `users/${uid}/pension_funds`
 const CONTRIBUTIONS_COLLECTION = (uid: string) => `users/${uid}/pension_contributions`
 const CONFIG_COLLECTION = (uid: string) => `users/${uid}/previdenza`
 const CONFIG_DOC_ID = 'config'
+const BASELINE_DOC_ID = 'baseline'
 
 // ---------------------------------------------------------------------------
 // TFR CALCULATION
@@ -113,9 +115,10 @@ export function calculateTFRFromPayslips(
  */
 export function calculateTFRCumulativo(
   annualData: TFRData[],
-  inflazionePerAnno: Record<number, number>
+  inflazionePerAnno: Record<number, number>,
+  baselineTfr = 0
 ): ApiResult<TFRData[]> {
-  if (annualData.length === 0) {
+  if (annualData.length === 0 && baselineTfr === 0) {
     return { success: false, error: 'Nessun dato TFR fornito' }
   }
 
@@ -123,7 +126,20 @@ export function calculateTFRCumulativo(
     .filter((d): d is TFRData & { annoCompetenza: number } => d.annoCompetenza !== undefined)
     .sort((a, b) => a.annoCompetenza - b.annoCompetenza)
   const result: TFRData[] = []
-  let tfrAccumulato = 0
+  let tfrAccumulato = baselineTfr
+
+  // Se non ci sono dati annuali ma c'è un baseline, restituiamo almeno un record con il baseline
+  if (sorted.length === 0 && baselineTfr > 0) {
+    return {
+      success: true,
+      data: [{
+        annoCompetenza: new Date().getFullYear(),
+        quota: 0,
+        rivalutazione: 0,
+        totale: baselineTfr
+      }]
+    }
+  }
 
   for (const data of sorted) {
     const inflazione = inflazionePerAnno[data.annoCompetenza] ?? 0
@@ -360,6 +376,48 @@ export async function createPensionFund(
       updatedAt: Timestamp.now(),
     })
     return { success: true, data: docRef.id }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+export async function savePrevidenzaBaseline(
+  uid: string,
+  data: Omit<PrevidenzaBaseline, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<ApiResult<void>> {
+  try {
+    const docRef = doc(db, CONFIG_COLLECTION(uid), BASELINE_DOC_ID)
+    const existing = await getDoc(docRef)
+    const isUpdate = existing.exists()
+
+    await setDoc(docRef, {
+      ...data,
+      updatedAt: Timestamp.now(),
+      ...(isUpdate ? {} : { createdAt: Timestamp.now() }),
+    }, { merge: true })
+
+    await logAudit({
+      uid,
+      action: isUpdate ? 'update' : 'create',
+      entityType: 'config',
+      entityId: BASELINE_DOC_ID,
+      newValue: data,
+    })
+
+    return { success: true, data: undefined }
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+export async function getPrevidenzaBaseline(uid: string): Promise<ApiResult<PrevidenzaBaseline | null>> {
+  try {
+    const docRef = doc(db, CONFIG_COLLECTION(uid), BASELINE_DOC_ID)
+    const snap = await getDoc(docRef)
+    if (!snap.exists()) {
+      return { success: true, data: null }
+    }
+    return { success: true, data: { id: snap.id, ...snap.data() } as PrevidenzaBaseline }
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) }
   }

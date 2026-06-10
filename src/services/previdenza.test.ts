@@ -22,6 +22,8 @@ import {
   getContributionsByFund,
   savePrevidenzaConfig,
   getPrevidenzaConfig,
+  savePrevidenzaBaseline,
+  getPrevidenzaBaseline,
 } from './previdenza'
 import type { Payslip, TFRData } from '../types'
 import type { Timestamp } from 'firebase/firestore'
@@ -166,9 +168,34 @@ describe('calculateTFRCumulativo', () => {
     }
   })
 
-  it('restituisce errore se array vuoto', () => {
-    const result = calculateTFRCumulativo([], {})
+  it('restituisce errore se array vuoto e no baseline', () => {
+    const result = calculateTFRCumulativo([], {}, 0)
     expect(result.success).toBe(false)
+  })
+
+  it('usa il baseline come punto di partenza', () => {
+    const annualData: TFRData[] = [
+      { annoCompetenza: 2024, retribuzioneAnnuale: 40000, quota: 2962.96, rivalutazione: 0, totale: 0 },
+    ]
+    const inflazione = { 2024: 0.02 }
+    const baselineTfr = 10000
+    const result = calculateTFRCumulativo(annualData, inflazione, baselineTfr)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      // Rivalutazione su baseline: 10000 * (0.015 + 0.75 * 0.02) = 10000 * 0.03 = 300
+      // Totale: 10000 + 300 + 2962.96 = 13262.96
+      expect(result.data[0].rivalutazione).toBe(300)
+      expect(result.data[0].totale).toBe(13262.96)
+    }
+  })
+
+  it('restituisce un record se solo baseline presente', () => {
+    const result = calculateTFRCumulativo([], {}, 10000)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.length).toBe(1)
+      expect(result.data[0].totale).toBe(10000)
+    }
   })
 })
 
@@ -212,6 +239,69 @@ describe('Previdenza Config', () => {
     if (!result.success) {
       expect(result.error).toBe('Configurazione previdenza non trovata')
     }
+  })
+})
+
+// -----------------------------------------------------------------------
+// --- Previdenza Baseline ---
+// -----------------------------------------------------------------------
+describe('Previdenza Baseline', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('salva il baseline con successo (happy path)', async () => {
+    const { setDoc, getDoc } = await import('firebase/firestore')
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ exists: () => false })
+    ;(setDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce(undefined)
+    const result = await savePrevidenzaBaseline('user-123', {
+      tfrAccumulato: 15000,
+      montanteFondoPensione: 5000,
+      anniContributiINPS: 10,
+      annoInizioLavoro: 2014,
+    })
+    expect(result.success).toBe(true)
+    expect(setDoc).toHaveBeenCalled()
+  })
+
+  it('recupera il baseline con successo', async () => {
+    const { getDoc } = await import('firebase/firestore')
+    const baselineData = {
+      tfrAccumulato: 15000,
+      montanteFondoPensione: 5000,
+      anniContributiINPS: 10,
+      annoInizioLavoro: 2014,
+    }
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      exists: () => true,
+      id: 'baseline',
+      data: () => baselineData,
+    })
+    const result = await getPrevidenzaBaseline('user-123')
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data?.tfrAccumulato).toBe(15000)
+    }
+  })
+
+  it('restituisce null se baseline non esiste (edge case)', async () => {
+    const { getDoc } = await import('firebase/firestore')
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ exists: () => false })
+    const result = await getPrevidenzaBaseline('user-123')
+    expect(result.success).toBe(true)
+    expect(result.data).toBeNull()
+  })
+
+  it('gestisce errore Firebase al salvataggio (errore)', async () => {
+    const { getDoc, setDoc } = await import('firebase/firestore')
+    ;(getDoc as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ exists: () => false })
+    ;(setDoc as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Firebase Save Error'))
+    const result = await savePrevidenzaBaseline('user-123', {
+      tfrAccumulato: 15000,
+      montanteFondoPensione: 5000,
+      anniContributiINPS: 10,
+      annoInizioLavoro: 2014,
+    })
+    expect(result.success).toBe(false)
+    expect(result.error).toBe('Firebase Save Error')
   })
 })
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from './useAuth'
 import {
   getPrevidenzaConfig,
+  getPrevidenzaBaseline,
   getAllPensionFunds,
   getContributionsByFund,
   calculateTFRFromPayslips,
@@ -12,10 +13,11 @@ import {
   type TFRComparison
 } from '../services/previdenza'
 import { getPayslips } from '../services/payroll'
-import type { PrevidenzaConfig, PensionFund, PensionContribution, Payslip, TFRData } from '../types'
+import type { PrevidenzaConfig, PrevidenzaBaseline, PensionFund, PensionContribution, Payslip, TFRData } from '../types'
 
 export interface PrevidenzaData {
   config: PrevidenzaConfig | null
+  baseline: PrevidenzaBaseline | null
   funds: PensionFund[]
   contributions: Record<string, PensionContribution[]>
   payslips: Payslip[]
@@ -32,6 +34,7 @@ export function usePrevidenzaData(): PrevidenzaData {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [config, setConfig] = useState<PrevidenzaConfig | null>(null)
+  const [baseline, setBaseline] = useState<PrevidenzaBaseline | null>(null)
   const [funds, setFunds] = useState<PensionFund[]>([])
   const [contributions, setContributions] = useState<Record<string, PensionContribution[]>>({})
   const [payslips, setPayslips] = useState<Payslip[]>([])
@@ -46,14 +49,17 @@ export function usePrevidenzaData(): PrevidenzaData {
     setError(null)
 
     try {
-      const [configRes, fundsRes, payslipsRes] = await Promise.all([
+      const [configRes, baselineRes, fundsRes, payslipsRes] = await Promise.all([
         getPrevidenzaConfig(user.uid),
+        getPrevidenzaBaseline(user.uid),
         getAllPensionFunds(user.uid),
         getPayslips(user.uid)
       ])
 
       if (configRes.success) setConfig(configRes.data)
       // Note: error 'Configurazione previdenza non trovata' is expected if first time
+
+      if (baselineRes.success) setBaseline(baselineRes.data)
 
       if (fundsRes.success) {
         setFunds(fundsRes.data)
@@ -104,16 +110,16 @@ export function usePrevidenzaData(): PrevidenzaData {
     const inflazione: Record<number, number> = {}
     years.forEach(y => { inflazione[y] = 0.02 })
 
-    const cumulativoRes = calculateTFRCumulativo(annualTfr, inflazione)
+    const cumulativoRes = calculateTFRCumulativo(annualTfr, inflazione, baseline?.tfrAccumulato ?? 0)
     return cumulativoRes.success ? cumulativoRes.data : []
-  }, [payslips])
+  }, [payslips, baseline])
 
   const pensionProjection = useMemo(() => {
     if (!config?.birthYear) return null
 
     const currentYear = new Date().getFullYear()
     const age = currentYear - config.birthYear
-    const totalFundsBalance = funds.reduce((sum, f) => sum + f.saldoAttuale, 0)
+    const totalFundsBalance = funds.reduce((sum, f) => sum + f.saldoAttuale, 0) + (baseline?.montanteFondoPensione ?? 0)
     const annualContrib = config.currentRal * (config.pensionFundContributionPct ?? 0) / 100 +
                          config.currentRal * (config.pensionFundEmployerContributionPct ?? 0) / 100
 
@@ -126,7 +132,7 @@ export function usePrevidenzaData(): PrevidenzaData {
     )
 
     return res.success ? res.data : null
-  }, [config, funds])
+  }, [config, funds, baseline])
 
   const tfrComparison = useMemo(() => {
     if (!config?.currentRal) return null
@@ -148,6 +154,7 @@ export function usePrevidenzaData(): PrevidenzaData {
 
   return {
     config,
+    baseline,
     funds,
     contributions,
     payslips,
