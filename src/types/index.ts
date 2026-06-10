@@ -1,10 +1,11 @@
 // ============================================================
 // CORE TYPES - manti_finance_dev
 // Modello dati v3 - allineato alle implementazioni reali
-// Aggiornato 05/06/2026 — conflict resolution src/types/index.ts
+// Aggiornato 10/06/2026 — flexible PACSchedule for adult PAC
 // ============================================================
 
 import type { Timestamp } from 'firebase/firestore'
+import type { PACSchedule } from './pacFrequency'
 
 // --------------------------------------------------------
 // BASE
@@ -46,7 +47,6 @@ export interface AllocationItem {
 // API RESULT
 // --------------------------------------------------------
 
-// Permissive union: .error is accessible after narrowing (!result.success)
 export type ApiResult<T> =
   | { success: true; data: T; error?: never }
   | { success: false; data?: never; error: string }
@@ -235,7 +235,6 @@ export interface Investment extends BaseDocument {
   isPac: boolean
   pacMonthlyAmount?: number
   lastPriceUpdate: Timestamp
-  // Extra fields from main (auto-update / Yahoo Finance integration)
   tickerOnly?: boolean
   autoUpdate?: boolean
   lastUpdateError?: string | null
@@ -292,16 +291,21 @@ export interface PacConfig extends BaseDocument {
   name: string
   isin: string
   ticker?: string
+  schedule: PACSchedule         // sostituisce monthlyDays/dayOfMonth legacy
   monthlyAmount: number
-  dayOfMonth?: number
-  monthlyDays?: number[]
   startDate: string
   endDate?: string
   active: boolean
   autoUpdate: boolean
   platform?: string
   notes?: string
-  // Metadati per migrazione e calcolo patrimonio
+  lastPaymentDate?: string      // ISO date
+  nextPaymentDate?: string      // ISO date — calcolata automaticamente
+  totalInvested?: number
+  // legacy — mantenuti per retrocompatibilità lettura Firestore
+  dayOfMonth?: number
+  monthlyDays?: number[]
+  // Metadati per calcolo patrimonio
   shares?: number
   avgCost?: number
   currentPrice?: number
@@ -334,7 +338,6 @@ export interface SurplusBreakdown {
   netSalary: number
   fixedExpenses: number
   surplus?: number
-  /** Surplus lordo prima delle spese fisse */
   surplusGross: number
   bonusAmount: number
   variableComponent: number
@@ -456,7 +459,6 @@ export interface Goal extends BaseDocument {
   note?: string
 }
 
-// v3 clean shape — no percent/onTrack duplicates
 export interface GoalProgress {
   goalId: string
   progressPercent: number
@@ -517,10 +519,8 @@ export interface InboxItem extends BaseDocument {
   title?: string
   description?: string
   status: InboxItemStatus
-  // 'ai_suggestion' added from main
   source: 'email' | 'import' | 'upload' | 'ai_suggestion'
   confidence?: number
-  // v3: typed ConfidenceField[] (not partial record)
   confidenceFields: ConfidenceField[]
   linkedTransactionId?: string
   suggestedTransaction?: Partial<Transaction>
@@ -535,7 +535,6 @@ export interface InboxItem extends BaseDocument {
 export interface InboxBadgeCount {
   total: number
   requiresReview: number
-  // optional per v3
   pending?: number
 }
 
@@ -672,7 +671,6 @@ export type AuditAction =
   | 'login' | 'logout' | 'export' | 'import'
   | 'snapshot' | 'LEGACY_IMPORT'
 
-// v3 base + 'kindergartenExpense' | 'kindergartenConfig' from main
 export type AuditEntityType =
   | 'transaction' | 'investment' | 'payslip' | 'snapshot'
   | 'goal' | 'document' | 'inbox' | 'alert' | 'config'
@@ -691,9 +689,7 @@ export interface AuditLogEntry extends BaseDocument {
   ipHash?: string
   ipAddress?: string
   userAgent?: string
-  // strict union (v3) — no loose string
   source?: 'user' | 'import' | 'system'
-  // non-nullable (v3)
   previousValue?: Record<string, unknown>
   newValue?: Record<string, unknown>
 }

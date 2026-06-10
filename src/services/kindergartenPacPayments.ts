@@ -1,7 +1,7 @@
 /**
  * Service: Kindergarten PAC Payments
  * Collection: users/{uid}/kindergarten_pac_payments
- * Mirrors adult pac.ts logic — completely isolated.
+ * Uses shared PACSchedule from pacFrequency.ts
  */
 import {
   collection,
@@ -14,10 +14,10 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  Timestamp,
 } from 'firebase/firestore'
 import { db } from '../firebase'
-import type { KindergartenPAC, KindergartenPACPayment, KGPACFrequency } from '../types/kindergarten'
+import type { KindergartenPAC, KindergartenPACPayment } from '../types/kindergarten'
+import { getPendingDates, calcNextScheduledDate } from '../types/pacFrequency'
 import type { ApiResult } from '../types'
 
 const paymentsCol = (uid: string) =>
@@ -107,66 +107,6 @@ export async function updateKGPACPayment(
 }
 
 // ---------------------------------------------------------------------------
-// DATE UTILS
-// ---------------------------------------------------------------------------
-
-/**
- * Calcola la prossima data di pagamento in base alla frequenza.
- * - monthly:  stesso dayOfMonth del mese successivo (o dayOfMonth specificato)
- * - biweekly: +14 giorni
- * - daily:    +1 giorno
- */
-export function calcNextPaymentDate(
-  from: string,       // ISO date dell'ultimo pagamento
-  frequency: KGPACFrequency,
-  dayOfMonth?: number
-): string {
-  const d = new Date(from)
-  switch (frequency) {
-    case 'monthly': {
-      const next = new Date(d)
-      next.setMonth(next.getMonth() + 1)
-      if (dayOfMonth) next.setDate(Math.min(dayOfMonth, daysInMonth(next.getFullYear(), next.getMonth())))
-      return next.toISOString().slice(0, 10)
-    }
-    case 'biweekly': {
-      const next = new Date(d)
-      next.setDate(next.getDate() + 14)
-      return next.toISOString().slice(0, 10)
-    }
-    case 'daily': {
-      const next = new Date(d)
-      next.setDate(next.getDate() + 1)
-      return next.toISOString().slice(0, 10)
-    }
-  }
-}
-
-function daysInMonth(year: number, month: number): number {
-  return new Date(year, month + 1, 0).getDate()
-}
-
-/**
- * Dato un PAC, restituisce tutte le date di pagamento scadute tra
- * lastPaymentDate (esclusa) e oggi (inclusa).
- */
-export function getPendingPaymentDates(
-  pac: KindergartenPAC,
-  today: string = new Date().toISOString().slice(0, 10)
-): string[] {
-  const start = pac.lastPaymentDate ?? pac.startDate
-  const pending: string[] = []
-  let cursor = calcNextPaymentDate(start, pac.frequency, pac.dayOfMonth)
-  while (cursor <= today) {
-    pending.push(cursor)
-    cursor = calcNextPaymentDate(cursor, pac.frequency, pac.dayOfMonth)
-    // safety: max 1000 iterazioni
-    if (pending.length > 1000) break
-  }
-  return pending
-}
-
-// ---------------------------------------------------------------------------
 // AUTO-PROCESS
 // ---------------------------------------------------------------------------
 
@@ -177,11 +117,6 @@ export interface AutoPaymentResult {
   totalAmount: number
 }
 
-/**
- * Controlla tutti i PAC KG e registra automaticamente i versamenti scaduti.
- * Aggiorna totalInvested, lastPaymentDate e nextPaymentDate sul PAC.
- * Restituisce il report dei versamenti aggiunti.
- */
 export async function processKGPACAutoPayments(
   uid: string,
   pacs: KindergartenPAC[],
@@ -191,15 +126,17 @@ export async function processKGPACAutoPayments(
   const results: AutoPaymentResult[] = []
 
   for (const pac of pacs) {
-    const pendingDates = getPendingPaymentDates(pac, today)
+    if (!pac.schedule) continue
+    const from = pac.lastPaymentDate ?? pac.startDate
+    const pendingDates = getPendingDates(pac.schedule, from, today)
     if (pendingDates.length === 0) continue
 
     let addedCount = 0
     let totalAmount = 0
-    let lastDate = pac.lastPaymentDate ?? pac.startDate
+    let lastDate = from
 
     for (const date of pendingDates) {
-      const paymentData: Omit<KindergartenPACPayment, 'id' | 'quantityPurchased' | 'createdAt' | 'updatedAt'> = {
+      const res = await addKGPACPayment(uid, {
         pacId: pac.id,
         pacName: pac.name,
         date,
@@ -208,8 +145,7 @@ export async function processKGPACAutoPayments(
           ? pac.currentValue / (pac.quantity ?? 1)
           : 0,
         auto: true,
-      }
-      const res = await addKGPACPayment(uid, paymentData)
+      })
       if (res.success) {
         addedCount++
         totalAmount += pac.monthlyAmount
@@ -218,10 +154,9 @@ export async function processKGPACAutoPayments(
     }
 
     if (addedCount > 0) {
-      const newTotalInvested = pac.totalInvested + totalAmount
-      const nextPaymentDate = calcNextPaymentDate(lastDate, pac.frequency, pac.dayOfMonth)
+      const nextPaymentDate = calcNextScheduledDate(pac.schedule, lastDate, today)
       await updatePACFn(pac.id, {
-        totalInvested: newTotalInvested,
+        totalInvested: pac.totalInvested + totalAmount,
         lastPaymentDate: lastDate,
         nextPaymentDate,
       })

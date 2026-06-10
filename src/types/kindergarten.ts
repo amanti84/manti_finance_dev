@@ -4,8 +4,7 @@
  * NO cross-import with main investment/PAC types.
  */
 import type { Timestamp } from 'firebase/firestore'
-
-export type KGPACFrequency = 'daily' | 'biweekly' | 'monthly'
+import type { PACSchedule } from './pacFrequency'
 
 export interface KindergartenInvestment {
   id: string
@@ -15,10 +14,10 @@ export interface KindergartenInvestment {
   tickerOnly?: boolean
   autoUpdate?: boolean
   category: 'etf' | 'fund' | 'stock' | 'bond' | 'other'
-  purchaseDate: string        // ISO date
-  purchasePrice: number       // EUR
+  purchaseDate: string
+  purchasePrice: number
   quantity: number
-  currentPrice: number        // EUR — updated manually or via feed
+  currentPrice: number
   notes?: string
   lastPriceUpdate?: Timestamp | string
   lastUpdateError?: string | null
@@ -36,18 +35,17 @@ export interface KindergartenPAC {
   ticker?: string
   tickerOnly?: boolean
   autoUpdate?: boolean
-  // --- Frequenza versamenti ---
-  frequency: KGPACFrequency   // 'daily' | 'biweekly' | 'monthly'
-  dayOfMonth?: number         // 1-28 — usato solo se frequency === 'monthly'
+  // --- Scheduling ---
+  schedule: PACSchedule         // unico campo che sostituisce frequency/dayOfMonth
   // --- Importi ---
-  monthlyAmount: number       // EUR — rata per periodo
+  monthlyAmount: number         // EUR — importo rata
   quantity?: number
-  startDate: string           // ISO date
+  startDate: string             // ISO date
   targetYears: number
-  currentValue: number        // EUR — valore attuale
-  totalInvested: number       // EUR — totale versato (aggregato, aggiornato ad ogni payment)
-  lastPaymentDate?: string    // ISO date — data ultimo versamento effettivo
-  nextPaymentDate?: string    // ISO date — calcolata automaticamente
+  currentValue: number
+  totalInvested: number
+  lastPaymentDate?: string      // ISO date — ultimo versamento effettivo
+  nextPaymentDate?: string      // ISO date — calcolata automaticamente
   notes?: string
   lastPriceUpdate?: Timestamp | string
   lastUpdateError?: string | null
@@ -62,11 +60,11 @@ export interface KindergartenPACPayment {
   id: string
   pacId: string
   pacName: string
-  date: string                // ISO date
-  amount: number              // EUR
-  priceAtPayment: number      // EUR — prezzo quota al momento del versamento
-  quantityPurchased: number   // calcolato: amount / priceAtPayment
-  auto: boolean               // true se registrato automaticamente
+  date: string
+  amount: number
+  priceAtPayment: number
+  quantityPurchased: number
+  auto: boolean
   notes?: string
   createdAt: Timestamp
   updatedAt: Timestamp
@@ -75,10 +73,10 @@ export interface KindergartenPACPayment {
 export interface KindergartenMovement {
   id: string
   type: 'investment_buy' | 'investment_sell' | 'pac_payment' | 'pac_rebalance'
-  referenceId: string         // ID investment o PAC
+  referenceId: string
   referenceName: string
-  amount: number              // EUR
-  date: string                // ISO date
+  amount: number
+  date: string
   notes?: string
   createdAt: string | Timestamp
 }
