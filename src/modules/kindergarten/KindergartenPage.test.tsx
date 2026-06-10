@@ -104,10 +104,11 @@ describe('KindergartenPage', () => {
     expect(screen.getByText('Errore di connessione a Firestore')).toBeTruthy()
   })
 
-  it('renders investment and PAC sections', () => {
+  it('renders tab buttons for investments and PAC', () => {
     render(<KindergartenPage uid="test-uid" />)
-    expect(screen.getByRole('heading', { name: 'Investimenti Diretti', level: 2 })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: 'Piano di Accumulo (PAC)', level: 2 })).toBeTruthy()
+    // La Page usa tab buttons — non h2 separati per sezione
+    expect(screen.getByRole('button', { name: /Investimenti/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /PAC/i })).toBeTruthy()
   })
 
   it('renders investment name in table', () => {
@@ -115,9 +116,13 @@ describe('KindergartenPage', () => {
     expect(screen.getByText('Vanguard FTSE All-World')).toBeTruthy()
   })
 
-  it('renders PAC name in table', () => {
+  it('renders PAC name after switching to PAC tab', async () => {
     render(<KindergartenPage uid="test-uid" />)
-    expect(screen.getByText('PAC Futuro')).toBeTruthy()
+    const pacTab = screen.getByRole('button', { name: /PAC/i })
+    act(() => { fireEvent.click(pacTab) })
+    await waitFor(() => {
+      expect(screen.getByText('PAC Futuro')).toBeTruthy()
+    })
   })
 
   it('calls deleteInvestment when delete button is clicked and confirmed', async () => {
