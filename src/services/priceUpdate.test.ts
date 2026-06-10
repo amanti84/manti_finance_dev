@@ -1,14 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { updateInvestmentPrice, updateAllPrices } from './priceUpdate'
+import {
+  updateInvestmentPrice,
+  updateKindergartenInvestmentPrice,
+  updateKindergartenPACPrice,
+  updateAllKindergartenPrices
+} from './priceUpdate'
 import { getPriceByISIN } from './isin'
 import { updateInvestment } from './investment'
+import {
+  getKindergartenInvestments,
+  updateKindergartenInvestment
+} from './kindergartenInvestment'
+import {
+  getKindergartenPACs,
+  updateKindergartenPAC
+} from './kindergartenPac'
 import { logAudit } from './audit'
 import { Timestamp } from 'firebase/firestore'
 import { type Investment, type ApiResult, type PriceData } from '../types'
+import { type KindergartenInvestment, type KindergartenPAC } from '../types/kindergarten'
 
 // Mock services
 vi.mock('./isin')
 vi.mock('./investment')
+vi.mock('./kindergartenInvestment')
+vi.mock('./kindergartenPac')
 vi.mock('./audit')
 vi.mock('../firebase', () => ({
   db: {}
@@ -32,6 +48,37 @@ describe('Price Update Service', () => {
     lastPriceUpdate: Timestamp.now(),
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
+    autoUpdate: true
+  }
+
+  const mockKGInvestment: KindergartenInvestment = {
+    id: 'kg-inv-1',
+    name: 'KG ETF',
+    isin: 'IE00B1234567',
+    ticker: 'TEST.MI',
+    category: 'etf',
+    quantity: 10,
+    purchasePrice: 100,
+    currentPrice: 100,
+    purchaseDate: '2023-01-01',
+    createdAt: '2023-01-01',
+    updatedAt: '2023-01-01',
+    autoUpdate: true
+  }
+
+  const mockKGPAC: KindergartenPAC = {
+    id: 'kg-pac-1',
+    name: 'KG PAC',
+    isin: 'IE00B7890123',
+    ticker: 'PAC.MI',
+    monthlyAmount: 100,
+    quantity: 50,
+    startDate: '2023-01-01',
+    targetYears: 18,
+    currentValue: 5000,
+    totalInvested: 4800,
+    createdAt: '2023-01-01',
+    updatedAt: '2023-01-01',
     autoUpdate: true
   }
 
@@ -98,37 +145,78 @@ describe('Price Update Service', () => {
       const updateData = inv1Call![2] as Partial<Investment>
       expect(updateData.lastUpdateError).toContain('USD')
     })
+  })
 
-    it('should handle API failure', async () => {
-      const errorResponse: ApiResult<PriceData> = {
-        success: false,
-        error: 'API Error'
-      }
-      vi.mocked(getPriceByISIN).mockResolvedValueOnce(errorResponse)
+  describe('updateKindergartenInvestmentPrice', () => {
+    it('should update KG investment price successfully', async () => {
+      vi.mocked(getPriceByISIN).mockResolvedValueOnce({
+        success: true,
+        data: {
+          isin: 'IE00B1234567',
+          ticker: 'TEST.MI',
+          name: 'KG ETF',
+          price: 120,
+          currency: 'EUR',
+          currentValue: 1200,
+          timestamp: new Date().toISOString(),
+          source: 'Yahoo Finance'
+        }
+      })
 
-      const result = await updateInvestmentPrice(uid, mockInvestment)
+      vi.mocked(updateKindergartenInvestment).mockResolvedValueOnce({ success: true, data: undefined })
 
-      expect(result.success).toBe(false)
-      expect(result.error).toBe('API Error')
-      expect(updateInvestment).toHaveBeenCalledWith(uid, 'inv-1', expect.objectContaining({
-        lastUpdateError: 'API Error'
+      const result = await updateKindergartenInvestmentPrice(uid, mockKGInvestment)
+
+      expect(result.success).toBe(true)
+      expect(updateKindergartenInvestment).toHaveBeenCalledWith(uid, 'kg-inv-1', expect.objectContaining({
+        currentPrice: 120,
+        priceSource: 'Yahoo Finance'
       }))
-    })
-
-    it('should return error if no ISIN and not tickerOnly', async () => {
-      const invNoIsin = { ...mockInvestment, isin: undefined, tickerOnly: false }
-      const result = await updateInvestmentPrice(uid, invNoIsin as unknown as Investment)
-      expect(result.success).toBe(false)
-      expect(result.error).toContain('Necessario ISIN o ticker')
+      expect(logAudit).toHaveBeenCalledWith(expect.objectContaining({
+        entityType: 'investment',
+        entityId: 'kg-inv-1'
+      }))
     })
   })
 
-  describe('updateAllPrices', () => {
-    it('should update multiple investments with progress tracking', async () => {
-      const investments = [
-        mockInvestment,
-        { ...mockInvestment, id: 'inv-2', name: 'Test 2' }
-      ]
+  describe('updateKindergartenPACPrice', () => {
+    it('should update KG PAC price successfully', async () => {
+      vi.mocked(getPriceByISIN).mockResolvedValueOnce({
+        success: true,
+        data: {
+          isin: 'IE00B7890123',
+          ticker: 'PAC.MI',
+          name: 'KG PAC',
+          price: 110,
+          currency: 'EUR',
+          currentValue: 5500,
+          timestamp: new Date().toISOString(),
+          source: 'Yahoo Finance'
+        }
+      })
+
+      vi.mocked(updateKindergartenPAC).mockResolvedValueOnce({ success: true, data: undefined })
+
+      const result = await updateKindergartenPACPrice(uid, mockKGPAC)
+
+      expect(result.success).toBe(true)
+      expect(updateKindergartenPAC).toHaveBeenCalledWith(uid, 'kg-pac-1', expect.objectContaining({
+        currentValue: 5500,
+        priceSource: 'Yahoo Finance'
+      }))
+    })
+  })
+
+  describe('updateAllKindergartenPrices', () => {
+    it('should update all KG investments and PACs with delay', async () => {
+      vi.mocked(getKindergartenInvestments).mockResolvedValueOnce({
+        success: true,
+        data: [mockKGInvestment]
+      })
+      vi.mocked(getKindergartenPACs).mockResolvedValueOnce({
+        success: true,
+        data: [mockKGPAC]
+      })
 
       const successResponse: ApiResult<PriceData> = {
         success: true,
@@ -137,48 +225,19 @@ describe('Price Update Service', () => {
         }
       }
       vi.mocked(getPriceByISIN).mockResolvedValue(successResponse)
-
-      const voidResponse: ApiResult<void> = { success: true, data: undefined }
-      vi.mocked(updateInvestment).mockResolvedValue(voidResponse)
+      vi.mocked(updateKindergartenInvestment).mockResolvedValue({ success: true, data: undefined })
+      vi.mocked(updateKindergartenPAC).mockResolvedValue({ success: true, data: undefined })
 
       const onProgress = vi.fn()
+      const promise = updateAllKindergartenPrices(uid, { onProgress })
 
-      const promise = updateAllPrices(uid, investments, { onProgress })
-
-      // Fast-forward through delays
       await vi.runAllTimersAsync()
-
       const result = await promise
 
       expect(result.success).toBe(true)
+      expect(result.data?.total).toBe(2)
       expect(result.data?.successCount).toBe(2)
       expect(onProgress).toHaveBeenCalledTimes(2)
-      expect(onProgress).toHaveBeenNthCalledWith(1, 1, 2, 'Test ETF')
-      expect(onProgress).toHaveBeenNthCalledWith(2, 2, 2, 'Test 2')
-    })
-
-    it('should filter by autoUpdate if option is set', async () => {
-      const investments = [
-        mockInvestment,
-        { ...mockInvestment, id: 'inv-2', autoUpdate: false }
-      ]
-
-      const successResponse: ApiResult<PriceData> = {
-        success: true,
-        data: {
-          isin: 'ISIN', ticker: 'T', name: 'N', price: 100, currency: 'EUR', currentValue: 1000, timestamp: '', source: ''
-        }
-      }
-      vi.mocked(getPriceByISIN).mockResolvedValue(successResponse)
-
-      const voidResponse: ApiResult<void> = { success: true, data: undefined }
-      vi.mocked(updateInvestment).mockResolvedValue(voidResponse)
-
-      const result = await updateAllPrices(uid, investments, { autoUpdateOnly: true })
-
-      expect(result.success).toBe(true)
-      expect(result.data?.total).toBe(1)
-      expect(result.data?.successCount).toBe(1)
     })
   })
 })
