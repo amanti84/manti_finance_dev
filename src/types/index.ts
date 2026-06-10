@@ -425,6 +425,13 @@ export interface MutuoConfig {
   notes?: string
 }
 
+export interface OverpaymentSimulation {
+  rateRisparmiate: number
+  interessiRisparmiati: number
+  nuovaScadenza: Timestamp | Date
+  risparmioTotale: number
+}
+
 // --------------------------------------------------------
 // MONTHLY CLOSE
 // --------------------------------------------------------

@@ -1,24 +1,36 @@
 import { useState, useMemo } from 'react'
 import type { FC } from 'react'
-import { Card, CardHeader, CardTitle, CardContent, Input } from '../../components/ui'
+import { Card, CardHeader, CardTitle, CardContent, Input, Button } from '../../components/ui'
 import { formatCurrency } from '../../utils/format'
 import { simulateExtraPayment } from '../../services/mutuo'
 import type { MutuoConfig } from '../../types'
-import { Calculator, TrendingDown, CalendarDays, Wallet } from 'lucide-react'
+import { Calculator, TrendingDown, CalendarDays, Wallet, CheckCircle2 } from 'lucide-react'
 import { toDateSafe } from '../../utils/date'
 
 interface MutuoSimulatorProps {
   config: MutuoConfig | null
+  onApplyOverpayment?: (amount: number) => Promise<boolean>
 }
 
-export const MutuoSimulator: FC<MutuoSimulatorProps> = ({ config }) => {
+export const MutuoSimulator: FC<MutuoSimulatorProps> = ({ config, onApplyOverpayment }) => {
   const [extraAmount, setExtraAmount] = useState<number>(0)
+  const [isApplying, setIsApplying] = useState(false)
 
   const simulation = useMemo(() => {
     if (!config || extraAmount <= 0) return null
     const result = simulateExtraPayment(config, extraAmount)
     return result.success ? result.data : null
   }, [config, extraAmount])
+
+  const handleApply = async () => {
+    if (!onApplyOverpayment || extraAmount <= 0) return
+    setIsApplying(true)
+    const success = await onApplyOverpayment(extraAmount)
+    if (success) {
+      setExtraAmount(0)
+    }
+    setIsApplying(false)
+  }
 
   if (!config) return null
 
@@ -89,8 +101,18 @@ export const MutuoSimulator: FC<MutuoSimulatorProps> = ({ config }) => {
         )}
 
         {simulation && (
-          <div className="flex items-center gap-2 text-xs text-text-muted italic">
-            * I calcoli sono stime basate sull'ammortamento alla francese e non includono eventuali penali o costi di gestione della banca.
+          <div className="space-y-4">
+            <Button
+              className="w-full gap-2"
+              onClick={() => { void handleApply() }}
+              isLoading={isApplying}
+              disabled={!onApplyOverpayment}
+            >
+              <CheckCircle2 size={18} /> Applica Versamento Extra
+            </Button>
+            <div className="flex items-center gap-2 text-xs text-text-muted italic">
+              * I calcoli sono stime basate sull'ammortamento alla francese e non includono eventuali penali o costi di gestione della banca.
+            </div>
           </div>
         )}
       </CardContent>

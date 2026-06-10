@@ -66,10 +66,13 @@ export const MutuoFormModal: FC<MutuoFormModalProps> = ({
     setLoading(true)
     void (async () => {
       try {
+        const dataInizioDate = new Date(formData.dataInizio)
+        const dataFineDate = new Date(formData.dataFine)
+
         const config: MutuoConfig = {
           ...formData,
-          dataInizio: Timestamp.fromDate(new Date(formData.dataInizio)),
-          dataFine: Timestamp.fromDate(new Date(formData.dataFine))
+          dataInizio: Timestamp.fromDate(dataInizioDate),
+          dataFine: Timestamp.fromDate(dataFineDate)
         }
         await onSubmit(config)
         onClose()
