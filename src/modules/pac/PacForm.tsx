@@ -1,10 +1,9 @@
 import type { FC, FormEvent } from 'react'
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { Timestamp } from 'firebase/firestore'
 import { recordPacPayment } from '../../services/pac'
 import { createInvestment } from '../../services/investment'
 import type { Broker } from '../../types'
-import { ISINPickerField } from '../../components/ui'
 
 type Frequency = 'mensile' | 'trimestrale'
 
@@ -25,8 +24,6 @@ export const PacForm: FC<PacFormProps> = ({
 }) => {
   const [name, setName] = useState(existingInvestmentName ?? '')
   const [isin, setIsin] = useState('')
-  const [ticker, setTicker] = useState('')
-  const [tickerOnly, setTickerOnly] = useState(false)
   const [importoMensile, setImportoMensile] = useState('')
   const [dataInizio, setDataInizio] = useState('')
   const [frequency, setFrequency] = useState<Frequency>('mensile')
@@ -82,9 +79,7 @@ export const PacForm: FC<PacFormProps> = ({
           isPac: true,
           pacMonthlyAmount: importo,
           lastPriceUpdate: Timestamp.now(),
-          ...(isin.trim() && !tickerOnly ? { isin: isin.trim() } : {}),
-          ...(ticker.trim() ? { ticker: ticker.trim() } : {}),
-          tickerOnly,
+          ...(isin.trim() ? { isin: isin.trim() } : {}),
         }
         const createResult = await createInvestment(uid, investmentData)
 
@@ -127,11 +122,6 @@ export const PacForm: FC<PacFormProps> = ({
 
   const handleSubmit = (e: FormEvent): void => { void handleSubmitAsync(e) }
 
-  const handlePriceResolved = useCallback((price: number, _currency: string, resolvedName: string) => {
-    setPriceAtPayment(price.toString())
-    if (!name) setName(resolvedName)
-  }, [name])
-
   // frequency is used for UI display but not sent to backend yet — kept for future use
   void frequency
 
@@ -152,18 +142,16 @@ export const PacForm: FC<PacFormProps> = ({
             />
           </label>
 
-          <div style={{ marginTop: '4px', marginBottom: '8px' }}>
-            <ISINPickerField
-              isin={isin}
-              ticker={ticker}
-              tickerOnly={tickerOnly}
-              onISINChange={setIsin}
-              onTickerChange={setTicker}
-              onTickerOnlyChange={setTickerOnly}
-              onPriceResolved={handlePriceResolved}
-              disabled={isSubmitting}
+          <label>
+            ISIN (opzionale)
+            <input
+              type="text"
+              value={isin}
+              onChange={(e) => setIsin(e.target.value)}
+              placeholder="es. LU0996182563"
+              style={{ width: '100%', padding: '8px', marginTop: '4px' }}
             />
-          </div>
+          </label>
 
           <label>
             Broker *

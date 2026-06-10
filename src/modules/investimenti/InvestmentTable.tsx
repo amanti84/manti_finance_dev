@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { FC } from 'react'
 import { Badge } from '../../components/ui'
 import { formatCurrency, formatPercent, formatDate } from '../../utils/format'
+import { toDateSafe } from '../../utils/date'
 import type { Investment } from '../../types'
 import { AlertCircle, RefreshCw, AlertTriangle } from 'lucide-react'
 import type { Timestamp } from 'firebase/firestore'
@@ -100,7 +101,7 @@ export const InvestmentTable: FC<InvestmentTableProps> = ({
                       <div className="font-medium">{formatCurrency(inv.currentValue, inv.currency)}</div>
                       <div
                         className="text-xs text-text-muted"
-                        title={inv.lastPriceUpdate ? `Ultimo aggiornamento: ${formatDate(inv.lastPriceUpdate.toDate().toISOString())}` : undefined}
+                        title={toDateSafe(inv.lastPriceUpdate) ? `Ultimo aggiornamento: ${formatDate(toDateSafe(inv.lastPriceUpdate)!.toISOString())}` : undefined}
                       >
                         {formatCurrency(inv.currentPrice, inv.currency)}
                       </div>

@@ -3,9 +3,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // Mock Firebase per evitare inizializzazione con chiavi vuote in CI
 vi.mock('../../firebase', () => ({
   db: {},
-  auth: {},
+  auth: {
+    onAuthStateChanged: vi.fn(() => vi.fn()),
+  },
   storage: {},
   default: {},
+}))
+
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { uid: 'test-uid' },
+    loading: false,
+    signInWithGoogle: vi.fn(),
+    logout: vi.fn(),
+  }),
 }))
 
 import { render, screen, fireEvent } from '@testing-library/react'
@@ -28,7 +39,7 @@ describe('InvestimentiPage', () => {
       assetClass: 'etf',
       broker: 'fineco',
       isPac: true,
-      lastPriceUpdate: { toMillis: () => Date.now() }
+      lastPriceUpdate: { toMillis: () => Date.now(), toDate: () => new Date() }
     }
   ]
 
