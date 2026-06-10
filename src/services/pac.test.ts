@@ -13,6 +13,7 @@ import {
   getPacSummary,
   calculatePacProgress,
   getPacAnalytics,
+  processPacAutoPayments,
 } from './pac'
 import type { Investment, PacPayment } from '../types'
 import type { Timestamp } from 'firebase/firestore'
@@ -32,7 +33,14 @@ vi.mock('firebase/firestore', () => ({
   query: vi.fn(),
   where: vi.fn(),
   orderBy: vi.fn(),
-  Timestamp: { now: vi.fn(() => ({ toDate: () => new Date() })) },
+  Timestamp: {
+    now: vi.fn(() => ({ toDate: () => new Date() })),
+    fromDate: vi.fn((d: Date) => ({
+      seconds: Math.floor(d.getTime() / 1000),
+      nanoseconds: 0,
+      toDate: () => d,
+    })),
+  },
 }))
 
 vi.mock('../firebase', () => ({ db: {} }))
@@ -60,7 +68,7 @@ const makePayment = (overrides: Partial<PacPayment> = {}): PacPayment => ({
   ...overrides,
 })
 
-const makeInvestment = (): Investment => ({
+const makeInvestment = (overrides: Partial<Investment> = {}): Investment => ({
   id: 'inv-001',
   name: 'iShares MSCI World',
   ticker: 'SWDA',
@@ -75,6 +83,7 @@ const makeInvestment = (): Investment => ({
   lastPriceUpdate: makeTimestamp(new Date()),
   createdAt: makeTimestamp(new Date()),
   updatedAt: makeTimestamp(new Date()),
+  ...overrides,
 })
 
 // helper: mock snapshot con forEach
@@ -123,6 +132,63 @@ describe('recordPacPayment', () => {
     if (!result.success) {
       expect(result.error).toBeDefined()
     }
+  })
+})
+
+// -----------------------------------------------------------------------
+// --- processPacAutoPayments ---
+// -----------------------------------------------------------------------
+describe('processPacAutoPayments', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('processa versamenti automatici correttamente', async () => {
+    const { addDoc } = await import('firebase/firestore')
+    ;(addDoc as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'payment-id' })
+    const updateFn = vi.fn().mockResolvedValue({ success: true })
+
+    // PAC mensile il 5, ultimo pagamento 2024-01-05
+    const pac = makeInvestment({
+      id: 'pac-01',
+      isPac: true,
+      pacMonthlyAmount: 100,
+      schedule: { type: 'interval', intervalValue: 1, intervalUnit: 'month', daysOfMonth: [5] },
+      lastPaymentDate: '2024-01-05',
+    })
+
+    // Mock today = 2024-03-10
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2024-03-10'))
+
+    const results = await processPacAutoPayments('user-123', [pac], updateFn)
+
+    expect(results.length).toBe(1)
+    expect(results[0].paymentsAdded).toBe(2) // 2024-02-05 e 2024-03-05
+    expect(results[0].totalAmount).toBe(200)
+    expect(updateFn).toHaveBeenCalledWith('user-123', 'pac-01', expect.objectContaining({
+      lastPaymentDate: '2024-03-05',
+      nextPaymentDate: '2024-04-05',
+    }))
+
+    vi.useRealTimers()
+  })
+
+  it('non fa nulla se non ci sono date pendenti', async () => {
+    const updateFn = vi.fn()
+    const pac = makeInvestment({
+      isPac: true,
+      schedule: { type: 'interval', intervalValue: 1, intervalUnit: 'month', daysOfMonth: [5] },
+      lastPaymentDate: '2024-03-05',
+    })
+
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2024-03-10'))
+
+    const results = await processPacAutoPayments('user-123', [pac], updateFn)
+
+    expect(results.length).toBe(0)
+    expect(updateFn).not.toHaveBeenCalled()
+
+    vi.useRealTimers()
   })
 })
 

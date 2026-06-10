@@ -19,6 +19,7 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import type { Investment, ApiResult, PacPayment, PacSummary, PacProgress, PacAnalytics } from '../types'
+import { getPendingDates, calcNextScheduledDate } from '../types/pacFrequency'
 import { logAudit } from './audit'
 
 // ---------------------------------------------------------------------------
@@ -222,6 +223,81 @@ export async function calculatePacProgress(
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
+}
+
+// ---------------------------------------------------------------------------
+// AUTO-PROCESS
+// ---------------------------------------------------------------------------
+
+export interface AutoPaymentResult {
+  investmentId: string
+  investmentName: string
+  paymentsAdded: number
+  totalAmount: number
+}
+
+/**
+ * Processa i versamenti automatici per i PAC adulti.
+ * Basato sulla logica di processKGPACAutoPayments in kindergartenPacPayments.ts
+ */
+export async function processPacAutoPayments(
+  uid: string,
+  investments: Investment[],
+  updateInvestmentFn: (uid: string, id: string, data: Partial<Investment>) => Promise<ApiResult<void>>
+): Promise<AutoPaymentResult[]> {
+  const today = new Date().toISOString().slice(0, 10)
+  const results: AutoPaymentResult[] = []
+
+  // Filtriamo solo gli investimenti che sono PAC e hanno uno schedule
+  const pacs = investments.filter(inv => inv.isPac && inv.schedule)
+
+  for (const pac of pacs) {
+    if (!pac.schedule) continue
+
+    // Se non c'è lastPaymentDate, usiamo la data di creazione o un default (es. startDate se esistesse)
+    // In assenza di startDate nell'interfaccia Investment (anche se l'abbiamo aggiunta nel form),
+    // usiamo una data prudente.
+    // Dalla modifica del form, abbiamo aggiunto startDate.
+    // Usiamo pac.startDate (se presente) o il createdAt.
+    const from = pac.lastPaymentDate ??
+                 pac.startDate ??
+                 (pac.createdAt instanceof Timestamp ? pac.createdAt.toDate().toISOString().slice(0, 10) : today)
+
+    const pendingDates = getPendingDates(pac.schedule, from, today)
+    if (pendingDates.length === 0) continue
+
+    let addedCount = 0
+    let totalAmount = 0
+    let lastDate = from
+
+    for (const date of pendingDates) {
+      const res = await recordPacPayment(uid, {
+        investmentId: pac.id,
+        investmentName: pac.name,
+        data: Timestamp.fromDate(new Date(date)),
+        importo: pac.pacMonthlyAmount ?? 0,
+        priceAtPayment: pac.currentPrice > 0 ? pac.currentPrice : 0,
+        broker: pac.broker,
+      })
+
+      if (res.success) {
+        addedCount++
+        totalAmount += pac.pacMonthlyAmount ?? 0
+        lastDate = date
+      }
+    }
+
+    if (addedCount > 0) {
+      const nextPaymentDate = calcNextScheduledDate(pac.schedule, lastDate, today)
+      await updateInvestmentFn(uid, pac.id, {
+        lastPaymentDate: lastDate,
+        nextPaymentDate,
+      })
+      results.push({ investmentId: pac.id, investmentName: pac.name, paymentsAdded: addedCount, totalAmount })
+    }
+  }
+
+  return results
 }
 
 export async function getPacAnalytics(
