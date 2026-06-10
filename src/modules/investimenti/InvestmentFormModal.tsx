@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { FC } from 'react'
-import { Modal, Input, Button } from '../../components/ui'
+import { Modal, Input, Button, ISINPickerField } from '../../components/ui'
 import type { Investment, AssetClass, Broker, Currency } from '../../types'
 import { Timestamp } from 'firebase/firestore'
 
@@ -27,6 +27,7 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
     name: '',
     isin: '',
     ticker: '',
+    tickerOnly: false,
     assetClass: 'etf' as AssetClass,
     broker: 'fineco' as Broker,
     quantity: 0,
@@ -35,7 +36,6 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
     currency: 'EUR' as Currency,
     isPac: false,
     pacMonthlyAmount: 0,
-    tickerOnly: false,
     autoUpdate: true
   })
 
@@ -47,6 +47,7 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
         name: initialData.name,
         isin: initialData.isin ?? '',
         ticker: initialData.ticker ?? '',
+        tickerOnly: initialData.tickerOnly ?? false,
         assetClass: initialData.assetClass,
         broker: initialData.broker,
         quantity: initialData.quantity,
@@ -55,7 +56,6 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
         currency: initialData.currency,
         isPac: initialData.isPac,
         pacMonthlyAmount: initialData.pacMonthlyAmount ?? 0,
-        tickerOnly: initialData.tickerOnly ?? false,
         autoUpdate: initialData.autoUpdate ?? true
       })
     } else {
@@ -63,6 +63,7 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
         name: '',
         isin: '',
         ticker: '',
+        tickerOnly: false,
         assetClass: 'etf',
         broker: 'fineco',
         quantity: 0,
@@ -71,7 +72,6 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
         currency: 'EUR',
         isPac: false,
         pacMonthlyAmount: 0,
-        tickerOnly: false,
         autoUpdate: true
       })
     }
@@ -86,6 +86,15 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
       [name]: type === 'checkbox' ? checked : (type === 'number' ? parseFloat(value) || 0 : value)
     }))
   }
+
+  const handlePriceResolved = useCallback((price: number, currency: string, name: string) => {
+    setFormData(prev => ({
+      ...prev,
+      currentPrice: price,
+      currency: currency as Currency,
+      name: prev.name || name
+    }))
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -137,31 +146,16 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">ISIN</label>
-              {!formData.tickerOnly && (
-                <span className="text-[10px] text-text-muted uppercase">Obbligatorio per auto-update</span>
-              )}
-            </div>
-            <Input
-              name="isin"
-              value={formData.isin}
-              onChange={handleChange}
-              placeholder="IE00B3XXRP09"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-sm font-medium">Ticker</label>
-            <Input
-              name="ticker"
-              value={formData.ticker}
-              onChange={handleChange}
-              placeholder="VUSA.L"
-            />
-          </div>
-        </div>
+        <ISINPickerField
+          isin={formData.isin}
+          ticker={formData.ticker}
+          tickerOnly={formData.tickerOnly}
+          onISINChange={(isin) => setFormData(prev => ({ ...prev, isin }))}
+          onTickerChange={(ticker) => setFormData(prev => ({ ...prev, ticker }))}
+          onTickerOnlyChange={(tickerOnly) => setFormData(prev => ({ ...prev, tickerOnly }))}
+          onPriceResolved={handlePriceResolved}
+          disabled={loading}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
@@ -201,19 +195,6 @@ export const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
               />
               <label htmlFor="autoUpdate" className="text-sm font-medium cursor-pointer">
                 Aggiornamento automatico prezzi
-              </label>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                id="tickerOnly"
-                name="tickerOnly"
-                type="checkbox"
-                checked={formData.tickerOnly}
-                onChange={handleChange}
-                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-              />
-              <label htmlFor="tickerOnly" className="text-sm font-medium cursor-pointer">
-                Usa solo Ticker (es. Crypto/No ISIN)
               </label>
             </div>
           </div>
