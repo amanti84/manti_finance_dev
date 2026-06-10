@@ -119,7 +119,7 @@ export const ISINPickerField: FC<ISINPickerFieldProps> = ({
 
         <Button
           type="button"
-          onClick={handleSearch}
+          onClick={() => { void handleSearch() }}
           disabled={disabled || loading || (!tickerOnly && (!!isinError || !isin)) || (tickerOnly && !ticker)}
           isLoading={loading}
           className="md:mb-0.5"
