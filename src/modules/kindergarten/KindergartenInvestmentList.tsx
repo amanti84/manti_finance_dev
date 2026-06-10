@@ -29,7 +29,7 @@ function fmt(n: number) {
   return n.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })
 }
 
-type FormData = {
+interface FormData {
   name: string
   isin: string
   ticker: string
@@ -111,7 +111,6 @@ export default function KindergartenInvestmentList({ investments, onAdd, onUpdat
     e.preventDefault()
     setSaving(true)
     try {
-      // exactOptionalPropertyTypes: omit keys instead of assigning undefined
       const payload: Omit<KindergartenInvestment, 'id' | 'createdAt' | 'updatedAt'> = {
         name: form.name,
         category: form.category,
