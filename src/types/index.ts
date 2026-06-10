@@ -234,6 +234,12 @@ export interface Investment extends BaseDocument {
   currency: Currency
   isPac: boolean
   pacMonthlyAmount?: number
+  schedule?: PACSchedule
+  startDate?: string
+  lastPaymentDate?: string
+  nextPaymentDate?: string
+  /** @deprecated use schedule */
+  frequency?: string
   lastPriceUpdate: Timestamp
   tickerOnly?: boolean
   autoUpdate?: boolean
