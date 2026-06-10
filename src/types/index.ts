@@ -699,6 +699,24 @@ export interface AuditLogEntry extends BaseDocument {
 }
 
 // --------------------------------------------------------
+// ISIN / PRICE DATA (Issue #138)
+// --------------------------------------------------------
+
+export interface PriceData {
+  isin: string | null
+  ticker: string
+  name: string
+  price: number
+  currency: string
+  currentValue: number
+  timestamp: string
+  source: string
+  warning?: string
+}
+
+export type AssetISINType = 'etf' | 'fund-it' | 'fund-lu' | 'other'
+
+// --------------------------------------------------------
 // PREVIDENZA
 // --------------------------------------------------------
 
