@@ -7,7 +7,7 @@ import { MutuoAmmortamentoTable } from './MutuoAmmortamentoTable'
 import { MutuoFormModal } from './MutuoFormModal'
 import { MutuoSimulator } from './MutuoSimulator'
 import { MutuoChart } from './MutuoChart'
-import { Button, EmptyState, Skeleton } from '../../components/ui'
+import { Button, EmptyState, Skeleton, ErrorCard } from '../../components/ui'
 import type { MutuoConfig } from '../../types'
 
 export const MutuoPage: FC = () => {
@@ -32,11 +32,10 @@ export const MutuoPage: FC = () => {
 
   if (error) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-error font-medium">Errore nel caricamento del mutuo: {error}</p>
-        <Button className="mt-4 gap-2" onClick={() => { void refresh() }}>
-          <RefreshCw size={16} /> Riprova
-        </Button>
+      <div className="p-8 flex justify-center">
+        <div className="max-w-md w-full">
+          <ErrorCard message={error} onRetry={() => { void refresh(); }} />
+        </div>
       </div>
     )
   }

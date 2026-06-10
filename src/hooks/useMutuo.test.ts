@@ -92,9 +92,9 @@ describe('useMutuo', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
-    })
+    }, { timeout: 15000 })
 
-    expect(result.current.error).toBe('Database connection failed')
+    expect(result.current.error).toContain('Database connection failed')
   })
 
   it('should call saveMutuoConfig and refresh', async () => {

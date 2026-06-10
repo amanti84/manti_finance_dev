@@ -12,6 +12,7 @@ import {
   type TFRComparison
 } from '../services/previdenza'
 import { getPayslips } from '../services/payroll'
+import { withRetry } from '../utils/withRetry'
 import type { PrevidenzaConfig, PensionFund, PensionContribution, Payslip, TFRData } from '../types'
 
 export interface PrevidenzaData {
@@ -47,22 +48,22 @@ export function usePrevidenzaData(): PrevidenzaData {
 
     try {
       const [configRes, fundsRes, payslipsRes] = await Promise.all([
-        getPrevidenzaConfig(user.uid),
-        getAllPensionFunds(user.uid),
-        getPayslips(user.uid)
+        withRetry(() => getPrevidenzaConfig(user.uid)),
+        withRetry(() => getAllPensionFunds(user.uid)),
+        withRetry(() => getPayslips(user.uid))
       ])
 
-      if (configRes.success) setConfig(configRes.data)
+      if (configRes.success) setConfig(configRes.data ?? null)
       // Note: error 'Configurazione previdenza non trovata' is expected if first time
 
       if (fundsRes.success) {
-        setFunds(fundsRes.data)
+        setFunds(fundsRes.data ?? [])
         const contribsMap: Record<string, PensionContribution[]> = {}
         await Promise.all(
-          fundsRes.data.map(async (fund) => {
-            const res = await getContributionsByFund(user.uid, fund.id)
+          (fundsRes.data ?? []).map(async (fund) => {
+            const res = await withRetry(() => getContributionsByFund(user.uid, fund.id))
             if (res.success) {
-              contribsMap[fund.id] = res.data
+              contribsMap[fund.id] = res.data ?? []
             }
           })
         )
@@ -72,7 +73,7 @@ export function usePrevidenzaData(): PrevidenzaData {
       }
 
       if (payslipsRes.success) {
-        setPayslips(payslipsRes.data)
+        setPayslips(payslipsRes.data ?? [])
       } else {
         setError(payslipsRes.error)
       }

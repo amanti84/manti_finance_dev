@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { listDocuments } from '../../services/document'
 import type { FinancialDocument } from '../../types'
+import { withRetry } from '../../utils/withRetry'
+import { ErrorCard } from '../../components/ui'
 import { DocumentUploader } from './DocumentUploader'
 import { DocumentList } from './DocumentList'
 import { DocumentLinkModal } from './DocumentLinkModal'
@@ -17,9 +19,9 @@ export const DocumentiPage: React.FC = () => {
     if (!user) return
     setLoading(true)
     setError(null)
-    const result = await listDocuments(user.uid)
+    const result = await withRetry(() => listDocuments(user.uid))
     if (result.success) {
-      setDocuments(result.data)
+      setDocuments(result.data ?? [])
     } else {
       setError(result.error)
     }
@@ -47,8 +49,8 @@ export const DocumentiPage: React.FC = () => {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-          Errore nel caricamento dei documenti: {error}
+        <div className="mb-6">
+          <ErrorCard message={error} onRetry={() => { void fetchDocuments(); }} />
         </div>
       )}
 

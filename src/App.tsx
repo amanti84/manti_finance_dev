@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { LoginPage } from './pages/LoginPage'
 import { UnauthorizedPage } from './pages/UnauthorizedPage'
 import { PayrollPage } from './modules/payroll'
@@ -39,22 +40,94 @@ function App(): React.ReactElement {
         {/* Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/payroll" element={<PayrollPage />} />
-            <Route path="/investimenti" element={<InvestimentiPage />} />
-            <Route path="/investimenti/pac" element={user ? <PacPage uid={user.uid} /> : null} />
-            <Route path="/cashflow" element={user ? <CashFlowPage uid={user.uid} /> : null} />
-            <Route path="/monthly-close" element={user ? <MonthlyClosePage uid={user.uid} /> : null} />
-            <Route path="/mutuo" element={<MutuoPage />} />
-            <Route path="/monthly-allocation" element={<MonthlyAllocationPage />} />
-            <Route path="/previdenza" element={<PrevidenzaPage />} />
-            <Route path="/kindergarten" element={user ? <KindergartenPage uid={user.uid} /> : null} />
-            <Route path="/documenti" element={<DocumentiPage />} />
-            <Route path="/what-if" element={<WhatIfPage />} />
-            <Route path="/alerts" element={<AlertsPage />} />
-            <Route path="/inbox" element={<InboxPage />} />
-            <Route path="/goals" element={<GoalsPage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/" element={
+              <ErrorBoundary moduleName="Dashboard">
+                <DashboardPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/payroll" element={
+              <ErrorBoundary moduleName="Payroll">
+                <PayrollPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/investimenti" element={
+              <ErrorBoundary moduleName="Investimenti">
+                <InvestimentiPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/investimenti/pac" element={
+              user ? (
+                <ErrorBoundary moduleName="PAC">
+                  <PacPage uid={user.uid} />
+                </ErrorBoundary>
+              ) : null
+            } />
+            <Route path="/cashflow" element={
+              user ? (
+                <ErrorBoundary moduleName="CashFlow">
+                  <CashFlowPage uid={user.uid} />
+                </ErrorBoundary>
+              ) : null
+            } />
+            <Route path="/monthly-close" element={
+              user ? (
+                <ErrorBoundary moduleName="MonthlyClose">
+                  <MonthlyClosePage uid={user.uid} />
+                </ErrorBoundary>
+              ) : null
+            } />
+            <Route path="/mutuo" element={
+              <ErrorBoundary moduleName="Mutuo">
+                <MutuoPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/monthly-allocation" element={
+              <ErrorBoundary moduleName="MonthlyAllocation">
+                <MonthlyAllocationPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/previdenza" element={
+              <ErrorBoundary moduleName="Previdenza">
+                <PrevidenzaPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/kindergarten" element={
+              user ? (
+                <ErrorBoundary moduleName="Kindergarten">
+                  <KindergartenPage uid={user.uid} />
+                </ErrorBoundary>
+              ) : null
+            } />
+            <Route path="/documenti" element={
+              <ErrorBoundary moduleName="Documenti">
+                <DocumentiPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/what-if" element={
+              <ErrorBoundary moduleName="WhatIf">
+                <WhatIfPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/alerts" element={
+              <ErrorBoundary moduleName="Alerts">
+                <AlertsPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/inbox" element={
+              <ErrorBoundary moduleName="Inbox">
+                <InboxPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/goals" element={
+              <ErrorBoundary moduleName="Goals">
+                <GoalsPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/admin" element={
+              <ErrorBoundary moduleName="Admin">
+                <AdminPage />
+              </ErrorBoundary>
+            } />
           </Route>
         </Route>
       </Routes>

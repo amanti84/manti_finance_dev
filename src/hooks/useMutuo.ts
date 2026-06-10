@@ -13,6 +13,7 @@ import {
   type PianoAmmortamento,
   type MutuoSummary
 } from '../services/mutuo'
+import { withRetry } from '../utils/withRetry'
 import type { MutuoConfig, ApiResult } from '../types'
 
 export interface UseMutuoReturn {
@@ -39,9 +40,9 @@ export function useMutuo(): UseMutuoReturn {
     }
 
     setLoading(true)
-    const result = await getMutuoConfig(user.uid)
+    const result = await withRetry(() => getMutuoConfig(user.uid))
     if (result.success) {
-      setConfig(result.data)
+      setConfig(result.data ?? null)
       setError(null)
     } else {
       // Se non trovato, non lo consideriamo un errore bloccante per la UI
