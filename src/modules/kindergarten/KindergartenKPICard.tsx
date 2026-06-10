@@ -1,56 +1,72 @@
 /**
- * KindergartenKPICard — KPI aggregati del portafoglio bambini.
- * Mostra: investimenti + PAC + totale complessivo.
- * Nessun dato proveniente dal portafoglio principale.
+ * KindergartenKPICard — KPI card per i PAC del portafoglio bambini.
+ * Export: default (aggiunto per compatibilità con KindergartenPage import).
  */
-import type { KindergartenKPIs } from '../../types/kindergarten'
+import type { KindergartenPAC } from '../../types/kindergarten'
+import { scheduleSummary } from '../../types/pacFrequency'
 
-type InvKPIs = Pick<KindergartenKPIs, 'totalInvested' | 'currentValue' | 'gainLoss' | 'gainLossPercent'>
-type PACKPIs = Pick<KindergartenKPIs, 'totalPACMonthly' | 'totalPACInvested' | 'totalPACValue' | 'pacGainLoss' | 'pacGainLossPercent'>
-type GrandKPIs = Pick<KindergartenKPIs, 'grandTotalInvested' | 'grandTotalValue' | 'grandTotalGainLoss' | 'grandTotalGainLossPercent'>
+interface KPIs {
+  totalPACMonthly: number
+  totalPACInvested: number
+  totalPACValue: number
+  pacGainLoss: number
+  pacGainLossPercent: number
+}
 
 interface Props {
-  invKPIs: InvKPIs
-  pacKPIs: PACKPIs
-  grandKPIs: GrandKPIs
+  pacs: KindergartenPAC[]
+  kpis: KPIs
 }
 
 function fmt(n: number) {
   return n.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' })
 }
 
-function pct(n: number) {
-  return `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`
-}
+export default function KindergartenKPICard({ pacs, kpis }: Props) {
+  const { totalPACMonthly, totalPACInvested, totalPACValue, pacGainLoss, pacGainLossPercent } = kpis
 
-export default function KindergartenKPICard({ invKPIs, pacKPIs, grandKPIs }: Props) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-      <div className="rounded-lg border p-4 bg-white shadow-sm">
-        <h3 className="text-sm font-medium text-gray-500 mb-2">Investimenti Diretti</h3>
-        <p className="text-xl font-bold">{fmt(invKPIs.currentValue)}</p>
-        <p className="text-sm text-gray-400">Investito: {fmt(invKPIs.totalInvested)}</p>
-        <p className={`text-sm font-medium mt-1 ${invKPIs.gainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-          {fmt(invKPIs.gainLoss)} ({pct(invKPIs.gainLossPercent)})
-        </p>
+    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+      <h2 className="text-base font-semibold text-gray-700">Piano di Accumulo (PAC)</h2>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-xs text-gray-400">Rata totale mensile</p>
+          <p className="text-xl font-bold">{fmt(totalPACMonthly)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-400">Totale versato</p>
+          <p className="text-xl font-bold">{fmt(totalPACInvested)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-400">Valore attuale</p>
+          <p className="text-xl font-bold">{fmt(totalPACValue)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-400">G/P complessivo</p>
+          <p className={`text-xl font-bold ${pacGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {fmt(pacGainLoss)} ({pacGainLoss >= 0 ? '+' : ''}{pacGainLossPercent.toFixed(2)}%)
+          </p>
+        </div>
       </div>
-      <div className="rounded-lg border p-4 bg-white shadow-sm">
-        <h3 className="text-sm font-medium text-gray-500 mb-2">PAC</h3>
-        <p className="text-xl font-bold">{fmt(pacKPIs.totalPACValue)}</p>
-        <p className="text-sm text-gray-400">Versato: {fmt(pacKPIs.totalPACInvested)}</p>
-        <p className={`text-sm font-medium mt-1 ${pacKPIs.pacGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-          {fmt(pacKPIs.pacGainLoss)} ({pct(pacKPIs.pacGainLossPercent)})
-        </p>
-        <p className="text-xs text-gray-400 mt-1">Rata mensile: {fmt(pacKPIs.totalPACMonthly)}</p>
-      </div>
-      <div className="rounded-lg border p-4 bg-primary/5 shadow-sm">
-        <h3 className="text-sm font-medium text-gray-500 mb-2">Portafoglio Totale</h3>
-        <p className="text-2xl font-bold">{fmt(grandKPIs.grandTotalValue)}</p>
-        <p className="text-sm text-gray-400">Totale investito: {fmt(grandKPIs.grandTotalInvested)}</p>
-        <p className={`text-sm font-medium mt-1 ${grandKPIs.grandTotalGainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-          {fmt(grandKPIs.grandTotalGainLoss)} ({pct(grandKPIs.grandTotalGainLossPercent)})
-        </p>
-      </div>
+
+      {pacs.length > 0 && (
+        <div className="space-y-1 border-t pt-3">
+          <p className="text-xs font-medium text-gray-400 uppercase">PAC attivi</p>
+          {pacs.map(pac => (
+            <div key={pac.id} className="flex items-center justify-between text-sm">
+              <span className="font-medium truncate max-w-[55%]">{pac.name}</span>
+              <span className="text-gray-400 text-xs">
+                {pac.schedule ? scheduleSummary(pac.schedule) : '—'}
+              </span>
+              <span className="tabular-nums">{fmt(pac.monthlyAmount)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
+
+// named export per retrocompatibilità con eventuali import named esistenti
+export { KindergartenKPICard }

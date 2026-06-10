@@ -71,6 +71,7 @@ describe('Price Update Service', () => {
     name: 'KG PAC',
     isin: 'IE00B7890123',
     ticker: 'PAC.MI',
+    schedule: { type: 'interval', intervalValue: 1, intervalUnit: 'month' },
     monthlyAmount: 100,
     quantity: 50,
     startDate: '2023-01-01',
@@ -138,7 +139,6 @@ describe('Price Update Service', () => {
       expect(result.success).toBe(false)
       expect(result.error).toContain('EUR ammesso')
 
-      // Check that updateInvestment was called with an error containing USD
       const calls = vi.mocked(updateInvestment).mock.calls
       const inv1Call = calls.find(call => call[1] === 'inv-1')
       expect(inv1Call).toBeDefined()

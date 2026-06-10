@@ -37,6 +37,7 @@ const mockPAC: KindergartenPAC = {
   id: 'pac-001',
   name: 'PAC Figlio 1',
   ticker: 'VWCE',
+  schedule: { type: 'interval', intervalValue: 1, intervalUnit: 'month' },
   monthlyAmount: 200,
   startDate: '2023-01-01',
   targetYears: 18,

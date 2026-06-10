@@ -40,6 +40,7 @@ const mockInvestment: KindergartenInvestment = {
 const mockPAC: KindergartenPAC = {
   id: 'pac-1',
   name: 'PAC Futuro',
+  schedule: { type: 'interval', intervalValue: 1, intervalUnit: 'month' },
   monthlyAmount: 200,
   startDate: '2024-01-01',
   targetYears: 18,
@@ -71,6 +72,8 @@ const defaultPacHook = {
   },
   loading: false,
   error: null,
+  autoPaymentResults: [],
+  clearAutoPaymentResults: vi.fn(),
   addPAC: vi.fn(),
   updatePAC: vi.fn(),
   deletePAC: vi.fn().mockResolvedValue(undefined),
@@ -80,7 +83,6 @@ const defaultPacHook = {
 describe('KindergartenPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // jsdom returns false for window.confirm by default — must mock explicitly
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(useKindergartenInvestments).mockReturnValue(defaultInvHook)
     vi.mocked(useKindergartenPacs).mockReturnValue(defaultPacHook)
@@ -104,7 +106,6 @@ describe('KindergartenPage', () => {
 
   it('renders investment and PAC sections', () => {
     render(<KindergartenPage uid="test-uid" />)
-    // Use getByRole for headings with level to avoid ambiguity with KPI card headers
     expect(screen.getByRole('heading', { name: 'Investimenti Diretti', level: 2 })).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Piano di Accumulo (PAC)', level: 2 })).toBeTruthy()
   })
