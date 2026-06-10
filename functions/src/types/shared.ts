@@ -96,6 +96,7 @@ export interface PriceResult {
   source: string
   fetchedAt: Timestamp
   symbol?: string
+  name?: string
 }
 
 export interface ISINCacheEntry extends PriceResult {
