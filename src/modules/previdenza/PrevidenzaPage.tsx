@@ -9,6 +9,7 @@ import { PrevidenzaCharts } from './PrevidenzaCharts'
 import { PensionFundSection } from './PensionFundSection'
 import { TFRSection } from './TFRSection'
 import { PrevidenzaConfigForm } from './PrevidenzaConfigForm'
+import { PrevidenzaInitForm } from './PrevidenzaInitForm'
 import { Button, EmptyState, Skeleton, Card, CardHeader, CardTitle, CardContent, ErrorCard } from '../../components/ui'
 import { formatCurrency } from '../../utils/format'
 import type { PrevidenzaConfig } from '../../types'
@@ -112,14 +113,17 @@ export const PrevidenzaPage: FC = () => {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-text mb-6">Previdenza</h1>
-        <EmptyState
-          title="Nessun dato configurato"
-          description="Per visualizzare le proiezioni pensionistiche e il TFR, configura i tuoi dati di base."
-          action={{
-            label: "Configura Ora",
-            onClick: () => setIsConfigModalOpen(true)
-          }}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          <EmptyState
+            title="Nessun dato configurato"
+            description="Per visualizzare le proiezioni pensionistiche e il TFR, configura i tuoi dati di base."
+            action={{
+              label: "Configura Ora",
+              onClick: () => setIsConfigModalOpen(true)
+            }}
+          />
+          {user && <PrevidenzaInitForm uid={user.uid} onSuccess={() => { void refresh(); }} />}
+        </div>
         <PrevidenzaConfigForm
           isOpen={isConfigModalOpen}
           onClose={() => setIsConfigModalOpen(false)}

@@ -51,21 +51,31 @@ describe('MutuoPage', () => {
         debitoResiduo: 199200
       }
     ],
-    config: mockConfig
+    config: mockConfig,
+    totaleInteressi: 20000,
+    totaleCapitale: 200000,
+    numeroRateRimanenti: 240,
+    percentualeRimborso: 25
+  }
+
+  const mockHookReturn: UseMutuoReturn = {
+    config: mockConfig,
+    piano: mockPiano,
+    summary: mockSummary,
+    loading: false,
+    error: null,
+    saveConfig: vi.fn(),
+    updateMutuo: vi.fn(),
+    deleteMutuo: vi.fn(),
+    simulateOverpayment: vi.fn(),
+    applyPartialRepayment: vi.fn(),
+    updateResidual: vi.fn(),
+    refresh: vi.fn(),
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(useMutuoHook.useMutuo).mockReturnValue({
-      config: mockConfig,
-      piano: mockPiano,
-      summary: mockSummary,
-      loading: false,
-      error: null,
-      saveConfig: vi.fn(),
-      updateResidual: vi.fn(),
-      refresh: vi.fn(),
-    } as unknown as UseMutuoReturn)
+    vi.mocked(useMutuoHook.useMutuo).mockReturnValue(mockHookReturn)
   })
 
   it('should render KPIs and title correctly (happy path)', () => {
@@ -81,14 +91,10 @@ describe('MutuoPage', () => {
 
   it('should show empty state when no config (edge case)', () => {
     vi.mocked(useMutuoHook.useMutuo).mockReturnValue({
+      ...mockHookReturn,
       config: null,
       piano: null,
       summary: null,
-      loading: false,
-      error: null,
-      saveConfig: vi.fn(),
-      updateResidual: vi.fn(),
-      refresh: vi.fn(),
     })
 
     render(<MutuoPage />)
@@ -103,14 +109,11 @@ describe('MutuoPage', () => {
 
   it('should show error state (error handling)', () => {
     vi.mocked(useMutuoHook.useMutuo).mockReturnValue({
+      ...mockHookReturn,
       config: null,
       piano: null,
       summary: null,
-      loading: false,
       error: 'Fetch error',
-      saveConfig: vi.fn(),
-      updateResidual: vi.fn(),
-      refresh: vi.fn(),
     })
 
     render(<MutuoPage />)

@@ -7,6 +7,10 @@ import { useAuth } from './useAuth'
 import {
   getMutuoConfig,
   saveMutuoConfig,
+  updateMutuo,
+  deleteMutuo as deleteMutuoService,
+  simulateOverpayment,
+  applyPartialRepayment as applyPartialRepaymentService,
   getPianoAmmortamento,
   getMutuoSummary,
   updateDebitoResiduo,
@@ -14,7 +18,7 @@ import {
   type MutuoSummary
 } from '../services/mutuo'
 import { withRetry } from '../utils/withRetry'
-import type { MutuoConfig, ApiResult } from '../types'
+import type { MutuoConfig, ApiResult, OverpaymentSimulation } from '../types'
 
 export interface UseMutuoReturn {
   config: MutuoConfig | null
@@ -23,6 +27,10 @@ export interface UseMutuoReturn {
   loading: boolean
   error: string | null
   saveConfig: (data: MutuoConfig) => Promise<ApiResult<void>>
+  updateMutuo: (data: Partial<MutuoConfig>) => Promise<ApiResult<void>>
+  deleteMutuo: () => Promise<ApiResult<void>>
+  simulateOverpayment: (extraAmount: number) => ApiResult<OverpaymentSimulation>
+  applyPartialRepayment: (amount: number) => Promise<ApiResult<void>>
   updateResidual: (nuovoDebito: number) => Promise<ApiResult<void>>
   refresh: () => Promise<void>
 }
@@ -79,6 +87,38 @@ export function useMutuo(): UseMutuoReturn {
     return result
   }
 
+  const handleSimulateOverpayment = (extraAmount: number) => {
+    if (!config) return { success: false, error: 'Mutuo non configurato' } as ApiResult<OverpaymentSimulation>
+    return simulateOverpayment(config, extraAmount)
+  }
+
+  const handleUpdateMutuo = async (data: Partial<MutuoConfig>) => {
+    if (!user?.uid) return { success: false, error: 'User not authenticated' } as ApiResult<void>
+    const result = await updateMutuo(user.uid, 'config', data)
+    if (result.success) {
+      await fetchMutuo()
+    }
+    return result
+  }
+
+  const handleDeleteMutuo = async () => {
+    if (!user?.uid) return { success: false, error: 'User not authenticated' } as ApiResult<void>
+    const result = await deleteMutuoService(user.uid, 'config')
+    if (result.success) {
+      await fetchMutuo()
+    }
+    return result
+  }
+
+  const handleApplyPartialRepayment = async (amount: number) => {
+    if (!user?.uid) return { success: false, error: 'User not authenticated' } as ApiResult<void>
+    const result = await applyPartialRepaymentService(user.uid, 'config', amount)
+    if (result.success) {
+      await fetchMutuo()
+    }
+    return result
+  }
+
   const updateResidual = async (nuovoDebito: number) => {
     if (!user?.uid) return { success: false, error: 'User not authenticated' } as ApiResult<void>
     const result = await updateDebitoResiduo(user.uid, nuovoDebito)
@@ -95,6 +135,10 @@ export function useMutuo(): UseMutuoReturn {
     loading,
     error,
     saveConfig,
+    updateMutuo: handleUpdateMutuo,
+    deleteMutuo: handleDeleteMutuo,
+    simulateOverpayment: handleSimulateOverpayment,
+    applyPartialRepayment: handleApplyPartialRepayment,
     updateResidual,
     refresh: fetchMutuo
   }

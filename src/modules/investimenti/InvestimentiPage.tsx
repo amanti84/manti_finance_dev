@@ -1,17 +1,21 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import type { FC } from 'react'
-import { Plus, Search, Filter, RefreshCw } from 'lucide-react'
+import { Plus, Search, Filter, RefreshCw, History, PieChart } from 'lucide-react'
 import { useInvestments } from '../../hooks/useInvestments'
 import { updateInvestmentPrice, updateAllPrices } from '../../services/priceUpdate'
+import { getSaleHistory, getAnnualTaxSummary, getTaxWallet } from '../../services/sales'
 import { useAuth } from '../../hooks/useAuth'
 import { InvestmentKPIs } from './InvestmentKPIs'
 import { InvestmentTable } from './InvestmentTable'
 import { InvestmentFormModal } from './InvestmentFormModal'
 import { InvestmentDetailModal } from './InvestmentDetailModal'
 import { SellInvestmentModal } from './SellInvestmentModal'
+import { SaleHistoryTable } from './SaleHistoryTable'
+import { TaxSummaryCard } from './TaxSummaryCard'
 import { Button, Input, EmptyState, Skeleton, ErrorCard } from '../../components/ui'
-import type { Investment, AssetClass, Broker } from '../../types'
+import type { Investment, AssetClass, Broker, SaleRecord, TaxSummary, TaxWallet } from '../../types'
 
+type TabId = 'portfolio' | 'history'
 type SortField = 'name' | 'currentValue' | 'pnlPct'
 type SortOrder = 'asc' | 'desc'
 
@@ -29,6 +33,7 @@ export const InvestimentiPage: FC = () => {
   } = useInvestments()
 
   // State
+  const [activeTab, setActiveTab] = useState<TabId>('portfolio')
   const [searchTerm, setSearchTerm] = useState('')
   const [assetClassFilter, setAssetClassFilter] = useState<AssetClass | 'all'>('all')
   const [brokerFilter, setBrokerFilter] = useState<Broker | 'all'>('all')
@@ -43,11 +48,41 @@ export const InvestimentiPage: FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isSellModalOpen, setIsSellModalOpen] = useState(false)
 
+  // Sales Data
+  const [sales, setSales] = useState<SaleRecord[]>([])
+  const [taxSummary, setTaxSummary] = useState<TaxSummary | null>(null)
+  const [taxWallet, setTaxWallet] = useState<TaxWallet | null>(null)
+  const [loadingSales, setLoadingSales] = useState(false)
+
   // Update State
   const [isUpdatingAll, setIsUpdatingAll] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
   const [progress, setProgress] = useState<{ current: number; total: number; name: string } | null>(null)
   const [updateResult, setUpdateResult] = useState<{ success: number; fail: number; total: number } | null>(null)
+
+  // Handlers
+  const loadSalesData = useCallback(async () => {
+    if (!user) return
+    setLoadingSales(true)
+    const currentYear = new Date().getFullYear()
+
+    const [salesRes, summaryRes, walletRes] = await Promise.all([
+      getSaleHistory(user.uid),
+      getAnnualTaxSummary(user.uid, currentYear),
+      getTaxWallet(user.uid)
+    ])
+
+    if (salesRes.success) setSales(salesRes.data)
+    if (summaryRes.success) setTaxSummary(summaryRes.data)
+    if (walletRes.success) setTaxWallet(walletRes.data)
+    setLoadingSales(false)
+  }, [user])
+
+  useEffect(() => {
+    if (activeTab === 'history') {
+      void loadSalesData()
+    }
+  }, [activeTab, loadSalesData])
 
   // Derived Data
   const filteredInvestments = useMemo(() => {
@@ -130,19 +165,10 @@ export const InvestimentiPage: FC = () => {
     }
   }
 
-  const handleSellConfirm = async (id: string, quantityToSell: number, salePrice: number) => {
-    const inv = investments.find(i => i.id === id)
-    if (!inv) return
-
-    if (quantityToSell >= inv.quantity) {
-      // Full sale - usually we might archive it, but for now we just delete or update to 0
-      await removeInvestment(id)
-    } else {
-      // Partial sale
-      await editInvestment(id, {
-        quantity: inv.quantity - quantityToSell,
-        currentPrice: salePrice // Option to update price to sale price
-      })
+  const handleSellSuccess = async () => {
+    await refresh()
+    if (activeTab === 'history') {
+      await loadSalesData()
     }
   }
 
@@ -225,9 +251,35 @@ export const InvestimentiPage: FC = () => {
         </div>
       )}
 
-      <InvestmentKPIs summary={summary} loading={loading} />
+      {/* Tab Navigation */}
+      <div className="flex border-b border-border">
+        <button
+          onClick={() => setActiveTab('portfolio')}
+          className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'portfolio'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-text-muted hover:text-text'
+          }`}
+        >
+          <PieChart size={18} /> Portafoglio
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-6 py-3 text-sm font-medium transition-colors border-b-2 flex items-center gap-2 ${
+            activeTab === 'history'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-text-muted hover:text-text'
+          }`}
+        >
+          <History size={18} /> Storico Vendite
+        </button>
+      </div>
 
-      {/* Filters and Search */}
+      {activeTab === 'portfolio' ? (
+        <>
+          <InvestmentKPIs summary={summary} loading={loading} />
+
+          {/* Filters and Search */}
       <div className="bg-surface rounded-lg border border-border p-4 flex flex-col md:flex-row gap-4 items-end">
         <div className="flex-1 w-full space-y-1">
           <label className="text-xs font-semibold text-text-muted uppercase">Cerca</label>
@@ -302,44 +354,69 @@ export const InvestimentiPage: FC = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      ) : filteredInvestments.length === 0 ? (
-        <EmptyState
-          title={searchTerm || assetClassFilter !== 'all' || brokerFilter !== 'all' || isPacFilter !== 'all'
-            ? "Nessun investimento trovato"
-            : "Il tuo portafoglio è vuoto"
-          }
-          description={searchTerm || assetClassFilter !== 'all' || brokerFilter !== 'all' || isPacFilter !== 'all'
-            ? "Prova a modificare i filtri o i termini di ricerca."
-            : "Inizia aggiungendo il tuo primo investimento."
-          }
-          action={{
-            label: searchTerm || assetClassFilter !== 'all' || brokerFilter !== 'all' || isPacFilter !== 'all'
-              ? "Pulisci filtri"
-              : "Aggiungi Investimento",
-            onClick: () => {
-              if (searchTerm || assetClassFilter !== 'all' || brokerFilter !== 'all' || isPacFilter !== 'all') {
-                setSearchTerm('')
-                setAssetClassFilter('all')
-                setBrokerFilter('all')
-                setIsPacFilter('all')
-              } else {
-                setIsAddModalOpen(true)
+          {loading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+          ) : filteredInvestments.length === 0 ? (
+            <EmptyState
+              title={searchTerm || assetClassFilter !== 'all' || brokerFilter !== 'all' || isPacFilter !== 'all'
+                ? "Nessun investimento trovato"
+                : "Il tuo portafoglio è vuoto"
               }
-            }
-          }}
-        />
+              description={searchTerm || assetClassFilter !== 'all' || brokerFilter !== 'all' || isPacFilter !== 'all'
+                ? "Prova a modificare i filtri o i termini di ricerca."
+                : "Inizia aggiungendo il tuo primo investimento."
+              }
+              action={{
+                label: searchTerm || assetClassFilter !== 'all' || brokerFilter !== 'all' || isPacFilter !== 'all'
+                  ? "Pulisci filtri"
+                  : "Aggiungi Investimento",
+                onClick: () => {
+                  if (searchTerm || assetClassFilter !== 'all' || brokerFilter !== 'all' || isPacFilter !== 'all') {
+                    setSearchTerm('')
+                    setAssetClassFilter('all')
+                    setBrokerFilter('all')
+                    setIsPacFilter('all')
+                  } else {
+                    setIsAddModalOpen(true)
+                  }
+                }
+              }}
+            />
+          ) : (
+            <InvestmentTable
+              investments={filteredInvestments}
+              onRowClick={openDetail}
+              onUpdatePrice={handleUpdatePrice}
+              updatingId={updatingId}
+            />
+          )}
+        </>
       ) : (
-        <InvestmentTable
-          investments={filteredInvestments}
-          onRowClick={openDetail}
-          onUpdatePrice={handleUpdatePrice}
-          updatingId={updatingId}
-        />
+        <div className="space-y-6">
+          <TaxSummaryCard
+            summary={taxSummary}
+            wallet={taxWallet}
+            year={new Date().getFullYear()}
+          />
+
+          <div className="bg-surface rounded-xl border border-border overflow-hidden">
+            <div className="p-4 border-b border-border bg-bg/50">
+              <h3 className="font-bold text-text">Registro Vendite Realizzate</h3>
+            </div>
+            {loadingSales ? (
+              <div className="p-8 space-y-4">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ) : (
+              <SaleHistoryTable sales={sales} />
+            )}
+          </div>
+        </div>
       )}
 
       {/* Modals */}
@@ -378,7 +455,7 @@ export const InvestimentiPage: FC = () => {
         isOpen={isSellModalOpen}
         onClose={() => setIsSellModalOpen(false)}
         investment={selectedInvestment}
-        onConfirm={handleSellConfirm}
+        onSuccess={handleSellSuccess}
       />
     </div>
   )

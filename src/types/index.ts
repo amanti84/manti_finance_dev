@@ -102,6 +102,10 @@ export type ScenarioType =
   | 'INVESTIMENTO_ETF'
   | 'AUMENTO_PAC'
   | 'VARIAZIONE_RAL'
+  | 'ANTICIPO_MUTUO'
+  | 'VARIAZIONE_PAC'
+  | 'RIBILANCIAMENTO'
+  | 'PENSIONE_ANTICIPATA'
 
 export interface ScenarioInput {
   type: ScenarioType
@@ -247,6 +251,47 @@ export interface Investment extends BaseDocument {
   lastUpdateAttempt?: Timestamp | null
   yahooSymbol?: string
   priceSource?: string
+}
+
+export interface SaleResult {
+  grossGain: number           // plusvalenza lorda
+  taxableGain: number         // dopo compensazione minus pregresse
+  taxAmount: number           // 26% di taxableGain (se positivo)
+  netProceeds: number         // incasso netto dopo tasse
+  isLoss: boolean
+}
+
+export interface SaleRecord extends BaseDocument {
+  investmentId: string
+  investmentName: string
+  sellPrice: number
+  sellQuantity: number
+  saleDate: Timestamp
+  grossGain: number
+  taxableGain: number
+  taxAmount: number
+  netProceeds: number
+  isLoss: boolean
+  broker: Broker
+}
+
+export interface TaxSummary {
+  year: number
+  totalGrossGain: number
+  totalTaxableGain: number
+  totalTaxPaid: number
+  totalLossesRealized: number
+}
+
+export interface TaxLoss {
+  amount: number
+  year: number
+  expiryYear: number
+}
+
+export interface TaxWallet extends BaseDocument {
+  totalAvailableLosses: number
+  lossItems: TaxLoss[]
 }
 
 export interface PacPayment extends BaseDocument {
@@ -423,6 +468,13 @@ export interface MutuoConfig {
   isMutuoVariabile: boolean
   banca?: string
   notes?: string
+}
+
+export interface OverpaymentSimulation {
+  rateRisparmiate: number
+  interessiRisparmiati: number
+  nuovaScadenza: Timestamp | Date
+  risparmioTotale: number
 }
 
 // --------------------------------------------------------
@@ -692,6 +744,7 @@ export type AuditEntityType =
   | 'scenario' | 'monthlyClose'
   | 'kindergartenExpense' | 'kindergartenConfig'
   | 'monthlyAllocation'
+  | 'sale' | 'taxWallet'
 
 export interface AuditLogEntry extends BaseDocument {
   action: AuditAction
@@ -790,4 +843,12 @@ export interface PrevidenzaConfig extends BaseDocument {
   pensionFundEmployerContributionPct?: number
   expectedReturnPct?: number
   retirementAgeTarget?: number
+}
+
+export interface PrevidenzaBaseline extends BaseDocument {
+  tfrAccumulato: number
+  montanteFondoPensione: number
+  anniContributiINPS: number
+  annoInizioLavoro: number
+  retribuzioneAnnuaLorda?: number
 }
