@@ -24,6 +24,7 @@ import {
   Sun,
   Moon,
   LogOut,
+  Plus,
   User as UserIcon
 } from 'lucide-react'
 import { auth } from '../firebase'
@@ -34,6 +35,9 @@ import { listInboxItems, calculateBadgeCount } from '../services/inbox'
 import { InboxBadge } from '../modules/inbox'
 import type { InboxBadgeCount } from '../types'
 import { Logo } from './Logo'
+import { OfflineBanner } from './OfflineBanner'
+import { BottomSheet } from './ui/BottomSheet'
+import { Button } from './ui/Button'
 
 interface NavItem {
   label: string
@@ -169,6 +173,7 @@ const NavContent: FC<NavContentProps> = ({
 export const Layout: FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [alertCount, setAlertCount] = useState(0)
@@ -226,7 +231,9 @@ export const Layout: FC = () => {
   const isAdmin = user?.email === 'ant.manti@gmail.com'
 
   return (
-    <div className="flex h-screen bg-bg text-text">
+    <div className="flex flex-col h-screen bg-bg text-text">
+      <OfflineBanner />
+      <div className="flex flex-1 overflow-hidden">
       {/* Sidebar - Desktop */}
       <aside
         className={`
@@ -333,12 +340,113 @@ export const Layout: FC = () => {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-bg p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto bg-bg p-4 md:p-8 pb-20 md:pb-8">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
         </main>
+
+        {/* Bottom Navigation (Mobile Only) */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface border-t border-border flex items-center justify-around px-2 z-[40] pb-[env(safe-area-inset-bottom)] box-content">
+          <NavLink
+            to="/"
+            className={({ isActive }) => `
+              flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-lg transition-colors
+              ${isActive ? 'text-primary' : 'text-text-muted hover:text-text'}
+            `}
+          >
+            <LayoutDashboard size={24} />
+            <span className="text-[10px] font-medium">Dashboard</span>
+          </NavLink>
+
+          <NavLink
+            to="/investimenti"
+            className={({ isActive }) => `
+              flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-lg transition-colors
+              ${isActive ? 'text-primary' : 'text-text-muted hover:text-text'}
+            `}
+          >
+            <TrendingUp size={24} />
+            <span className="text-[10px] font-medium">Investimenti</span>
+          </NavLink>
+
+          <button
+            onClick={() => setIsBottomSheetOpen(true)}
+            className="flex items-center justify-center w-14 h-14 bg-primary text-white rounded-full shadow-lg shadow-primary/30 -mt-8"
+          >
+            <Plus size={28} />
+          </button>
+
+          <NavLink
+            to="/documenti"
+            className={({ isActive }) => `
+              flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-lg transition-colors
+              ${isActive ? 'text-primary' : 'text-text-muted hover:text-text'}
+            `}
+          >
+            <FileText size={24} />
+            <span className="text-[10px] font-medium">Documenti</span>
+          </NavLink>
+
+          <NavLink
+            to="/alerts"
+            className={({ isActive }) => `
+              flex flex-col items-center justify-center gap-1 w-14 h-14 rounded-lg transition-colors relative
+              ${isActive ? 'text-primary' : 'text-text-muted hover:text-text'}
+            `}
+          >
+            <Bell size={24} />
+            {alertCount > 0 && (
+              <span className="absolute top-1 right-1 bg-error text-white text-[10px] font-bold px-1 rounded-full min-w-[16px] text-center">
+                {alertCount}
+              </span>
+            )}
+            <span className="text-[10px] font-medium">Alert</span>
+          </NavLink>
+        </nav>
       </div>
+
+      <BottomSheet
+        isOpen={isBottomSheetOpen}
+        onClose={() => setIsBottomSheetOpen(false)}
+        title="Azioni Rapide"
+      >
+        <div className="grid grid-cols-1 gap-4">
+          <Button
+            variant="secondary"
+            className="justify-start gap-4 h-14 px-4 text-lg"
+            onClick={() => {
+              setIsBottomSheetOpen(false)
+              navigate('/documenti')
+            }}
+          >
+            <FileText size={24} className="text-primary" />
+            Carica documento
+          </Button>
+          <Button
+            variant="secondary"
+            className="justify-start gap-4 h-14 px-4 text-lg"
+            onClick={() => {
+              setIsBottomSheetOpen(false)
+              navigate('/investimenti')
+            }}
+          >
+            <TrendingUp size={24} className="text-primary" />
+            Aggiungi investimento
+          </Button>
+          <Button
+            variant="secondary"
+            className="justify-start gap-4 h-14 px-4 text-lg"
+            onClick={() => {
+              setIsBottomSheetOpen(false)
+              navigate('/monthly-close')
+            }}
+          >
+            <Archive size={24} className="text-primary" />
+            Registra snapshot
+          </Button>
+        </div>
+      </BottomSheet>
 
       {/* Mobile Sidebar Overlay */}
       {isMobileMenuOpen && (
@@ -367,6 +475,8 @@ export const Layout: FC = () => {
           </aside>
         </div>
       )}
+
+      </div>
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
