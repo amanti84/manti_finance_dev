@@ -72,7 +72,7 @@ describe('InvestimentiPage', () => {
     expect(screen.getByText('Valore Portafoglio')).toBeDefined()
     // Using a more flexible text matcher for values
     expect(screen.getAllByText((content) => content.includes('4500,00'))).toBeDefined()
-    expect(screen.getByText('Vanguard S&P 500')).toBeDefined()
+    expect(screen.getAllByText('Vanguard S&P 500')).toBeDefined()
     expect(screen.getAllByText('fineco')).toBeDefined()
   })
 
@@ -106,8 +106,8 @@ describe('InvestimentiPage', () => {
   it('should open detail modal when clicking table row', () => {
     render(<InvestimentiPage />)
 
-    const row = screen.getByText('Vanguard S&P 500')
-    fireEvent.click(row)
+    const rows = screen.getAllByText('Vanguard S&P 500')
+    fireEvent.click(rows[0])
 
     expect(screen.getByRole('heading', { name: /Dettaglio Investimento/i })).toBeDefined()
     expect(screen.getAllByText((content) => content.includes('450,00'))).toBeDefined()

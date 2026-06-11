@@ -61,7 +61,8 @@ describe('Layout Component', () => {
     renderLayout()
     expect(screen.getByText('Manti')).toBeTruthy()
     expect(screen.getByText('Finance')).toBeTruthy()
-    expect(screen.getByRole('link', { name: /dashboard/i })).toBeTruthy()
+    // Find at least one dashboard link (could be sidebar or bottom nav)
+    expect(screen.getAllByRole('link', { name: /dashboard/i }).length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { name: /overview/i })).toBeTruthy()
   })
 
