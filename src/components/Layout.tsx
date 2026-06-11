@@ -24,7 +24,6 @@ import {
   Sun,
   Moon,
   LogOut,
-  BarChart3,
   User as UserIcon
 } from 'lucide-react'
 import { auth } from '../firebase'
@@ -53,7 +52,6 @@ const NAV_GROUPS: NavGroup[] = [
     title: 'Overview',
     items: [
       { label: 'Dashboard', to: '/', icon: LayoutDashboard },
-      { label: 'Patrimonio Netto', to: '/net-worth', icon: BarChart3 },
       { label: 'Alert', to: '/alerts', icon: Bell },
       { label: 'Inbox', to: '/inbox', icon: Inbox },
     ],
