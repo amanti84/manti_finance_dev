@@ -47,7 +47,7 @@ export async function getTaxWallet(uid: string): Promise<ApiResult<TaxWallet>> {
           lossItems: [],
           createdAt: Timestamp.now(),
           updatedAt: Timestamp.now()
-        } as TaxWallet
+        }
       }
     }
     return { success: true, data: { id: snap.id, ...snap.data() } as TaxWallet }
@@ -228,12 +228,15 @@ export async function recordSale(
     }
 
     // 5. Audit
+    const auditValue: Record<string, unknown> = {}
+    Object.entries(saleRecord).forEach(([k, v]) => { auditValue[k] = v })
+
     await logAudit({
       uid,
       action: 'create',
       entityType: 'sale',
       entityId: saleRef.id,
-      newValue: saleRecord as unknown as Record<string, unknown>
+      newValue: auditValue
     })
 
     return { success: true, data: undefined }

@@ -11,8 +11,8 @@ import type { Investment, SaleRecord } from '../types'
 // Mock Firebase
 vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(),
-  collection: vi.fn((_db, path) => ({ path })),
-  doc: vi.fn((_db, path, id) => ({ path: id ? `${path}/${id}` : path })),
+  collection: vi.fn((_db: unknown, path: string) => ({ path })),
+  doc: vi.fn((_db: unknown, path: string, id?: string) => ({ path: id ? `${path}/${id}` : path })),
   addDoc: vi.fn(),
   getDoc: vi.fn(),
   getDocs: vi.fn(),
@@ -51,9 +51,9 @@ describe('Sales Service', () => {
     currentValue: 2000,
     currency: 'EUR',
     isPac: false,
-    lastPriceUpdate: { seconds: 1623321600, nanoseconds: 0 } as any,
-    createdAt: { seconds: 1623321600, nanoseconds: 0 } as any,
-    updatedAt: { seconds: 1623321600, nanoseconds: 0 } as any,
+    lastPriceUpdate: { seconds: 1623321600, nanoseconds: 0 } as unknown as firestore.Timestamp,
+    createdAt: { seconds: 1623321600, nanoseconds: 0 } as unknown as firestore.Timestamp,
+    updatedAt: { seconds: 1623321600, nanoseconds: 0 } as unknown as firestore.Timestamp,
   }
 
   beforeEach(() => {
@@ -63,9 +63,9 @@ describe('Sales Service', () => {
   describe('calculateSale', () => {
     it('calcola correttamente plusvalenza senza minusvalenze', async () => {
       // Mock wallet vuoto
-      ;(firestore.getDoc as any).mockResolvedValue({
+      vi.mocked(firestore.getDoc).mockResolvedValue({
         exists: () => false
-      })
+      } as unknown as firestore.DocumentSnapshot<unknown, firestore.DocumentData>)
 
       const res = await calculateSale(mockInvestment, 200, 5, uid)
 
@@ -81,14 +81,14 @@ describe('Sales Service', () => {
 
     it('calcola correttamente plusvalenza con compensazione minusvalenze', async () => {
       // Mock wallet con 100€ di minus
-      ;(firestore.getDoc as any).mockResolvedValue({
+      vi.mocked(firestore.getDoc).mockResolvedValue({
         exists: () => true,
         id: 'taxWallet',
         data: () => ({
           totalAvailableLosses: 100,
           lossItems: [{ amount: 100, year: 2024, expiryYear: 2028 }]
         })
-      })
+      } as unknown as firestore.DocumentSnapshot<unknown, firestore.DocumentData>)
 
       const res = await calculateSale(mockInvestment, 200, 5, uid)
 
@@ -117,11 +117,11 @@ describe('Sales Service', () => {
   describe('recordSale', () => {
     it('registra correttamente una vendita in profitto e consuma minusvalenze', async () => {
       // Mock investimento
-      ;(firestore.getDoc as any).mockResolvedValueOnce({
+      vi.mocked(firestore.getDoc).mockResolvedValueOnce({
         exists: () => true,
         id: 'inv-1',
         data: () => mockInvestment
-      })
+      } as unknown as firestore.DocumentSnapshot<unknown, firestore.DocumentData>)
       // Mock wallet
       .mockResolvedValueOnce({
         exists: () => true,
@@ -130,9 +130,9 @@ describe('Sales Service', () => {
           totalAvailableLosses: 100,
           lossItems: [{ amount: 100, year: 2024, expiryYear: 2028 }]
         })
-      })
+      } as unknown as firestore.DocumentSnapshot<unknown, firestore.DocumentData>)
 
-      ;(firestore.addDoc as any).mockResolvedValue({ id: 'sale-1' })
+      vi.mocked(firestore.addDoc).mockResolvedValue({ id: 'sale-1' } as unknown as firestore.DocumentReference<unknown, firestore.DocumentData>)
 
       const res = await recordSale(uid, 'inv-1', 200, 5, new Date(2025, 5, 10))
 
@@ -148,16 +148,16 @@ describe('Sales Service', () => {
     })
 
     it('registra una vendita in perdita e aggiorna lo zainetto fiscale', async () => {
-        ;(firestore.getDoc as any).mockResolvedValueOnce({
+        vi.mocked(firestore.getDoc).mockResolvedValueOnce({
           exists: () => true,
           id: 'inv-1',
           data: () => mockInvestment
-        })
+        } as unknown as firestore.DocumentSnapshot<unknown, firestore.DocumentData>)
         .mockResolvedValueOnce({
           exists: () => false
-        })
+        } as unknown as firestore.DocumentSnapshot<unknown, firestore.DocumentData>)
 
-        ;(firestore.addDoc as any).mockResolvedValue({ id: 'sale-2' })
+        vi.mocked(firestore.addDoc).mockResolvedValue({ id: 'sale-2' } as unknown as firestore.DocumentReference<unknown, firestore.DocumentData>)
 
         const res = await recordSale(uid, 'inv-1', 100, 5, new Date(2025, 5, 10))
 
@@ -168,11 +168,11 @@ describe('Sales Service', () => {
       })
 
     it('ritorna errore se quantità insufficiente', async () => {
-        ;(firestore.getDoc as any).mockResolvedValue({
+        vi.mocked(firestore.getDoc).mockResolvedValue({
           exists: () => true,
           id: 'inv-1',
           data: () => mockInvestment
-        })
+        } as unknown as firestore.DocumentSnapshot<unknown, firestore.DocumentData>)
 
         const res = await recordSale(uid, 'inv-1', 200, 20, new Date())
         expect(res.success).toBe(false)
@@ -187,9 +187,9 @@ describe('Sales Service', () => {
         { grossGain: -100, taxableGain: 0, taxAmount: 0, isLoss: true }
       ]
 
-      ;(firestore.getDocs as any).mockResolvedValue({
+      vi.mocked(firestore.getDocs).mockResolvedValue({
         docs: mockSales.map(s => ({ data: () => s }))
-      })
+      } as unknown as firestore.QuerySnapshot<unknown, firestore.DocumentData>)
 
       const res = await getAnnualTaxSummary(uid, 2025)
       expect(res.success).toBe(true)
