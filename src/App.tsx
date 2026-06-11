@@ -7,7 +7,7 @@ import { LoginPage } from './pages/LoginPage'
 import { UnauthorizedPage } from './pages/UnauthorizedPage'
 import { PayrollPage } from './modules/payroll'
 import { PacPage } from './modules/pac'
-import { CashFlowPage } from './modules/cashflow'
+import { FinancialOverviewPage } from './modules/financialOverview'
 import { MonthlyClosePage } from './modules/monthlyClose'
 import { MutuoPage } from './modules/mutuo'
 import { InvestimentiPage } from './modules/investimenti'
@@ -44,7 +44,8 @@ function App(): React.ReactElement {
             <Route path="/payroll" element={<PayrollPage />} />
             <Route path="/investimenti" element={<InvestimentiPage />} />
             <Route path="/investimenti/pac" element={user ? <PacPage uid={user.uid} /> : null} />
-            <Route path="/cashflow" element={user ? <CashFlowPage uid={user.uid} /> : null} />
+            <Route path="/cashflow" element={user ? <FinancialOverviewPage uid={user.uid} /> : null} />
+            <Route path="/overview" element={user ? <FinancialOverviewPage uid={user.uid} /> : null} />
             <Route path="/monthly-close" element={user ? <MonthlyClosePage uid={user.uid} /> : null} />
             <Route path="/mutuo" element={<MutuoPage />} />
             <Route path="/monthly-allocation" element={<MonthlyAllocationPage />} />

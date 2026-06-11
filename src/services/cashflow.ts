@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { logAudit } from './audit'
+import { getFixedExpenses } from './financialOverview'
 import type { Account, RecurringExpense, ApiResult } from '../types'
 
 const ACCOUNTS_COLLECTION = (uid: string) => `users/${uid}/accounts`
@@ -91,6 +92,7 @@ export async function saveAccount(
 
 /**
  * Recupera tutte le spese ricorrenti dell'utente.
+ * @deprecated Use getFixedExpenses from financialOverview service
  */
 export async function getRecurringExpenses(uid: string): Promise<ApiResult<RecurringExpense[]>> {
   try {
@@ -106,6 +108,7 @@ export async function getRecurringExpenses(uid: string): Promise<ApiResult<Recur
 
 /**
  * Salva una spesa ricorrente (creazione o aggiornamento).
+ * @deprecated Use saveFixedExpense from financialOverview service
  */
 export async function saveRecurringExpense(
   uid: string,
@@ -158,7 +161,8 @@ export async function saveRecurringExpense(
 
 /**
  * Calcola il saldo disponibile totale.
- * Somma dei saldi dei conti - spese ricorrenti mensilizzate.
+ * Somma dei saldi dei conti - uscite fisse mensilizzate.
+ * Nota: Migrato per usare FixedExpense dal nuovo servizio financialOverview.
  */
 export async function getAvailableBalance(uid: string): Promise<ApiResult<{
   totalBalance: number;
@@ -169,7 +173,7 @@ export async function getAvailableBalance(uid: string): Promise<ApiResult<{
     const accountsResult = await getAccounts(uid)
     if (!accountsResult.success) return accountsResult
 
-    const expensesResult = await getRecurringExpenses(uid)
+    const expensesResult = await getFixedExpenses(uid)
     if (!expensesResult.success) return expensesResult
 
     const totalBalance = accountsResult.data.reduce((sum, acc) => sum + acc.currentBalance, 0)
@@ -179,9 +183,6 @@ export async function getAvailableBalance(uid: string): Promise<ApiResult<{
       switch (exp.frequency) {
         case 'monthly':
           monthlyAmount = exp.amount
-          break
-        case 'quarterly':
-          monthlyAmount = exp.amount / 3
           break
         case 'annual':
           monthlyAmount = exp.amount / 12
