@@ -26,7 +26,8 @@ export const FinancialTrendChart: FC<FinancialTrendChartProps> = ({ data }) => {
     'Dati Incompleti': !d.dataComplete
   }))
 
-  const formatTooltipValue = (value: any) => formatCurrency(value as number)
+  const formatTooltipValue = (value: number | string | readonly (number | string)[] | undefined) =>
+    formatCurrency(typeof value === 'number' ? value : 0)
 
   return (
     <div className="h-[400px] w-full">

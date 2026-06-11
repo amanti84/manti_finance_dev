@@ -57,7 +57,7 @@ export async function saveFixedExpense(
     const isUpdate = !!data.id
     const colRef = collection(db, FIXED_EXPENSES_COLLECTION(uid))
 
-    let docId = data.id || ''
+    let docId = data.id ?? ''
     const payload = {
       ...data,
       updatedAt: serverTimestamp(),
@@ -79,7 +79,7 @@ export async function saveFixedExpense(
       action: isUpdate ? 'update' : 'create',
       entityType: 'fixedExpense',
       entityId: docId,
-      newValue: data as unknown as Record<string, unknown>,
+      newValue: data,
     })
 
     return { success: true, data: docId }
@@ -130,12 +130,12 @@ export async function getMonthlyOverview(
 
     const totalPac = investments
       .filter(i => i.isPac)
-      .reduce((sum, i) => sum + (i.pacMonthlyAmount || 0), 0)
+      .reduce((sum, i) => sum + (i.pacMonthlyAmount ?? 0), 0)
 
     // Previdenza dal cedolino (se presente) o da stima?
     // L'issue dice "Contributi mensili fondo pensione (calcolati automaticamente dai dati già presenti)"
     // Usiamo il dato dal cedolino se disponibile.
-    const previdenza = payslip ? (payslip.fondoPensione || 0) : 0
+    const previdenza = payslip ? (payslip.fondoPensione ?? 0) : 0
 
     // 4. Uscite Manuali
     const manualExpensesRes = await getFixedExpenses(uid)
@@ -201,7 +201,7 @@ export async function getAnnualStats(uid: string, year: number): Promise<ApiResu
     const endOfYear = Timestamp.fromDate(new Date(year, 11, 31, 23, 59, 59))
     const qPac = query(pacPaymentsCol, where('data', '>=', startOfYear), where('data', '<=', endOfYear))
     const snapPac = await getDocs(qPac)
-    const totalPacInvested = snapPac.docs.reduce((sum, d) => sum + (d.data().importo || 0), 0)
+    const totalPacInvested = snapPac.docs.reduce((sum, d) => sum + ((d.data().importo as number) ?? 0), 0)
 
     // Per investimenti diretti: quelli creati quest'anno (che non sono PAC)
     const directInvestments = investments.filter(i => {

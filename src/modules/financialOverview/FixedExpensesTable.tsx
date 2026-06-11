@@ -92,7 +92,7 @@ export const FixedExpensesTable: FC<FixedExpensesTableProps> = ({
                   </td>
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => void onDelete(exp.id)}
+                      onClick={() => { void (async () => { await onDelete(exp.id) })() }}
                       className="text-text-muted hover:text-error transition-colors p-1 opacity-0 group-hover:opacity-100"
                       disabled={loading}
                     >
@@ -121,7 +121,7 @@ export const FixedExpensesTable: FC<FixedExpensesTableProps> = ({
         title="Nuova Uscita Ricorrente"
         maxWidth="sm"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
           <div className="space-y-1">
             <label className="text-xs font-semibold text-text-muted uppercase">Etichetta</label>
             <Input

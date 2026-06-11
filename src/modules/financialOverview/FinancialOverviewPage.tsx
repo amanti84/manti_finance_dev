@@ -126,7 +126,7 @@ export const FinancialOverviewPage: FC<Props> = ({ uid }) => {
           <div className="mt-2">
             {loading ? <Skeleton className="h-8 w-24" /> : (
               <div className="text-2xl font-bold text-text">
-                {formatCurrency(currentOverview?.netIncome || 0)}
+                {formatCurrency(currentOverview?.netIncome ?? 0)}
               </div>
             )}
             <p className="text-xs text-text-muted mt-1">Cedolino netto del mese</p>
@@ -141,12 +141,12 @@ export const FinancialOverviewPage: FC<Props> = ({ uid }) => {
           <div className="mt-2">
             {loading ? <Skeleton className="h-8 w-24" /> : (
               <div className="text-2xl font-bold text-text">
-                {formatCurrency((currentOverview?.fixedExpensesAuto || 0) + (currentOverview?.fixedExpensesManual || 0))}
+                {formatCurrency((currentOverview?.fixedExpensesAuto ?? 0) + (currentOverview?.fixedExpensesManual ?? 0))}
               </div>
             )}
             <div className="flex gap-2 mt-1">
-              <Badge variant="info" className="text-[9px]">AUTO: {formatCurrency(currentOverview?.fixedExpensesAuto || 0)}</Badge>
-              <Badge variant="info" className="text-[9px]">MAN: {formatCurrency(currentOverview?.fixedExpensesManual || 0)}</Badge>
+              <Badge variant="info" className="text-[9px]">AUTO: {formatCurrency(currentOverview?.fixedExpensesAuto ?? 0)}</Badge>
+              <Badge variant="info" className="text-[9px]">MAN: {formatCurrency(currentOverview?.fixedExpensesManual ?? 0)}</Badge>
             </div>
           </div>
         </Card>
@@ -158,8 +158,8 @@ export const FinancialOverviewPage: FC<Props> = ({ uid }) => {
           </div>
           <div className="mt-2">
             {loading ? <Skeleton className="h-8 w-24" /> : (
-              <div className={`text-2xl font-bold ${(currentOverview?.estimatedSurplus || 0) >= 0 ? 'text-success' : 'text-error'}`}>
-                {formatCurrency(currentOverview?.estimatedSurplus || 0)}
+              <div className={`text-2xl font-bold ${(currentOverview?.estimatedSurplus ?? 0) >= 0 ? 'text-success' : 'text-error'}`}>
+                {formatCurrency(currentOverview?.estimatedSurplus ?? 0)}
               </div>
             )}
             <p className="text-xs text-text-muted mt-1">Liquidità post-spese fisse</p>
@@ -213,12 +213,12 @@ export const FinancialOverviewPage: FC<Props> = ({ uid }) => {
               <div>
                 <div className="flex justify-between text-xs text-text-muted uppercase font-semibold mb-1">
                   <span>Totale Investito</span>
-                  <span className="text-text">{formatCurrency(annualStats?.totalInvested || 0)}</span>
+                  <span className="text-text">{formatCurrency(annualStats?.totalInvested ?? 0)}</span>
                 </div>
                 <div className="h-2 bg-bg rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary"
-                    style={{ width: `${Math.min(100, ((annualStats?.totalInvested || 0) / (annualStats?.projectedYearEndSurplus || 1)) * 100)}%` }}
+                    style={{ width: `${Math.min(100, ((annualStats?.totalInvested ?? 0) / (annualStats?.projectedYearEndSurplus ?? 1)) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -226,14 +226,14 @@ export const FinancialOverviewPage: FC<Props> = ({ uid }) => {
               <div>
                 <div className="flex justify-between text-xs text-text-muted uppercase font-semibold mb-1">
                   <span>Surplus Mensile Medio</span>
-                  <span className="text-text">{formatCurrency(annualStats?.avgMonthlySurplus || 0)}</span>
+                  <span className="text-text">{formatCurrency(annualStats?.avgMonthlySurplus ?? 0)}</span>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-border">
                 <p className="text-xs text-text-muted uppercase font-semibold mb-2">Proiezione fine anno</p>
                 <div className="text-3xl font-bold text-primary">
-                  {formatCurrency(annualStats?.projectedYearEndSurplus || 0)}
+                  {formatCurrency(annualStats?.projectedYearEndSurplus ?? 0)}
                 </div>
                 <p className="text-[10px] text-text-muted mt-1 italic">
                   * Basata su surplus medio e mesi rimanenti.

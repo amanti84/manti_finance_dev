@@ -67,13 +67,13 @@ describe('Financial Overview Service', () => {
       // Mock Cedolino
       vi.mocked(payrollService.getPayslipByMonth).mockResolvedValue({
         success: true,
-        data: { netSalary: 2500, fondoPensione: 100 } as any
+        data: { netSalary: 2500, fondoPensione: 100 } as unknown as never
       })
 
       // Mock Mutuo
       vi.mocked(mutuoService.getMutuoConfig).mockResolvedValue({
         success: true,
-        data: { rataMensile: 800 } as any
+        data: { rataMensile: 800 } as unknown as never
       })
 
       // Mock Investimenti (PAC)
@@ -82,7 +82,7 @@ describe('Financial Overview Service', () => {
         data: [
           { isPac: true, pacMonthlyAmount: 200 },
           { isPac: false, currentValue: 5000 }
-        ] as any
+        ] as unknown as never
       })
 
       // Mock Uscite Manuali
@@ -90,7 +90,7 @@ describe('Financial Overview Service', () => {
         docs: [
           { id: 'exp-1', data: () => ({ label: 'Affitto', amount: 500, frequency: 'monthly' }) }
         ]
-      } as any)
+      } as unknown as never)
 
       const res = await getMonthlyOverview(uid, 2026, 6)
 
@@ -109,9 +109,9 @@ describe('Financial Overview Service', () => {
         success: false,
         error: 'Not found'
       })
-      vi.mocked(mutuoService.getMutuoConfig).mockResolvedValue({ success: true, data: { rataMensile: 800 } as any })
+      vi.mocked(mutuoService.getMutuoConfig).mockResolvedValue({ success: true, data: { rataMensile: 800 } as unknown as never })
       vi.mocked(investmentService.getAllInvestments).mockResolvedValue({ success: true, data: [] })
-      vi.mocked(firestore.getDocs).mockResolvedValue({ docs: [] } as any)
+      vi.mocked(firestore.getDocs).mockResolvedValue({ docs: [] } as unknown as never)
 
       const res = await getMonthlyOverview(uid, 2026, 6)
 
@@ -130,7 +130,7 @@ describe('Financial Overview Service', () => {
         docs: [
           { id: '1', data: () => ({ label: 'Internet', amount: 30, frequency: 'monthly' }) }
         ]
-      } as any)
+      } as unknown as never)
 
       const res = await getFixedExpenses(uid)
       expect(res.success).toBe(true)
@@ -141,7 +141,7 @@ describe('Financial Overview Service', () => {
     })
 
     it('crea una nuova spesa fissa', async () => {
-      vi.mocked(firestore.addDoc).mockResolvedValue({ id: 'new-id' } as any)
+      vi.mocked(firestore.addDoc).mockResolvedValue({ id: 'new-id' } as unknown as never)
 
       const res = await saveFixedExpense(uid, {
         label: 'Netflix',
@@ -172,15 +172,15 @@ describe('Financial Overview Service', () => {
       // Mock payroll
       vi.mocked(payrollService.getPayslipsByYear).mockResolvedValue({
         success: true,
-        data: [{ id: 'p1' }] as any
+        data: [{ id: 'p1' }] as unknown as never
       })
       vi.mocked(payrollService.getPayslipByMonth).mockResolvedValue({
         success: true,
-        data: { netSalary: 2000, fondoPensione: 0 } as any
+        data: { netSalary: 2000, fondoPensione: 0 } as unknown as never
       })
 
       // Mock Mutuo
-      vi.mocked(mutuoService.getMutuoConfig).mockResolvedValue({ success: true, data: { rataMensile: 500 } as any })
+      vi.mocked(mutuoService.getMutuoConfig).mockResolvedValue({ success: true, data: { rataMensile: 500 } as unknown as never })
 
       // Mock Investimenti
       vi.mocked(investmentService.getAllInvestments).mockResolvedValue({ success: true, data: [] })
@@ -191,8 +191,8 @@ describe('Financial Overview Service', () => {
           { data: () => ({ importo: 100 }) },
           { data: () => ({ importo: 100 }) }
         ]
-      } as any) // PAC payments
-      .mockResolvedValue({ docs: [] } as any) // manual expenses
+      } as unknown as never) // PAC payments
+      .mockResolvedValue({ docs: [] } as unknown as never) // manual expenses
 
       const res = await getAnnualStats(uid, 2026)
       expect(res.success).toBe(true)
@@ -206,11 +206,11 @@ describe('Financial Overview Service', () => {
        // Mock basics for getMonthlyOverview
        vi.mocked(payrollService.getPayslipByMonth).mockResolvedValue({
         success: true,
-        data: { netSalary: 2000, fondoPensione: 0 } as any
+        data: { netSalary: 2000, fondoPensione: 0 } as unknown as never
       })
-      vi.mocked(mutuoService.getMutuoConfig).mockResolvedValue({ success: true, data: { rataMensile: 500 } as any })
+      vi.mocked(mutuoService.getMutuoConfig).mockResolvedValue({ success: true, data: { rataMensile: 500 } as unknown as never })
       vi.mocked(investmentService.getAllInvestments).mockResolvedValue({ success: true, data: [] })
-      vi.mocked(firestore.getDocs).mockResolvedValue({ docs: [] } as any)
+      vi.mocked(firestore.getDocs).mockResolvedValue({ docs: [] } as unknown as never)
 
       const res = await getTrend(uid, 3)
       expect(res.success).toBe(true)
