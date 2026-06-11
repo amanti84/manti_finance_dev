@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
 import type { FC } from 'react'
-import { Settings, LayoutDashboard, Wallet, Landmark } from 'lucide-react'
+import { Settings, LayoutDashboard, Wallet, Landmark, History } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { usePrevidenzaData } from '../../hooks/usePrevidenzaData'
-import { savePrevidenzaConfig } from '../../services/previdenza'
+import { savePrevidenzaConfig, savePrevidenzaBaseline } from '../../services/previdenza'
 import { PrevidenzaSummary } from './PrevidenzaSummary'
 import { PrevidenzaCharts } from './PrevidenzaCharts'
 import { PensionFundSection } from './PensionFundSection'
@@ -12,12 +12,13 @@ import { PrevidenzaConfigForm } from './PrevidenzaConfigForm'
 import { PrevidenzaInitForm } from './PrevidenzaInitForm'
 import { Button, EmptyState, Skeleton, Card, CardHeader, CardTitle, CardContent, ErrorCard } from '../../components/ui'
 import { formatCurrency } from '../../utils/format'
-import type { PrevidenzaConfig } from '../../types'
+import type { PrevidenzaConfig, PrevidenzaBaseline } from '../../types'
 
 export const PrevidenzaPage: FC = () => {
   const { user } = useAuth()
   const {
     config,
+    baseline,
     funds,
     contributions,
     tfrHistory,
@@ -29,6 +30,7 @@ export const PrevidenzaPage: FC = () => {
   } = usePrevidenzaData()
 
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false)
+  const [isBaselineModalOpen, setIsBaselineModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'dashboard' | 'fondo' | 'tfr'>('dashboard')
 
   const chartData = useMemo(() => {
@@ -84,6 +86,15 @@ export const PrevidenzaPage: FC = () => {
     }
   }
 
+  const handleBaselineSubmit = async (data: Omit<PrevidenzaBaseline, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (user?.uid) {
+      const res = await savePrevidenzaBaseline(user.uid, data)
+      if (res.success) {
+        await refresh()
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -95,6 +106,27 @@ export const PrevidenzaPage: FC = () => {
           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
         </div>
         <Skeleton className="h-96 w-full" />
+      </div>
+    )
+  }
+
+  if (!baseline) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-text mb-6">Previdenza</h1>
+        <EmptyState
+          title="Dati storici mancanti"
+          description="Per avere proiezioni realistiche, inserisci i dati storici del tuo TFR e del fondo pensione."
+          action={{
+            label: "Inserisci Dati Storici",
+            onClick: () => setIsBaselineModalOpen(true)
+          }}
+        />
+        <PrevidenzaInitForm
+          isOpen={isBaselineModalOpen}
+          onClose={() => setIsBaselineModalOpen(false)}
+          onSubmit={handleBaselineSubmit}
+        />
       </div>
     )
   }
@@ -141,6 +173,9 @@ export const PrevidenzaPage: FC = () => {
           <p className="text-text-muted">Monitora la tua pensione futura e il TFR accumulato.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => setIsBaselineModalOpen(true)} className="gap-2">
+            <History size={18} /> Dati Storici
+          </Button>
           <Button variant="secondary" onClick={() => setIsConfigModalOpen(true)} className="gap-2">
             <Settings size={18} /> Configura
           </Button>
@@ -261,6 +296,13 @@ export const PrevidenzaPage: FC = () => {
         onClose={() => setIsConfigModalOpen(false)}
         onSubmit={handleConfigSubmit}
         initialData={config}
+      />
+
+      <PrevidenzaInitForm
+        isOpen={isBaselineModalOpen}
+        onClose={() => setIsBaselineModalOpen(false)}
+        onSubmit={handleBaselineSubmit}
+        initialData={baseline}
       />
     </div>
   )

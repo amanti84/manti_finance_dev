@@ -72,7 +72,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Uscite & Debiti',
     items: [
-      { label: 'Cash Flow', to: '/cashflow', icon: Wallet },
+      { label: 'Sintesi Finanziaria', to: '/cashflow', icon: Wallet },
       { label: 'Mutuo', to: '/mutuo', icon: Home },
       { label: 'Kindergarten', to: '/kindergarten', icon: Baby },
     ],

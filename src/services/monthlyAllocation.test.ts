@@ -8,7 +8,7 @@ import {
 import * as payrollService from './payroll'
 import * as mutuoService from './mutuo'
 import * as investmentService from './investment'
-import * as cashflowService from './cashflow'
+import * as financialOverviewService from './financialOverview'
 import { getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import { logAudit } from './audit'
 
@@ -42,7 +42,7 @@ vi.mock('./audit', () => ({
 vi.mock('./payroll')
 vi.mock('./mutuo')
 vi.mock('./investment')
-vi.mock('./cashflow')
+vi.mock('./financialOverview')
 
 describe('monthlyAllocation service', () => {
   const uid = 'test-user-id'
@@ -145,10 +145,10 @@ describe('monthlyAllocation service', () => {
         success: true,
         data: [{ id: 'pac-1', name: 'ETF World', isPac: true, pacMonthlyAmount: 200 }] as unknown as never
       })
-      // Mock Cashflow (Recurring Expenses)
-      vi.mocked(cashflowService.getRecurringExpenses).mockResolvedValueOnce({
+      // Mock Financial Overview (Fixed Expenses)
+      vi.mocked(financialOverviewService.getFixedExpenses).mockResolvedValueOnce({
         success: true,
-        data: [{ id: 'exp-1', name: 'Internet', amount: 30, frequency: 'monthly' }] as unknown as never
+        data: [{ id: 'exp-1', label: 'Internet', amount: 30, frequency: 'monthly' }] as unknown as never
       })
 
       // Mock createOrUpdateAllocation internal behavior

@@ -15,7 +15,7 @@ import { logAudit } from './audit'
 import { getPayslipByMonth } from './payroll'
 import { getMutuoConfig } from './mutuo'
 import { getAllInvestments } from './investment'
-import { getRecurringExpenses } from './cashflow'
+import { getFixedExpenses } from './financialOverview'
 import type {
   MonthlyAllocation,
   AllocationItem,
@@ -189,16 +189,15 @@ export async function generateDraftAllocation(
     }
 
     // 4. Spese Ricorrenti
-    const expensesRes = await getRecurringExpenses(uid)
+    const expensesRes = await getFixedExpenses(uid)
     if (expensesRes.success) {
       expensesRes.data.forEach(exp => {
         let monthlyAmount = exp.amount
-        if (exp.frequency === 'quarterly') monthlyAmount = exp.amount / 3
         if (exp.frequency === 'annual') monthlyAmount = exp.amount / 12
 
         allocations.push({
           id: `auto-exp-${exp.id}`,
-          label: exp.name,
+          label: exp.label,
           category: 'fixed_expense',
           amount: Math.round(monthlyAmount * 100) / 100,
           percentage: netIncome > 0 ? (monthlyAmount / netIncome) * 100 : 0,
