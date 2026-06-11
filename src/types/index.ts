@@ -156,6 +156,34 @@ export type Currency = 'EUR' | 'USD' | 'GBP' | 'CHF'
 export type Month = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12
 
 // --------------------------------------------------------
+// FINANCIAL OVERVIEW (Issue #155)
+// --------------------------------------------------------
+
+export interface MonthlyOverview {
+  year: number
+  month: Month
+  netIncome: number
+  fixedExpensesAuto: number   // mutuo + PAC + previdenza
+  fixedExpensesManual: number // voci manuali
+  estimatedSurplus: number
+  dataComplete: boolean       // false se manca il cedolino del mese
+}
+
+export interface AnnualFinancialStats {
+  year: number
+  totalInvested: number
+  savingsRate: number         // 0-1
+  projectedYearEndSurplus: number
+  avgMonthlySurplus: number
+}
+
+export interface FixedExpense extends BaseDocument {
+  label: string
+  amount: number
+  frequency: 'monthly' | 'annual'
+}
+
+// --------------------------------------------------------
 // USER
 // --------------------------------------------------------
 
@@ -745,6 +773,7 @@ export type AuditEntityType =
   | 'kindergartenExpense' | 'kindergartenConfig'
   | 'monthlyAllocation'
   | 'sale' | 'taxWallet'
+  | 'financialOverview' | 'fixedExpense'
 
 export interface AuditLogEntry extends BaseDocument {
   action: AuditAction
