@@ -40,7 +40,7 @@ export const NetWorthPage: FC = () => {
   const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchData = async () => {
+  const fetchData = useMemo(() => async () => {
     if (!user) return
     setLoading(true)
     setError(null)
@@ -52,16 +52,16 @@ export const NetWorthPage: FC = () => {
 
       if (historyRes.success) setHistory(historyRes.data)
       if (latestRes.success) setLatestSnapshot(latestRes.data)
-    } catch (err) {
+    } catch {
       setError('Errore nel caricamento dei dati')
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
 
   useEffect(() => {
     void fetchData()
-  }, [user])
+  }, [fetchData])
 
   const handleUpdateSnapshot = async () => {
     if (!user) return
@@ -73,7 +73,7 @@ export const NetWorthPage: FC = () => {
       } else {
         setError(res.error)
       }
-    } catch (err) {
+    } catch {
       setError('Errore durante l\'aggiornamento dello snapshot')
     } finally {
       setIsUpdating(false)
@@ -139,7 +139,7 @@ export const NetWorthPage: FC = () => {
       <div className="space-y-8 p-6">
         <Skeleton className="h-10 w-48" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)}
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)}
         </div>
         <Skeleton className="h-96 w-full" />
       </div>

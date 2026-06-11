@@ -76,7 +76,7 @@ describe('Net Worth Service', () => {
         data: [
           { id: 'acc1', currentBalance: 1000 },
           { id: 'acc2', currentBalance: 500 }
-        ] as any
+        ] as unknown as never
       })
 
       // Mock Investments
@@ -86,13 +86,13 @@ describe('Net Worth Service', () => {
           { id: 'inv1', assetClass: 'azioni', currentValue: 2000, isPac: false },
           { id: 'inv2', assetClass: 'etf', currentValue: 3000, isPac: true },
           { id: 'inv3', assetClass: 'immobili', currentValue: 200000, isPac: false }
-        ] as any
+        ] as unknown as never
       })
 
       // Mock Mutuo
       vi.mocked(mutuoService.getMutuoConfig).mockResolvedValue({
         success: true,
-        data: { debitoResiduo: 50000 } as any
+        data: { debitoResiduo: 50000 } as unknown as never
       })
 
       // Mock Previdenza
@@ -100,7 +100,7 @@ describe('Net Worth Service', () => {
         success: true,
         data: [
           { id: 'fund1', saldoAttuale: 10000 }
-        ] as any
+        ] as unknown as never
       })
 
       // Mock Latest Snapshot (per variazione)
@@ -112,7 +112,7 @@ describe('Net Worth Service', () => {
             data: () => ({ netWorth: 160000, date: { toDate: () => new Date() } })
           }
         ]
-      } as any)
+      } as unknown as never)
 
       const res = await captureNetWorthSnapshot(uid)
 
@@ -140,7 +140,7 @@ describe('Net Worth Service', () => {
       vi.mocked(investmentService.getAllInvestments).mockResolvedValue({ success: true, data: [] })
       vi.mocked(mutuoService.getMutuoConfig).mockResolvedValue({ success: false, error: 'Not found' })
       vi.mocked(previdenzaService.getAllPensionFunds).mockResolvedValue({ success: true, data: [] })
-      vi.mocked(firestore.getDocs).mockResolvedValue({ empty: true } as any)
+      vi.mocked(firestore.getDocs).mockResolvedValue({ empty: true } as unknown as never)
 
       const res = await captureNetWorthSnapshot(uid)
 
@@ -159,7 +159,7 @@ describe('Net Worth Service', () => {
           { id: '2026-6', data: () => ({ year: 2026, month: 6, netWorth: 1000 }) },
           { id: '2026-5', data: () => ({ year: 2026, month: 5, netWorth: 900 }) }
         ]
-      } as any)
+      } as unknown as never)
 
       const res = await getNetWorthHistory(uid)
 
@@ -180,7 +180,7 @@ describe('Net Worth Service', () => {
         docs: [
           { id: '2026-6', data: () => ({ netWorth: 1000 }) }
         ]
-      } as any)
+      } as unknown as never)
 
       const res = await getLatestNetWorth(uid)
 
@@ -191,7 +191,7 @@ describe('Net Worth Service', () => {
     })
 
     it('restituisce null se non ci sono snapshot', async () => {
-      vi.mocked(firestore.getDocs).mockResolvedValue({ empty: true } as any)
+      vi.mocked(firestore.getDocs).mockResolvedValue({ empty: true } as unknown as never)
       const res = await getLatestNetWorth(uid)
       expect(res.success).toBe(true)
       expect(res.data).toBeNull()
