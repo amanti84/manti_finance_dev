@@ -118,7 +118,7 @@ describe('MutuoPage', () => {
 
     render(<MutuoPage />)
 
-    expect(screen.getByText(/Errore nel caricamento del mutuo: Fetch error/i)).toBeDefined()
+    expect(screen.getByText(/Fetch error/i)).toBeDefined()
   })
 
   it('should open edit modal when clicking edit button', () => {

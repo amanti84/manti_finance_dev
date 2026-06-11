@@ -12,7 +12,7 @@ import { InvestmentDetailModal } from './InvestmentDetailModal'
 import { SellInvestmentModal } from './SellInvestmentModal'
 import { SaleHistoryTable } from './SaleHistoryTable'
 import { TaxSummaryCard } from './TaxSummaryCard'
-import { Button, Input, EmptyState, Skeleton } from '../../components/ui'
+import { Button, Input, EmptyState, Skeleton, ErrorCard } from '../../components/ui'
 import type { Investment, AssetClass, Broker, SaleRecord, TaxSummary, TaxWallet } from '../../types'
 
 type TabId = 'portfolio' | 'history'
@@ -183,9 +183,10 @@ export const InvestimentiPage: FC = () => {
 
   if (error) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-error font-medium">Errore nel caricamento investimenti: {error}</p>
-        <Button className="mt-4" onClick={() => window.location.reload()}>Riprova</Button>
+      <div className="p-8 flex justify-center">
+        <div className="max-w-md w-full">
+          <ErrorCard message={error} onRetry={() => { void refresh(); }} />
+        </div>
       </div>
     )
   }

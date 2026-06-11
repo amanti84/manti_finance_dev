@@ -12,6 +12,7 @@ import {
   getPortfolioSummary,
   type PortfolioSummary
 } from '../services/investment'
+import { withRetry } from '../utils/withRetry'
 import type { Investment, ApiResult } from '../types'
 
 export interface UseInvestmentsReturn {
@@ -39,9 +40,9 @@ export function useInvestments(): UseInvestmentsReturn {
     }
 
     setLoading(true)
-    const result = await getAllInvestments(user.uid)
+    const result = await withRetry(() => getAllInvestments(user.uid))
     if (result.success) {
-      setInvestments(result.data)
+      setInvestments(result.data ?? [])
       setError(null)
     } else {
       setError(result.error)

@@ -83,9 +83,9 @@ describe('useInvestments', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
-    })
+    }, { timeout: 15000 }) // increased timeout for retries
 
-    expect(result.current.error).toBe('Fetch failed')
+    expect(result.current.error).toContain('Fetch failed')
     expect(result.current.investments).toEqual([])
   })
 

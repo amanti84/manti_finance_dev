@@ -1,12 +1,14 @@
 import type { FC } from 'react'
 import type { Payslip, Month } from '../../types'
 import { formatCurrency } from '../../utils/format'
+import { ErrorCard } from '../../components/ui'
 
 interface Props {
   payslips: Payslip[]
   loading: boolean
   error: string | null
   onRowClick?: (payslip: Payslip) => void
+  onRetry?: () => void
 }
 
 const MONTH_NAMES: Record<Month, string> = {
@@ -24,15 +26,15 @@ const MONTH_NAMES: Record<Month, string> = {
   12: 'Dicembre',
 }
 
-export const PayslipList: FC<Props> = ({ payslips, loading, error, onRowClick }) => {
+export const PayslipList: FC<Props> = ({ payslips, loading, error, onRowClick, onRetry }) => {
   if (loading) {
     return <div style={{ padding: '16px' }}>Caricamento cedolini...</div>
   }
 
   if (error) {
     return (
-      <div style={{ padding: '16px', color: '#721c24', backgroundColor: '#f8d7da', borderRadius: '4px' }}>
-        Errore: {error}
+      <div style={{ padding: '16px' }}>
+        <ErrorCard message={error} onRetry={onRetry} />
       </div>
     )
   }

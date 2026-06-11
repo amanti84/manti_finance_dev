@@ -84,6 +84,7 @@ export const PayrollPage: FC = () => {
             loading={loading}
             error={error}
             onRowClick={handlePayslipClick}
+            onRetry={() => { void refresh(); }}
           />
         </section>
       </div>

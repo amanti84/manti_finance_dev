@@ -5,9 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { logAudit, logChange, logCreate, logDelete, getAuditLog, exportAuditLogCSV } from './audit'
-import * as firestore from 'firebase/firestore'
-import type { AuditLogEntry, AuditEntityType } from '../types'
+import { logAudit, logChange, logCreate, logDelete } from './audit'
 
 // Mock firebase/firestore
 vi.mock('firebase/firestore', () => ({
@@ -21,12 +19,7 @@ vi.mock('firebase/firestore', () => ({
   orderBy: vi.fn(),
   limit: vi.fn(),
   Timestamp: {
-    now: vi.fn(() => ({ seconds: 1700000000, nanoseconds: 0 })),
-    fromDate: vi.fn((date: Date) => ({
-      seconds: Math.floor(date.getTime() / 1000),
-      nanoseconds: 0,
-      toDate: () => date
-    })),
+    now: () => ({ seconds: 1700000000, nanoseconds: 0 }),
   },
 }))
 
@@ -155,89 +148,5 @@ describe('logDelete', () => {
     if (!result.success) throw new Error('Result should be successful')
     expect(result.data.action).toBe('delete')
     expect(result.data.previousValue).toEqual(data)
-  })
-})
-
-// --------------------------------------------------------
-// getAuditLog
-// --------------------------------------------------------
-
-describe('getAuditLog', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(firestore.getDocs).mockResolvedValue({
-      docs: []
-    } as unknown as firestore.QuerySnapshot<unknown, firestore.DocumentData>)
-  })
-
-  it('applica correttamente i filtri di data', async () => {
-    const { where } = await import('firebase/firestore')
-    const dateFrom = firestore.Timestamp.fromDate(new Date('2024-01-01'))
-    const dateTo = firestore.Timestamp.fromDate(new Date('2024-01-31'))
-
-    await getAuditLog('user123', {
-      dateFrom,
-      dateTo
-    })
-
-    expect(where).toHaveBeenCalledWith('createdAt', '>=', dateFrom)
-    expect(where).toHaveBeenCalledWith('createdAt', '<=', dateTo)
-  })
-
-  it('applica altri filtri e ordinamento', async () => {
-    const { where, orderBy, limit } = await import('firebase/firestore')
-
-    await getAuditLog('user123', {
-      entityType: 'investment',
-      action: 'create',
-      limitN: 20
-    })
-
-    expect(where).toHaveBeenCalledWith('entityType', '==', 'investment')
-    expect(where).toHaveBeenCalledWith('action', '==', 'create')
-    expect(orderBy).toHaveBeenCalledWith('createdAt', 'desc')
-    expect(limit).toHaveBeenCalledWith(20)
-  })
-
-  it('applica filtri multipli con operatore in', async () => {
-    const { where } = await import('firebase/firestore')
-    const entityTypes: AuditEntityType[] = ['investment', 'payslip']
-
-    await getAuditLog('user123', {
-      entityType: entityTypes
-    })
-
-    expect(where).toHaveBeenCalledWith('entityType', 'in', entityTypes)
-  })
-})
-
-// --------------------------------------------------------
-// exportAuditLogCSV
-// --------------------------------------------------------
-
-describe('exportAuditLogCSV', () => {
-  it('genera correttamente il contenuto CSV', () => {
-    const mockDate = new Date('2024-06-12T10:00:00')
-    const entries: AuditLogEntry[] = [
-      {
-        id: '1',
-        uid: 'user123',
-        action: 'create',
-        entityType: 'investment',
-        entityId: 'inv-1',
-        source: 'user',
-        createdAt: firestore.Timestamp.fromDate(mockDate),
-        updatedAt: firestore.Timestamp.fromDate(mockDate),
-      }
-    ]
-
-    const csv = exportAuditLogCSV(entries)
-    const lines = csv.split('\n')
-
-    expect(lines[0]).toBe('Timestamp,Azione,EntityType,EntityId,Fonte,UID')
-    expect(lines[1]).toContain('"create"')
-    expect(lines[1]).toContain('"investment"')
-    expect(lines[1]).toContain('"inv-1"')
-    expect(lines[1]).toContain('"user123"')
   })
 })

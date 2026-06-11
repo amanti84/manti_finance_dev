@@ -104,8 +104,8 @@ describe('usePrevidenzaData', () => {
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
-    })
+    }, { timeout: 15000 })
 
-    expect(result.current.error).toBe('Database error')
+    expect(result.current.error).toContain('Database error')
   })
 })

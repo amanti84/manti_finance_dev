@@ -782,7 +782,7 @@ export interface MigrationAuditReport {
 export type AuditAction =
   | 'create' | 'update' | 'delete' | 'read'
   | 'login' | 'logout' | 'export' | 'import'
-  | 'snapshot' | 'LEGACY_IMPORT'
+  | 'snapshot' | 'LEGACY_IMPORT' | 'sistema'
 
 export type AuditEntityType =
   | 'transaction' | 'investment' | 'payslip' | 'snapshot'

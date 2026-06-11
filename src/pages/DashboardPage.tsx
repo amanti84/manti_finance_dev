@@ -29,146 +29,172 @@ import { getAllPacPayments } from '../services/pac';
 import { getAllInvestments } from '../services/investment';
 import { getAccounts, getRecurringExpenses } from '../services/cashflow';
 import { getMutuoConfig } from '../services/mutuo';
+import { withRetry } from '../utils/withRetry';
+import { ErrorCard } from '../components/ui';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [alerts, setAlerts] = useState<FinancialAlert[]>([]);
   const [alertsLoading, setAlertsLoading] = useState(true);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
 
   const [payslipData, setPayslipData] = useState<{ last: Payslip; trend: number | undefined } | null>(null);
   const [payslipLoading, setPayslipLoading] = useState(true);
+  const [payslipError, setPayslipError] = useState<string | null>(null);
 
   const [pacData, setPacData] = useState<{ totalInvested: number; count: number } | null>(null);
   const [pacLoading, setPacLoading] = useState(true);
+  const [pacError, setPacError] = useState<string | null>(null);
 
   const [cashflowData, setCashflowData] = useState<{ available: number } | null>(null);
   const [cashflowLoading, setCashflowLoading] = useState(true);
+  const [cashflowError, setCashflowError] = useState<string | null>(null);
 
   const [netWorthData, setNetWorthData] = useState<{ total: number; isPartial: boolean } | null>(null);
   const [netWorthLoading, setNetWorthLoading] = useState(true);
+  const [netWorthError, setNetWorthError] = useState<string | null>(null);
 
   const fetchAlerts = useCallback(async () => {
     if (!user) return;
     setAlertsLoading(true);
-    await evaluateAlerts(user.uid);
-    const result = await getActiveAlerts(user.uid);
-    if (result.success && result.data) {
-      setAlerts(result.data);
+    setAlertsError(null);
+    try {
+      await evaluateAlerts(user.uid);
+      const result = await withRetry(() => getActiveAlerts(user.uid));
+      if (result.success) {
+        setAlerts(result.data ?? []);
+      } else {
+        setAlertsError(result.error);
+      }
+    } catch (e) {
+      setAlertsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAlertsLoading(false);
     }
-    setAlertsLoading(false);
+  }, [user]);
+
+  const fetchPayslips = useCallback(async () => {
+    if (!user) return;
+    setPayslipLoading(true);
+    setPayslipError(null);
+    const res = await withRetry(() => getPayslips(user.uid));
+    if (res.success && res.data && res.data.length > 0) {
+      const sorted = res.data;
+      const last = sorted[0];
+      let trend: number | undefined;
+      if (sorted.length > 1) {
+        const prev = sorted[1];
+        if (prev.netSalary > 0) {
+          trend = ((last.netSalary - prev.netSalary) / prev.netSalary) * 100;
+        }
+      }
+      setPayslipData({ last, trend });
+    } else if (res.success) {
+      setPayslipData(null);
+    } else {
+      setPayslipError(res.error);
+    }
+    setPayslipLoading(false);
+  }, [user]);
+
+  const fetchPac = useCallback(async () => {
+    if (!user) return;
+    setPacLoading(true);
+    setPacError(null);
+    const res = await withRetry(() => getAllPacPayments(user.uid));
+    if (res.success && res.data && res.data.length > 0) {
+      const totalInvested = res.data.reduce((sum, p) => sum + p.importo, 0);
+      setPacData({ totalInvested, count: res.data.length });
+    } else if (res.success) {
+      setPacData(null);
+    } else {
+      setPacError(res.error);
+    }
+    setPacLoading(false);
+  }, [user]);
+
+  const fetchCashflow = useCallback(async () => {
+    if (!user) return;
+    setCashflowLoading(true);
+    setCashflowError(null);
+    const [accRes, expRes] = await Promise.all([
+      withRetry(() => getAccounts(user.uid)),
+      withRetry(() => getRecurringExpenses(user.uid))
+    ]);
+
+    if (accRes.success && accRes.data && accRes.data.length > 0) {
+      const totalBalance = accRes.data.reduce((sum, acc) => sum + acc.currentBalance, 0);
+      let monthlyExpenses = 0;
+      if (expRes.success && expRes.data) {
+        monthlyExpenses = expRes.data.reduce((sum, exp) => {
+          if (exp.frequency === 'monthly') return sum + exp.amount;
+          if (exp.frequency === 'quarterly') return sum + exp.amount / 3;
+          if (exp.frequency === 'annual') return sum + exp.amount / 12;
+          return sum;
+        }, 0);
+      }
+      setCashflowData({ available: totalBalance - monthlyExpenses });
+    } else if (accRes.success) {
+      setCashflowData(null);
+    } else {
+      setCashflowError(accRes.error);
+    }
+    setCashflowLoading(false);
+  }, [user]);
+
+  const fetchNetWorth = useCallback(async () => {
+    if (!user) return;
+    setNetWorthLoading(true);
+    setNetWorthError(null);
+    const [accRes, invRes, mutuoRes] = await Promise.all([
+      withRetry(() => getAccounts(user.uid)),
+      withRetry(() => getAllInvestments(user.uid)),
+      withRetry(() => getMutuoConfig(user.uid))
+    ]);
+
+    let total = 0;
+    let isPartial = false;
+    let hasAnyData = false;
+
+    if (accRes.success && accRes.data && accRes.data.length > 0) {
+      total += accRes.data.reduce((sum, acc) => sum + acc.currentBalance, 0);
+      hasAnyData = true;
+    } else if (!accRes.success) {
+      isPartial = true;
+    }
+
+    if (invRes.success && invRes.data && invRes.data.length > 0) {
+      total += invRes.data.reduce((sum, inv) => sum + inv.currentValue, 0);
+      hasAnyData = true;
+    } else if (!invRes.success) {
+      isPartial = true;
+    }
+
+    if (mutuoRes.success && mutuoRes.data) {
+      total -= mutuoRes.data.debitoResiduo;
+      hasAnyData = true;
+    } else if (mutuoRes.error && mutuoRes.error !== 'Configurazione mutuo non trovata' && !mutuoRes.success) {
+      isPartial = true;
+    }
+
+    if (hasAnyData) {
+      setNetWorthData({ total, isPartial });
+    } else if (!isPartial) {
+      setNetWorthData(null);
+    } else {
+      setNetWorthError('Errore durante il caricamento di alcuni componenti del patrimonio');
+    }
+    setNetWorthLoading(false);
   }, [user]);
 
   useEffect(() => {
     void fetchAlerts();
-  }, [fetchAlerts]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchPayslips = async () => {
-      setPayslipLoading(true);
-      const res = await getPayslips(user.uid);
-      if (res.success && res.data && res.data.length > 0) {
-        const sorted = res.data;
-        const last = sorted[0];
-        let trend: number | undefined;
-        if (sorted.length > 1) {
-          const prev = sorted[1];
-          if (prev.netSalary > 0) {
-            trend = ((last.netSalary - prev.netSalary) / prev.netSalary) * 100;
-          }
-        }
-        setPayslipData({ last, trend });
-      } else {
-        setPayslipData(null);
-      }
-      setPayslipLoading(false);
-    };
-
-    // Card PAC: totale versato = somma importo da PacPayment
-    // Fonte: getAllPacPayments — riflette i versamenti effettivi registrati
-    const fetchPac = async () => {
-      setPacLoading(true);
-      const res = await getAllPacPayments(user.uid);
-      if (res.success && res.data && res.data.length > 0) {
-        const totalInvested = res.data.reduce((sum, p) => sum + p.importo, 0);
-        setPacData({ totalInvested, count: res.data.length });
-      } else {
-        setPacData(null);
-      }
-      setPacLoading(false);
-    };
-
-    const fetchCashflow = async () => {
-      setCashflowLoading(true);
-      const [accRes, expRes] = await Promise.all([
-        getAccounts(user.uid),
-        getRecurringExpenses(user.uid)
-      ]);
-      if (accRes.success && accRes.data && accRes.data.length > 0) {
-        const totalBalance = accRes.data.reduce((sum, acc) => sum + acc.currentBalance, 0);
-        let monthlyExpenses = 0;
-        if (expRes.success && expRes.data) {
-          monthlyExpenses = expRes.data.reduce((sum, exp) => {
-            if (exp.frequency === 'monthly') return sum + exp.amount;
-            if (exp.frequency === 'quarterly') return sum + exp.amount / 3;
-            if (exp.frequency === 'annual') return sum + exp.amount / 12;
-            return sum;
-          }, 0);
-        }
-        setCashflowData({ available: totalBalance - monthlyExpenses });
-      } else {
-        setCashflowData(null);
-      }
-      setCashflowLoading(false);
-    };
-
-    const fetchNetWorth = async () => {
-      setNetWorthLoading(true);
-      const [accRes, invRes, mutuoRes] = await Promise.all([
-        getAccounts(user.uid),
-        getAllInvestments(user.uid),
-        getMutuoConfig(user.uid)
-      ]);
-      let total = 0;
-      let isPartial = false;
-      let hasAnyData = false;
-
-      if (accRes.success && accRes.data && accRes.data.length > 0) {
-        total += accRes.data.reduce((sum, acc) => sum + acc.currentBalance, 0);
-        hasAnyData = true;
-      } else if (!accRes.success) {
-        isPartial = true;
-      }
-
-      if (invRes.success && invRes.data && invRes.data.length > 0) {
-        total += invRes.data.reduce((sum, inv) => sum + inv.currentValue, 0);
-        hasAnyData = true;
-      } else if (!invRes.success) {
-        isPartial = true;
-      }
-
-      if (mutuoRes.success && mutuoRes.data) {
-        total -= mutuoRes.data.debitoResiduo;
-        hasAnyData = true;
-      } else if (mutuoRes.error && mutuoRes.error !== 'Configurazione mutuo non trovata') {
-        isPartial = true;
-      }
-
-      if (hasAnyData || isPartial) {
-        setNetWorthData({ total, isPartial });
-      } else {
-        setNetWorthData(null);
-      }
-      setNetWorthLoading(false);
-    };
-
     void fetchPayslips();
     void fetchPac();
     void fetchCashflow();
     void fetchNetWorth();
-  }, [user]);
+  }, [fetchAlerts, fetchPayslips, fetchPac, fetchCashflow, fetchNetWorth]);
 
   const handleRead = async (id: string) => {
     if (!user) return;
@@ -238,6 +264,8 @@ const DashboardPage: React.FC = () => {
               <Skeleton variant="heading" width="80%" />
               <Skeleton variant="text" width="60%" />
             </div>
+          ) : netWorthError ? (
+            <ErrorCard message={netWorthError} onRetry={() => { void fetchNetWorth(); }} compact />
           ) : !netWorthData ? (
             <EmptyState
               title="Nessun dato"
@@ -264,6 +292,8 @@ const DashboardPage: React.FC = () => {
               <Skeleton variant="heading" width="80%" />
               <Skeleton variant="text" width="60%" />
             </div>
+          ) : payslipError ? (
+            <ErrorCard message={payslipError} onRetry={() => { void fetchPayslips(); }} compact />
           ) : !payslipData ? (
             <EmptyState
               title="Nessun cedolino"
@@ -296,6 +326,8 @@ const DashboardPage: React.FC = () => {
               <Skeleton variant="heading" width="80%" />
               <Skeleton variant="text" width="60%" />
             </div>
+          ) : pacError ? (
+            <ErrorCard message={pacError} onRetry={() => { void fetchPac(); }} compact />
           ) : !pacData ? (
             <EmptyState
               title="Nessun PAC"
@@ -324,6 +356,8 @@ const DashboardPage: React.FC = () => {
               <Skeleton variant="heading" width="80%" />
               <Skeleton variant="text" width="60%" />
             </div>
+          ) : cashflowError ? (
+            <ErrorCard message={cashflowError} onRetry={() => { void fetchCashflow(); }} compact />
           ) : !cashflowData ? (
             <EmptyState
               title="Nessun conto"
@@ -378,6 +412,10 @@ const DashboardPage: React.FC = () => {
               <Skeleton variant="text" />
               <Skeleton variant="text" width="80%" />
               <Skeleton variant="text" width="60%" />
+            </div>
+          ) : alertsError ? (
+            <div className="p-6">
+              <ErrorCard message={alertsError} onRetry={() => { void fetchAlerts(); }} />
             </div>
           ) : alerts.length === 0 ? (
             <EmptyState

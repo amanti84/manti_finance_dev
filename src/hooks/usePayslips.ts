@@ -12,6 +12,7 @@ import {
   deletePayslip,
   calculateNetTrend,
 } from '../services/payroll'
+import { withRetry } from '../utils/withRetry'
 import type { Payslip } from '../types'
 
 interface UsePayslipsState {
@@ -42,7 +43,7 @@ export function usePayslips(year: number): UsePayslipsReturn {
       return
     }
     setState(prev => ({ ...prev, loading: true, error: null }))
-    const result = await getPayslipsByYear(user.uid, year)
+    const result = await withRetry(() => getPayslipsByYear(user.uid, year))
     if (!result.success) {
       setState({ payslips: [], loading: false, error: result.error })
     } else {
