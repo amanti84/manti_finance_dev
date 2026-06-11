@@ -218,6 +218,25 @@ export interface SnapshotWithDelta extends PatrimonioSnapshot {
   delta: number | null
 }
 
+export interface NetWorthSnapshot extends BaseDocument {
+  date: Timestamp              // data snapshot (fine mese)
+  year: number
+  month: Month
+  assets: {
+    liquidita: number          // somma saldi conti correnti
+    investimenti: number       // somma currentValue portafoglio
+    pac: number               // montante PAC accumulato
+    previdenza: number         // montante fondo pensione
+    immobili: number           // valore immobile (se configurato)
+  }
+  liabilities: {
+    mutuo: number              // debitoResiduo
+    altriDebiti: number
+  }
+  netWorth: number             // assets_totale - liabilities_totale
+  netWorthVariation: number    // delta vs snapshot precedente
+}
+
 // --------------------------------------------------------
 // TRANSAZIONI
 // --------------------------------------------------------
@@ -774,6 +793,7 @@ export type AuditEntityType =
   | 'monthlyAllocation'
   | 'sale' | 'taxWallet'
   | 'financialOverview' | 'fixedExpense'
+  | 'netWorthSnapshot'
 
 export interface AuditLogEntry extends BaseDocument {
   action: AuditAction
