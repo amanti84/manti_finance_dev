@@ -167,7 +167,7 @@ describe('getAuditLog', () => {
     vi.clearAllMocks()
     vi.mocked(firestore.getDocs).mockResolvedValue({
       docs: []
-    } as any)
+    } as unknown as firestore.QuerySnapshot<unknown, firestore.DocumentData>)
   })
 
   it('applica correttamente i filtri di data', async () => {

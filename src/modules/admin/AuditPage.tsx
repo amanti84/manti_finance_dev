@@ -3,7 +3,8 @@ import { useAuth } from '../../hooks/useAuth'
 import { Navigate } from 'react-router-dom'
 import {
   getAuditLog,
-  exportAuditLogCSV
+  exportAuditLogCSV,
+  type AuditFilter
 } from '../../services/audit'
 import {
   Button,
@@ -22,7 +23,7 @@ import {
   Clock,
   Zap
 } from 'lucide-react'
-import { Timestamp } from 'firebase/firestore'
+import { Timestamp, type DocumentSnapshot } from 'firebase/firestore'
 import type { AuditLogEntry, AuditEntityType, AuditAction } from '../../types'
 
 const ENTITY_TYPES: AuditEntityType[] = [
@@ -57,7 +58,7 @@ export const AuditPage: FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
   // Pagination
-  const [lastVisible, setLastVisible] = useState<any>(null)
+  const [lastVisible, setLastVisible] = useState<DocumentSnapshot | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const pageSize = 50
 
@@ -73,9 +74,9 @@ export const AuditPage: FC = () => {
     if (!user || !isAdmin) return
     setLoading(true)
 
-    const filter: any = {
+    const filter: AuditFilter = {
       limitN: pageSize,
-      lastVisible: isNext ? lastVisible : null
+      lastVisible: isNext ? (lastVisible ?? undefined) : undefined
     }
 
     if (selectedEntityTypes.length > 0) filter.entityType = selectedEntityTypes
@@ -102,14 +103,14 @@ export const AuditPage: FC = () => {
 
   useEffect(() => {
     void fetchLogs()
-  }, [selectedEntityTypes, selectedActions, dateFrom, dateTo])
+  }, [fetchLogs])
 
   const filteredLogs = useMemo(() => {
     if (!searchTerm) return logs
     const s = searchTerm.toLowerCase()
     return logs.filter(log =>
-      log.entityId.toLowerCase().includes(s) ||
-      (log.newValue && JSON.stringify(log.newValue).toLowerCase().includes(s)) ||
+      log.entityId.toLowerCase().includes(s) ??
+      (log.newValue && JSON.stringify(log.newValue).toLowerCase().includes(s)) ??
       (log.previousValue && JSON.stringify(log.previousValue).toLowerCase().includes(s))
     )
   }, [logs, searchTerm])
@@ -346,7 +347,7 @@ export const AuditPage: FC = () => {
                   <React.Fragment key={log.id}>
                     <tr
                       className={`hover:bg-primary/5 transition-colors cursor-pointer ${expandedId === log.id ? 'bg-primary/5' : ''}`}
-                      onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
+                      onClick={() => { setExpandedId(expandedId === log.id ? null : log.id) }}
                     >
                       <td className="px-4 py-3 text-sm whitespace-nowrap">
                         {formatDate(log.createdAt)}
@@ -365,7 +366,7 @@ export const AuditPage: FC = () => {
                         {log.entityId}
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        <Badge variant="default">{log.source || 'user'}</Badge>
+                        <Badge variant="default">{log.source ?? 'user'}</Badge>
                       </td>
                       <td className="px-4 py-3 text-right">
                         {expandedId === log.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}

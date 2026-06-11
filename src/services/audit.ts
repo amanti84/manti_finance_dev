@@ -13,6 +13,7 @@ import {
   startAfter,
   Timestamp,
   type QueryConstraint,
+  type DocumentSnapshot,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import type { AuditLogEntry, AuditAction, AuditEntityType, ApiResult } from '../types'
@@ -35,7 +36,7 @@ export interface AuditFilter {
   limitN?: number
   dateFrom?: Timestamp
   dateTo?: Timestamp
-  lastVisible?: any // Per paginazione cursore
+  lastVisible?: DocumentSnapshot | undefined // Per paginazione cursore
 }
 
 export async function logAudit(
@@ -71,7 +72,7 @@ export async function logAudit(
 export async function getAuditLog(
   uid: string,
   filter: AuditFilter = {}
-): Promise<ApiResult<{ entries: AuditLogEntry[], lastVisible: any }>> {
+): Promise<ApiResult<{ entries: AuditLogEntry[], lastVisible: DocumentSnapshot | null }>> {
   try {
     const ref = collection(db, 'users', uid, 'audit')
     const constraints: QueryConstraint[] = []
