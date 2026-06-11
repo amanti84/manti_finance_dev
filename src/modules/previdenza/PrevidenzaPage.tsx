@@ -10,7 +10,7 @@ import { PensionFundSection } from './PensionFundSection'
 import { TFRSection } from './TFRSection'
 import { PrevidenzaConfigForm } from './PrevidenzaConfigForm'
 import { PrevidenzaInitForm } from './PrevidenzaInitForm'
-import { Button, EmptyState, Skeleton, Card, CardHeader, CardTitle, CardContent, ErrorCard } from '../../components/ui'
+import { Button, EmptyState, Skeleton, Card, CardHeader, CardTitle, CardContent } from '../../components/ui'
 import { formatCurrency } from '../../utils/format'
 import type { PrevidenzaConfig, PrevidenzaBaseline } from '../../types'
 
@@ -133,10 +133,9 @@ export const PrevidenzaPage: FC = () => {
 
   if (error && error !== 'Configurazione previdenza non trovata') {
     return (
-      <div className="p-8 flex justify-center">
-        <div className="max-w-md w-full">
-          <ErrorCard message={error} onRetry={() => { void refresh(); }} />
-        </div>
+      <div className="p-8 text-center">
+        <p className="text-error font-medium">Errore nel caricamento dati previdenza: {error}</p>
+        <Button className="mt-4" onClick={() => void refresh()}>Riprova</Button>
       </div>
     )
   }
@@ -145,17 +144,14 @@ export const PrevidenzaPage: FC = () => {
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-text mb-6">Previdenza</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          <EmptyState
-            title="Nessun dato configurato"
-            description="Per visualizzare le proiezioni pensionistiche e il TFR, configura i tuoi dati di base."
-            action={{
-              label: "Configura Ora",
-              onClick: () => setIsConfigModalOpen(true)
-            }}
-          />
-          {user && <PrevidenzaInitForm uid={user.uid} onSuccess={() => { void refresh(); }} />}
-        </div>
+        <EmptyState
+          title="Nessun dato configurato"
+          description="Per visualizzare le proiezioni pensionistiche e il TFR, configura i tuoi dati di base."
+          action={{
+            label: "Configura Ora",
+            onClick: () => setIsConfigModalOpen(true)
+          }}
+        />
         <PrevidenzaConfigForm
           isOpen={isConfigModalOpen}
           onClose={() => setIsConfigModalOpen(false)}

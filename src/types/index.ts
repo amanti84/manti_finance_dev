@@ -773,6 +773,7 @@ export type AuditEntityType =
   | 'kindergartenExpense' | 'kindergartenConfig'
   | 'monthlyAllocation'
   | 'sale' | 'taxWallet'
+  | 'financialOverview' | 'fixedExpense'
 
 export interface AuditLogEntry extends BaseDocument {
   action: AuditAction

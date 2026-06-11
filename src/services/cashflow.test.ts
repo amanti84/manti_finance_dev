@@ -40,8 +40,9 @@ describe('cashflow service', () => {
         { id: '2', name: 'Conto 2', currentBalance: 2000 },
       ]
       const mockExpenses = [
-        { id: 'e1', label: 'Affitto', amount: 500, frequency: 'monthly' },
-        { id: 'e3', label: 'Tassa', amount: 120, frequency: 'annual' },
+        { id: 'e1', name: 'Affitto', amount: 500, frequency: 'monthly' },
+        { id: 'e2', name: 'Assicurazione', amount: 300, frequency: 'quarterly' },
+        { id: 'e3', name: 'Tassa', amount: 120, frequency: 'annual' },
       ]
 
       const { getDocs } = await import('firebase/firestore')
@@ -61,9 +62,9 @@ describe('cashflow service', () => {
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.totalBalance).toBe(3000)
-        // 500 + (120/12) = 500 + 10 = 510
-        expect(result.data.monthlyRecurringExpenses).toBe(510)
-        expect(result.data.availableBalance).toBe(2490)
+        // 500 + (300/3) + (120/12) = 500 + 100 + 10 = 610
+        expect(result.data.monthlyRecurringExpenses).toBe(610)
+        expect(result.data.availableBalance).toBe(2390)
       }
     })
 
@@ -105,7 +106,7 @@ describe('cashflow service', () => {
       const getDocsMock = getDocs as Mock
       getDocsMock.mockResolvedValueOnce({ docs: [] })
       getDocsMock.mockResolvedValueOnce({
-        docs: [{ id: 'e1', data: () => ({ label: 'Affitto', amount: 1000, frequency: 'monthly' }) }]
+        docs: [{ id: 'e1', data: () => ({ name: 'Affitto', amount: 1000, frequency: 'monthly' }) }]
       })
 
       const result = await getAvailableBalance('user123')

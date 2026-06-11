@@ -53,8 +53,8 @@ vi.mock('./modules/payroll', () => ({
 vi.mock('./modules/pac', () => ({
   PacPage: () => <div>PAC Page</div>,
 }))
-vi.mock('./modules/financialOverview', () => ({
-  FinancialOverviewPage: () => <div data-testid="cashflow-page">FinancialOverview</div>
+vi.mock('./modules/cashflow', () => ({
+  CashFlowPage: () => <div>Cash Flow Page</div>,
 }))
 
 import App from './App'

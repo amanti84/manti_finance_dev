@@ -65,8 +65,15 @@ function App(): React.ReactElement {
             } />
             <Route path="/cashflow" element={
               user ? (
-                <ErrorBoundary moduleName="CashFlow">
-                  <CashFlowPage uid={user.uid} />
+                <ErrorBoundary moduleName="FinancialOverview">
+                  <FinancialOverviewPage uid={user.uid} />
+                </ErrorBoundary>
+              ) : null
+            } />
+            <Route path="/overview" element={
+              user ? (
+                <ErrorBoundary moduleName="FinancialOverview">
+                  <FinancialOverviewPage uid={user.uid} />
                 </ErrorBoundary>
               ) : null
             } />
@@ -127,6 +134,11 @@ function App(): React.ReactElement {
             <Route path="/admin" element={
               <ErrorBoundary moduleName="Admin">
                 <AdminPage />
+              </ErrorBoundary>
+            } />
+            <Route path="/admin/audit" element={
+              <ErrorBoundary moduleName="Audit">
+                <AuditPage />
               </ErrorBoundary>
             } />
           </Route>
