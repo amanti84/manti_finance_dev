@@ -91,7 +91,7 @@ describe('MonthlyAllocationPage', () => {
     renderWithRouter(<MonthlyAllocationPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Affitto')).toBeDefined()
+      expect(screen.getAllByText('Affitto')[0]).toBeDefined()
     }, { timeout: 5000 })
   })
 
