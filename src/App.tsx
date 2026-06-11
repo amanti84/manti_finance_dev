@@ -20,6 +20,7 @@ import { AlertsPage } from './modules/alerts'
 import { InboxPage } from './modules/inbox'
 import { GoalsPage } from './modules/goals'
 import { AdminPage } from './pages/AdminPage'
+import { AuditPage } from './modules/admin/AuditPage'
 import DashboardPage from './pages/DashboardPage'
 import { ComponentGallery } from './ComponentGallery'
 
@@ -55,6 +56,7 @@ function App(): React.ReactElement {
             <Route path="/inbox" element={<InboxPage />} />
             <Route path="/goals" element={<GoalsPage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/audit" element={<AuditPage />} />
           </Route>
         </Route>
       </Routes>
