@@ -253,6 +253,47 @@ export interface Investment extends BaseDocument {
   priceSource?: string
 }
 
+export interface SaleResult {
+  grossGain: number           // plusvalenza lorda
+  taxableGain: number         // dopo compensazione minus pregresse
+  taxAmount: number           // 26% di taxableGain (se positivo)
+  netProceeds: number         // incasso netto dopo tasse
+  isLoss: boolean
+}
+
+export interface SaleRecord extends BaseDocument {
+  investmentId: string
+  investmentName: string
+  sellPrice: number
+  sellQuantity: number
+  saleDate: Timestamp
+  grossGain: number
+  taxableGain: number
+  taxAmount: number
+  netProceeds: number
+  isLoss: boolean
+  broker: Broker
+}
+
+export interface TaxSummary {
+  year: number
+  totalGrossGain: number
+  totalTaxableGain: number
+  totalTaxPaid: number
+  totalLossesRealized: number
+}
+
+export interface TaxLoss {
+  amount: number
+  year: number
+  expiryYear: number
+}
+
+export interface TaxWallet extends BaseDocument {
+  totalAvailableLosses: number
+  lossItems: TaxLoss[]
+}
+
 export interface PacPayment extends BaseDocument {
   investmentId: string
   investmentName: string
@@ -703,6 +744,7 @@ export type AuditEntityType =
   | 'scenario' | 'monthlyClose'
   | 'kindergartenExpense' | 'kindergartenConfig'
   | 'monthlyAllocation'
+  | 'sale' | 'taxWallet'
 
 export interface AuditLogEntry extends BaseDocument {
   action: AuditAction
